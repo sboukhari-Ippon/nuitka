@@ -1,0 +1,378 @@
+# Manifeste des packs thématiques de l'audit d'accessibilité (RGAA 4.1.2).
+#
+# Lu par Audit-A11Y-RGAA.py au démarrage : modifier CE fichier suffit pour
+# ajuster le routage des passes (les scripts sont distribués en binaires — tout le
+# contenu variable vit dans des fichiers externes comme celui-ci).
+#
+# Champs de chaque pack :
+#   id / slug / nom : identité ; le fichier de grille du pack est packs/T<id:02d>-<slug>.md
+#   criteres        : numéros de critères RGAA couverts — c'est le set EXACT attendu
+#                     dans la section '## Verdicts' de chaque passe de ce pack
+#   toujours        : true = la passe SOCLE de ce pack est garantie même sans déclencheur
+#                     (l'ABSENCE des motifs y est elle-même un constat potentiel)
+#   sondes          : indices NC quasi certains détectables par regex (motif, critere,
+#                     confiance : quasi-certain | probable | candidat). Double usage :
+#                     injectés dans le prompt de la passe (« confirme ou infirme »), et
+#                     confrontés aux verdicts (sonde positive + verdict C -> « verdict C
+#                     suspect » en annexe). JAMAIS un verdict automatique.
+#   testabilite     : mapping critère -> statique | partielle | manuelle, RECOPIÉ depuis
+#                     les suffixes des grilles packs/T*.md (source de vérité éditoriale).
+#                     Appliqué par l'agrégation : un verdict C sur un critère « manuelle »
+#                     est requalifié AVM (C non démontrable statiquement). Bloc
+#                     OBLIGATOIRE et complet (validé au chargement du manifeste).
+#   declencheurs    : expressions régulières Python (insensibles à la casse) cherchées
+#                     dans le CONTENU des fichiers d'un compartiment (socle, composants,
+#                     zone) ; au moins un match dans le compartiment => passe activée.
+#                     Un pack sans aucun match nulle part n'est audité NULLE PART :
+#                     ses critères sont déclarés NA mécaniquement (raison en annexe).
+#
+# Note d'écriture des regex : le point remplace volontairement le guillemet dans les
+# motifs du type type=.image (matche type="image et type='image) — plus robuste au
+# YAML et aux variantes d'écriture.
+
+version: "rgaa-4.1.2"
+packs:
+  - id: 1
+    slug: "images"
+    nom: "Images"
+    criteres: ["1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9"]
+    testabilite:
+      "1.1": "statique"
+      "1.2": "statique"
+      "1.3": "partielle"
+      "1.4": "partielle"
+      "1.5": "partielle"
+      "1.6": "partielle"
+      "1.7": "manuelle"
+      "1.8": "partielle"
+      "1.9": "statique"
+    toujours: false
+    declencheurs:
+      - '<img\b'
+      - '<picture\b'
+      - '<area\b'
+      - '<svg\b'
+      - '<canvas\b'
+      - 'type=.image'
+      - 'role=.img'
+      - '<embed\b'
+      - '<object\b'
+      - 'background(-image)?\s*:[^;{}]*url\('
+      - '\.(png|jpe?g|gif|webp|avif)\b'
+      - '<(Image|Img|Icon|Avatar|Logo)\b'
+
+  - id: 2
+    slug: "cadres"
+    nom: "Cadres"
+    criteres: ["2.1", "2.2"]
+    testabilite:
+      "2.1": "statique"
+      "2.2": "partielle"
+    toujours: false
+    sondes:
+      - motif: '<iframe(?![^>]{0,200}title=)[^>]*>'
+        critere: "2.1"
+        confiance: "probable"
+    declencheurs:
+      - '<i?frame\b'
+
+  - id: 3
+    slug: "couleurs"
+    nom: "Couleurs"
+    criteres: ["3.1", "3.2", "3.3"]
+    testabilite:
+      "3.1": "partielle"
+      "3.2": "partielle"
+      "3.3": "partielle"
+    toujours: true
+    declencheurs:
+      - 'color\s*:'
+      - 'background'
+      - 'rgba?\('
+      - 'hsla?\('
+      - '#[0-9a-fA-F]{6}\b'
+      - '(text|bg|border)-(red|green|blue|gray|grey|slate|zinc|amber|yellow|orange|purple|pink|indigo|emerald|teal|cyan|sky|rose|neutral|stone|lime|violet|fuchsia)'
+      - 'style='
+
+  - id: 4
+    slug: "multimedia"
+    nom: "Multimédia"
+    criteres: ["4.1", "4.2", "4.3", "4.4", "4.5", "4.6", "4.7", "4.8", "4.9", "4.10", "4.11", "4.12", "4.13"]
+    testabilite:
+      "4.1": "partielle"
+      "4.2": "manuelle"
+      "4.3": "partielle"
+      "4.4": "manuelle"
+      "4.5": "partielle"
+      "4.6": "manuelle"
+      "4.7": "partielle"
+      "4.8": "partielle"
+      "4.9": "manuelle"
+      "4.10": "statique"
+      "4.11": "partielle"
+      "4.12": "partielle"
+      "4.13": "partielle"
+    toujours: false
+    sondes:
+      - motif: '<(video|audio)[^>]{0,200}autoplay(?![^>]{0,200}muted)'
+        critere: "4.10"
+        confiance: "probable"
+    declencheurs:
+      - '<(video|audio|track|bgsound)\b'
+      - '\.(mp4|webm|ogv|ogg|mp3|wav|m4a|m3u8)\b'
+      - '(youtube|youtu\.be|vimeo|dailymotion|soundcloud|videojs|video-js|jwplayer|plyr)'
+      - 'autoplay'
+      - '<(Video|Audio|Player|ReactPlayer)\b'
+
+  - id: 5
+    slug: "tableaux"
+    nom: "Tableaux"
+    criteres: ["5.1", "5.2", "5.3", "5.4", "5.5", "5.6", "5.7", "5.8"]
+    testabilite:
+      "5.1": "partielle"
+      "5.2": "manuelle"
+      "5.3": "partielle"
+      "5.4": "statique"
+      "5.5": "partielle"
+      "5.6": "statique"
+      "5.7": "statique"
+      "5.8": "statique"
+    toujours: false
+    declencheurs:
+      - '<(table|thead|tbody|tfoot|th|caption)\b'
+      - 'role=.(grid|table|row\b|columnheader|rowheader)'
+      - '<(DataGrid|DataTable|Table)\b'
+
+  - id: 6
+    slug: "liens"
+    nom: "Liens"
+    criteres: ["6.1", "6.2"]
+    testabilite:
+      "6.1": "partielle"
+      "6.2": "statique"
+    toujours: false
+    declencheurs:
+      - '<a[\s>]'
+      - 'href='
+      - '<(Link|NavLink|RouterLink)\b'
+      - '(routerLink|router-link|to=)'
+      - 'role=.link'
+
+  - id: 7
+    slug: "scripts"
+    nom: "Scripts"
+    criteres: ["7.1", "7.2", "7.3", "7.4", "7.5"]
+    testabilite:
+      "7.1": "statique"
+      "7.2": "partielle"
+      "7.3": "statique"
+      "7.4": "statique"
+      "7.5": "statique"
+    toujours: false
+    declencheurs:
+      - 'addEventListener'
+      - '\bon(click|change|input|keydown|keyup|keypress|focus|blur|submit|mouseover|mouseenter)\s*[=(]'
+      - 'aria-'
+      - 'role='
+      - '(useState|useEffect|useRef|v-on:|v-if|v-show|@click|\(click\)|ng-click)'
+      - 'tabindex'
+      - '<script\b'
+      - '<(dialog|details)\b'
+
+  - id: 8
+    slug: "elements-obligatoires"
+    nom: "Éléments obligatoires"
+    criteres: ["8.1", "8.2", "8.3", "8.4", "8.5", "8.6", "8.7", "8.8", "8.9", "8.10"]
+    testabilite:
+      "8.1": "statique"
+      "8.2": "partielle"
+      "8.3": "statique"
+      "8.4": "statique"
+      "8.5": "statique"
+      "8.6": "partielle"
+      "8.7": "partielle"
+      "8.8": "statique"
+      "8.9": "statique"
+      "8.10": "statique"
+    toujours: true
+    sondes:
+      - motif: '<html(?![^>]{0,200}lang=)[^>]*>'
+        critere: "8.3"
+        confiance: "probable"
+    declencheurs:
+      - '<!doctype'
+      - '<html\b'
+      - '<head\b'
+      - '<title\b'
+      - '\blang='
+      - '\bdir='
+      - 'document\.title'
+      - '<(Helmet|Head|Title)\b'
+      - '(useTitle|useHead|useSeoMeta|setTitle)'
+      - '(<center\b|<font\b|<marquee\b|<blink\b|<big\b|<u>|align=|bgcolor=)'
+
+  - id: 9
+    slug: "structuration"
+    nom: "Structuration de l'information"
+    criteres: ["9.1", "9.2", "9.3", "9.4"]
+    testabilite:
+      "9.1": "statique"
+      "9.2": "statique"
+      "9.3": "statique"
+      "9.4": "statique"
+    toujours: true
+    declencheurs:
+      - '<h[1-6]\b'
+      - 'role=.heading'
+      - 'aria-level'
+      - '<(main|nav|header|footer|aside|section|article)\b'
+      - '<[ou]l\b'
+      - '<dl\b'
+      - '<(blockquote|q)\b'
+      - 'role=.(list\b|listitem|banner|contentinfo|navigation|complementary)'
+
+  - id: 10
+    slug: "presentation"
+    nom: "Présentation de l'information"
+    criteres: ["10.1", "10.2", "10.3", "10.4", "10.5", "10.6", "10.7", "10.8", "10.9", "10.10", "10.11", "10.12", "10.13", "10.14"]
+    testabilite:
+      "10.1": "statique"
+      "10.2": "partielle"
+      "10.3": "partielle"
+      "10.4": "partielle"
+      "10.5": "partielle"
+      "10.6": "statique"
+      "10.7": "statique"
+      "10.8": "statique"
+      "10.9": "partielle"
+      "10.10": "manuelle"
+      "10.11": "partielle"
+      "10.12": "partielle"
+      "10.13": "partielle"
+      "10.14": "statique"
+    toujours: true
+    sondes:
+      - motif: 'user-scalable\s*=\s*no'
+        critere: "10.4"
+        confiance: "quasi-certain"
+      - motif: 'maximum-scale\s*=\s*1\b'
+        critere: "10.4"
+        confiance: "quasi-certain"
+      - motif: 'outline\s*:\s*(none|0)'
+        critere: "10.7"
+        confiance: "candidat"
+    declencheurs:
+      - 'style='
+      - 'class(Name)?='
+      - '(font-size|font-weight|line-height|letter-spacing)'
+      - '@media'
+      - '\d+px\b'
+      - '(display|visibility|overflow)\s*:'
+      - '\bhidden\b'
+      - ':(hover|focus|focus-visible|focus-within)'
+      - '(outline|box-shadow)\s*:'
+      - '(styled\.|styled\(|css`|emotion|tailwind|@apply)'
+
+  - id: 11
+    slug: "formulaires"
+    nom: "Formulaires"
+    criteres: ["11.1", "11.2", "11.3", "11.4", "11.5", "11.6", "11.7", "11.8", "11.9", "11.10", "11.11", "11.12", "11.13"]
+    testabilite:
+      "11.1": "statique"
+      "11.2": "partielle"
+      "11.3": "partielle"
+      "11.4": "partielle"
+      "11.5": "partielle"
+      "11.6": "statique"
+      "11.7": "partielle"
+      "11.8": "statique"
+      "11.9": "statique"
+      "11.10": "statique"
+      "11.11": "partielle"
+      "11.12": "partielle"
+      "11.13": "statique"
+    toujours: false
+    declencheurs:
+      - '<(form|input|select|textarea|option|optgroup|fieldset|legend|label|datalist|output|progress|meter)\b'
+      - '<button\b'
+      - 'type=.(submit|text|email|password|checkbox|radio|number|tel|date|search|file|url|range)'
+      - 'role=.(button|checkbox|radio|switch|combobox|listbox|textbox|searchbox|slider|spinbutton)'
+      - '(useForm|Formik|react-hook-form|formControlName|FormGroup|FormControl|v-model|ngModel)'
+      - '(required|aria-required|autocomplete|aria-invalid)'
+      - '<(Button|Input|Select|TextField|Textarea|Checkbox|Radio|Form|Field)\b'
+
+  - id: 12
+    slug: "navigation"
+    nom: "Navigation"
+    criteres: ["12.1", "12.2", "12.3", "12.4", "12.5", "12.6", "12.7", "12.8", "12.9", "12.10", "12.11"]
+    testabilite:
+      "12.1": "partielle"
+      "12.2": "partielle"
+      "12.3": "partielle"
+      "12.4": "partielle"
+      "12.5": "partielle"
+      "12.6": "statique"
+      "12.7": "statique"
+      "12.8": "partielle"
+      "12.9": "partielle"
+      "12.10": "statique"
+      "12.11": "statique"
+    toujours: true
+    sondes:
+      - motif: 'tabindex=.[1-9]'
+        critere: "12.8"
+        confiance: "quasi-certain"
+      - motif: 'accesskey='
+        critere: "12.10"
+        confiance: "candidat"
+    declencheurs:
+      - '<nav\b'
+      - 'role=.navigation'
+      - '(breadcrumb|ariane)'
+      - '(skip-|skiplink|evitement|acces-rapide)'
+      - 'tabindex'
+      - 'accesskey'
+      - '(menu|navbar|sidebar)'
+      - '<(Link|NavLink)\b'
+      - '(routerLink|router-link|createBrowserRouter|useNavigate|<Route\b)'
+      - '(sitemap|plan-du-site|plan du site)'
+      - '(keydown|keyup|keyboard|shortcut|hotkey)'
+
+  - id: 13
+    slug: "consultation"
+    nom: "Consultation"
+    criteres: ["13.1", "13.2", "13.3", "13.4", "13.5", "13.6", "13.7", "13.8", "13.9", "13.10", "13.11", "13.12"]
+    testabilite:
+      "13.1": "partielle"
+      "13.2": "statique"
+      "13.3": "partielle"
+      "13.4": "manuelle"
+      "13.5": "statique"
+      "13.6": "partielle"
+      "13.7": "partielle"
+      "13.8": "statique"
+      "13.9": "partielle"
+      "13.10": "partielle"
+      "13.11": "statique"
+      "13.12": "partielle"
+    toujours: false
+    sondes:
+      - motif: 'http-equiv=.refresh'
+        critere: "13.1"
+        confiance: "quasi-certain"
+      - motif: '<(marquee|blink)\b'
+        critere: "13.8"
+        confiance: "quasi-certain"
+    declencheurs:
+      - '\.(pdf|docx?|xlsx?|pptx?|odt|ods|odp)\b'
+      - '\bdownload\b'
+      - '(@keyframes|animation\s*:|animation-name|transition\s*:)'
+      - '(autoplay|<marquee|<blink|carousel|carrousel|slider|ticker)'
+      - '(setTimeout|setInterval|requestAnimationFrame)'
+      - 'http-equiv=.refresh'
+      - 'window\.open'
+      - '(touchstart|touchmove|touchend|pointerdown|gesturestart|swipe|pinch)'
+      - '(deviceorientation|devicemotion|DeviceMotionEvent|accelerometer|gyroscope)'
+      - '(orientation\s*:|prefers-reduced-motion)'
+      - '(session|timeout|expir|deconnexion|logout).{0,40}(delai|timer|minute|second)'
+      - '(emoticone|emoji|ascii)'

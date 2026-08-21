@@ -1,0 +1,119 @@
+{
+  "title": "Proto sans DS : porte y/n des tokens par défaut, garde mécanique du token halluciné (rejet + feedback)",
+  "script": "Design-Prototype.py",
+  "seed": {
+    "need.md": "# Besoin\n\nPrototype d'une page d'accueil de conférence : titre, description et bouton d'inscription.\n"
+  },
+  "stdin": "y\ny\ny\n",
+  "steps": [
+    {
+      "label": "1 · agent PO/UX (section DS = aucun)",
+      "sentinel": ".pipeline_spec.done",
+      "expect": [
+        "Product Owner",
+        "(aucun — tokens par défaut du prototype)"
+      ],
+      "write": {
+        "spec.md": "# Spécification : Accueil conférence (prototype)\n\n## 1. Objectif métier\nValider la page d'accueil.\n\n## Design system\n(aucun — tokens par défaut du prototype)\n\n## 3. User Stories\n\n### US-1 : Page d'accueil\n**En tant que** visiteur, **je veux** voir la page d'accueil, **afin de** m'inscrire.\n\n**Critères d'acceptation :**\n- [ ] Étant donné la page, quand elle s'affiche, alors un bouton primaire « S'inscrire » est visible.\n\n## 4. Hors périmètre\n- Formulaire d'inscription réel.\n\n## 5. Hypothèses & Questions\n- **Hypothèse :** page unique — **Question :** aucune.\n"
+      }
+    },
+    {
+      "label": "2 · agent Architecte proto",
+      "sentinel": ".pipeline_plan.done",
+      "expect": [
+        "plan.md"
+      ],
+      "write": {
+        "plan.md": "# Plan d'implémentation : Accueil conférence\n\n## Stack & Livrables\n- **Stack cible :** HTML5 + CSS3 + JavaScript vanilla (aucun framework, aucun build)\n- **Design system :** (aucun — tokens par défaut du prototype)\n- **Point d'entrée :** index.html\n\n## Règles globales (recopiées telles quelles dans chaque prompt de l'exécutant)\n- **Contraintes :** (non spécifié)\n- **Style :** (non spécifié)\n- **Accessibilité :** (non spécifié)\n\n## Micro-phases (vue d'ensemble)\n1. Fondations + page d'accueil\n"
+      }
+    },
+    {
+      "label": "3 · compilateur blackboard",
+      "sentinel": ".pipeline_blackboard.done",
+      "expect": [
+        "blackboard.yaml"
+      ],
+      "write": {
+        "blackboard.yaml": "project: accueil-conf-proto\nstatus: IN_PROGRESS\nglobal_rules:\n  target: HTML5 + CSS3 + JavaScript vanilla (aucun framework, aucun build)\n  design_system: \"(aucun — tokens par défaut du prototype)\"\n  styling: (non spécifié)\n  constraints: (non spécifié)\n  accessibility: (non spécifié)\nphases:\n  - id: 1\n    name: Fondations + page d'accueil\n    status: TODO\n    covers: [US-1]\n    context: \"Phase unique : tokens par défaut + page d'accueil.\"\n    files_to_read: [spec.md]\n    tasks:\n      - Créer assets/css/tokens.css (tokens par défaut)\n      - Créer index.html (titre, description, bouton primaire)\n    verdict: PENDING\n    critic_feedback: \"\"\n"
+      }
+    },
+    {
+      "label": "4 · designer-dev tentative 1 (token halluciné)",
+      "sentinel": ".phase_1.attempt1.done",
+      "expect": [
+        "Designer-Dev",
+        "(aucun — tokens par défaut du prototype)"
+      ],
+      "touched": [
+        "assets/css/tokens.css",
+        "index.html"
+      ],
+      "write": {
+        "assets/css/tokens.css": ":root {\n  --color-primary: #2563eb;\n  --space-2: 8px;\n}\n",
+        "index.html": "<!DOCTYPE html>\n<html lang=\"fr\"><head><meta charset=\"utf-8\"><title>Conférence</title>\n<link rel=\"stylesheet\" href=\"assets/css/tokens.css\">\n<style>.btn--primary { background: var(--color-brand); padding: var(--space-2); }</style>\n</head><body>\n<main><h1>Conférence</h1><p>Deux jours de talks.</p>\n<button class=\"btn btn--primary\" type=\"button\">S'inscrire</button></main>\n</body></html>\n"
+      }
+    },
+    {
+      "label": "5 · designer-dev tentative 2 (reçoit le feedback mécanique, corrige)",
+      "sentinel": ".phase_1.attempt2.done",
+      "expect": [
+        "var(--color-brand) consommé dans index.html mais défini nulle part",
+        "tokens.css est la source unique"
+      ],
+      "touched": [
+        "index.html"
+      ],
+      "write": {
+        "index.html": "<!DOCTYPE html>\n<html lang=\"fr\"><head><meta charset=\"utf-8\"><title>Conférence</title>\n<link rel=\"stylesheet\" href=\"assets/css/tokens.css\">\n<style>.btn--primary { background: var(--color-primary); padding: var(--space-2); }</style>\n</head><body>\n<main><h1>Conférence</h1><p>Deux jours de talks.</p>\n<button class=\"btn btn--primary\" type=\"button\">S'inscrire</button></main>\n</body></html>\n"
+      }
+    },
+    {
+      "label": "6 · vérificateur phase 1 (verdict OK)",
+      "sentinel": ".phase_1.attempt2.verdict",
+      "skip_sentinel": true,
+      "expect": [
+        "Vérificateur de phase"
+      ],
+      "write": {
+        ".phase_1.attempt2.verdict": "OK\n"
+      }
+    },
+    {
+      "label": "7 · review finale (verdict OK)",
+      "sentinel": ".pipeline_review.attempt1.verdict",
+      "skip_sentinel": true,
+      "expect": [
+        "review_report.md"
+      ],
+      "write": {
+        "review_report.md": "# Review\n\n## Synthèse\nConforme.\n",
+        ".pipeline_review.attempt1.verdict": "OK\n"
+      }
+    }
+  ],
+  "assert": {
+    "exit_code": 0,
+    "tasks": 7,
+    "files_present": [
+      "index.html",
+      "review_report.md"
+    ],
+    "files_absent": [
+      ".design_system_ack"
+    ],
+    "phases": {
+      "1": {
+        "status": "DONE",
+        "verdict": "OK"
+      }
+    },
+    "stdout_contains": [
+      "DESIGN SYSTEM — aucune mention détectée",
+      "Continuer avec les tokens par défaut du prototype ? (y/n)",
+      "token(s) CSS",
+      "design system halluciné",
+      "produite et VÉRIFIÉE",
+      "Prototype CONFORME"
+    ]
+  }
+}

@@ -1,0 +1,58 @@
+name: Checks (push & PR)
+
+# Filet de non-régression sur CHAQUE push et PR (plan-big-last, Lot 1) : plus aucun
+# commit ne peut casser silencieusement. Ordre : les checkers rapides d'abord (échec
+# en secondes), les tests unitaires de l'audit, puis les scénarios mock JOUÉS SOUS
+# `--golden check` — une seule passe qui exécute les 27 pipelines de bout en bout,
+# vérifie leurs assertions ET diffe strictement leur stdout normalisé contre
+# tools/goldens/ (caractérisation : prérequis absolu de la factorisation du Lot 4).
+#
+# Dépendances : Python 3.12 épinglé (cohérence avec build.yml) + pyyaml. Les
+# verify_cmd des fixtures sont 100 % Python : aucun node/npm requis (vérifié au
+# Lot 1 ; si une fixture future en a besoin, ajouter actions/setup-node épinglé).
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install deps
+        run: pip install pyyaml
+
+      - name: Check variants synchronization
+        run: python tools/check_variants_sync.py
+
+      - name: Check gate labels (prompts <-> manifest)
+        run: python tools/check_gate_labels.py
+
+      - name: Check message parity
+        run: python tools/check_message_parity.py
+
+      - name: Check runner parity
+        run: python tools/check_runner_parity.py
+
+      - name: Check unused imports
+        run: python tools/check_unused_imports.py
+
+      # Tests unitaires des fonctions pures de l'audit RGAA (échec en secondes,
+      # avant les mocks qui prennent des minutes) — cf. real-plan.md, A0.
+      - name: Audit unit tests
+        run: python tools/test_audit_units.py
+
+      # Tests unitaires du journal de run (mm_audit, plan-big-last Lot 2).
+      - name: Run-journal unit tests
+        run: python tools/test_mm_audit.py
+
+      # Les 27 pipelines de bout en bout (MockRunner, zéro LLM) + goldens stricts.
+      - name: Mock scenarios + golden transcripts
+        run: python tools/run_mock_scenarios.py --golden check

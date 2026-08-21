@@ -1,0 +1,28 @@
+{
+ "title": "challenge du besoin : reprise — revue existante jamais entérinée -> la porte revient SANS nouvelle sollicitation",
+ "script": "Challenge-Need.py",
+ "seed": {
+  "need.md": "# Besoin fonctionnel\n\nUne fonction slugify(texte) pour générer des slugs d'URL. Les tirets multiples sont réduits parfois.\n",
+  "need_review.md": "# Revue du besoin — slugify (CANARI-REPRISE)\n\n## Ambiguïtés\n- [BLOQUANT] \"Les tirets multiples sont réduits parfois\" — le mot « parfois » est indécidable.\n\n## Contradictions\nAucune.\n\n## Zones d'ombre\nAucune.\n\n## Présupposés\nAucune.\n\n## Questions à trancher avant la spec\n1. [BLOQUANT] La réduction est-elle systématique ? (oui/non)\n"
+ },
+ "stdin": "y\n",
+ "steps": [],
+ "assert": {
+  "exit_code": 0,
+  "tasks": 0,
+  "files_present": [
+   "need_review.md",
+   ".need_reviewed"
+  ],
+  "files_absent": [
+   "failReport.md"
+  ],
+  "stdout_contains": [
+   "JAMAIS entérinée",
+   "Entériner cette revue du besoin ? (y/n)"
+  ],
+  "canaries": {
+   "need_review.md": "CANARI-REPRISE"
+  }
+ }
+}

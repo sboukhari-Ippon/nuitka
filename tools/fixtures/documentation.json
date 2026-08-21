@@ -1,0 +1,65 @@
+{
+  "title": "documentation (lecture seule) : périmètre -> carte -> zones -> assemblage",
+  "script": "Documentation.py",
+  "seed": {
+    "src/slug.py": "import unicodedata\n\ndef slugify(texte):\n    \"\"\"Transforme un texte en slug d'URL.\"\"\"\n    if not texte:\n        return \"\"\n    plat = unicodedata.normalize(\"NFKD\", texte)\n    return \"\".join(c for c in plat if not unicodedata.combining(c)).lower()\n",
+    "tests/test_slug.py": "import sys, unittest\nsys.path.insert(0, \"src\")\nfrom slug import slugify\n\nclass Slug(unittest.TestCase):\n    def test_minuscules(self):\n        self.assertEqual(slugify(\"BONJOUR\"), \"bonjour\")\n"
+  },
+  "stdin": "y\ny\n",
+  "steps": [
+    {
+      "label": "1 · cartographie",
+      "sentinel": ".doc_map.attempt1.done",
+      "expect": [
+        "doc_map.yaml"
+      ],
+      "write": {
+        "doc_map.yaml": "project: slugify\nzones:\n  - id: 1\n    name: Normalisation\n    files:\n      - src/slug.py\n    tests:\n      - tests/test_slug.py\n"
+      }
+    },
+    {
+      "label": "2 · passe zone Z1",
+      "sentinel": ".doc_z1.attempt1.done",
+      "expect": [
+        "Normalisation",
+        "doc_zones/Z01_normalisation.md"
+      ],
+      "write": {
+        "doc_zones/Z01_normalisation.md": "# Z1 — Normalisation\n\nLa zone transforme un texte libre en slug d'URL stable.\n\n## Features\n\n### F1 — Normalisation d'un texte en slug\n- **Comportement :** Le texte fourni est converti en minuscules et ses accents sont retirés, produisant un slug utilisable dans une URL.\n- **Sources :** `src/slug.py:3` (fonction `slugify`)\n- **Règles métier :** Aucune règle spécifique\n- **Cas limites observés :** un texte vide renvoie une chaîne vide.\n\n**Tests d'acceptance :**\n- **AT1 — Couvert par `tests/test_slug.py` :** Étant donné le texte « BONJOUR », quand on appelle slugify, alors le résultat est « bonjour ».\n- **AT2 — Proposé :** Étant donné le texte « Éléphant », quand on appelle slugify, alors le résultat est « elephant » (accents retirés).\n\n## Bilan\n- Features : 1\n- Tests d'acceptance : 2 (couverts : 1, proposés : 1)\n"
+      }
+    },
+    {
+      "label": "3 · vue d'ensemble",
+      "sentinel": ".doc_overview.attempt1.done",
+      "expect": [
+        "doc_zones/_overview.md"
+      ],
+      "write": {
+        "doc_zones/_overview.md": "## Vue d'ensemble\n\nLe produit expose une fonction de normalisation de texte en slug d'URL, destinée aux\ndéveloppeurs qui construisent des identifiants lisibles à partir de texte libre.\n\nLe parcours majeur est unique : appeler slugify() sur un texte et obtenir un slug.\n"
+      }
+    }
+  ],
+  "assert": {
+    "exit_code": 0,
+    "tasks": 3,
+    "files_present": [
+      "doc_map.yaml",
+      "doc_zones/Z01_normalisation.md",
+      "doc_zones/_overview.md",
+      "documentation.md"
+    ],
+    "files_absent": [
+      "blackboard.yaml",
+      "spec.md",
+      "plan.md",
+      "failReport.md"
+    ],
+    "stdout_contains": [
+      "Lancer la documentation sur ce périmètre ? (y/n)",
+      "Valider cette carte et lancer la documentation zone par zone ? (y/n)"
+    ],
+    "canaries": {
+      "documentation.md": "[`src/slug.py:3`](src/slug.py#L3)"
+    }
+  }
+}

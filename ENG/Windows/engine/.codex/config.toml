@@ -1,0 +1,9 @@
+# Project-local Codex CLI configuration — "factory" posture (equivalent of the
+# permissions of the former opencode "factory" agent: full access, no confirmation).
+# Loaded once the folder is "trusted", which the orchestrator validates
+# automatically on first launch ("Do you trust this directory?" screen).
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+
+# Uncomment to pin a model for THIS project (otherwise: default model from ~/.codex/config.toml):
+# model = "gpt-5.3-codex"

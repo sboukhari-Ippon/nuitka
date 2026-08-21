@@ -1,0 +1,9 @@
+# Configuration Codex CLI locale au projet — posture « usine » (équivalent des
+# permissions de l'ex-agent opencode « factory » : accès complet, aucune confirmation).
+# Chargée une fois le dossier « trusted », ce que l'orchestrateur valide
+# automatiquement au premier lancement (écran « Do you trust this directory? »).
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+
+# Décommente pour figer un modèle pour CE projet (sinon : modèle par défaut de ~/.codex/config.toml) :
+# model = "gpt-5.3-codex"

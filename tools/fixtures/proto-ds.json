@@ -1,0 +1,146 @@
+{
+  "title": "Proto + design system déclaré : transport need→spec→plan→blackboard, vérificateur par phase, review 3 volets",
+  "script": "Design-Prototype.py",
+  "seed": {
+    "need.md": "# Besoin\n\nPrototype d'un annuaire d'équipe : un écran d'accueil et un écran de liste des membres.\n\n## Design system\nDesign system « Nova » : tokens et composants de référence dans le dossier local ds/ (fichier ds/nova-tokens.css), documentation interne Nova v2.\n"
+  },
+  "stdin": "y\ny\n",
+  "steps": [
+    {
+      "label": "1 · agent PO/UX (transcrit le DS)",
+      "sentinel": ".pipeline_spec.done",
+      "expect": [
+        "Product Owner",
+        "Transcris-le FIDÈLEMENT",
+        "spec.md"
+      ],
+      "write": {
+        "spec.md": "# Spécification : Annuaire d'équipe (prototype)\n\n## 1. Objectif métier\nValider le parcours de consultation de l'annuaire.\n\n## Design system\nDesign system « Nova » : tokens et composants de référence dans le dossier local ds/ (fichier ds/nova-tokens.css), documentation interne Nova v2.\n\n## 3. User Stories\n\n### US-1 : Écran d'accueil\n**En tant que** membre, **je veux** un écran d'accueil, **afin de** rejoindre la liste.\n\n**Critères d'acceptation :**\n- [ ] Étant donné l'accueil, quand la page s'affiche, alors un bouton primaire mène à la liste.\n\n### US-2 : Liste des membres\n**En tant que** membre, **je veux** voir la liste des membres, **afin de** trouver un contact.\n\n**Critères d'acceptation :**\n- [ ] Étant donné des membres mockés, quand la liste s'affiche, alors chaque membre apparaît avec son rôle.\n\n## 4. Hors périmètre\n- Recherche et filtres.\n\n## 5. Hypothèses & Questions\n- **Hypothèse :** données mockées suffisantes — **Question :** aucune.\n"
+      }
+    },
+    {
+      "label": "2 · agent Architecte proto (transporte le DS)",
+      "sentinel": ".pipeline_plan.done",
+      "expect": [
+        "plan.md",
+        "Design system",
+        "ASSEMBLE"
+      ],
+      "write": {
+        "plan.md": "# Plan d'implémentation : Annuaire d'équipe\n\n## Stack & Livrables\n- **Stack cible :** HTML5 + CSS3 + JavaScript vanilla (aucun framework, aucun build)\n- **Design system :** Design system « Nova » : tokens et composants de référence dans le dossier local ds/ (fichier ds/nova-tokens.css), documentation interne Nova v2.\n- **Point d'entrée :** index.html\n\n## Règles globales (recopiées telles quelles dans chaque prompt de l'exécutant)\n- **Contraintes :** (non spécifié)\n- **Style :** (non spécifié)\n- **Accessibilité :** (non spécifié)\n\n## Micro-phases (vue d'ensemble)\n1. Fondations Nova + composants (tokens, bouton, carte, index.html)\n2. Écran liste des membres\n"
+      }
+    },
+    {
+      "label": "3 · compilateur blackboard (émet design_system)",
+      "sentinel": ".pipeline_blackboard.done",
+      "expect": [
+        "blackboard.yaml",
+        "design_system"
+      ],
+      "write": {
+        "blackboard.yaml": "project: annuaire-proto\nstatus: IN_PROGRESS\nglobal_rules:\n  target: HTML5 + CSS3 + JavaScript vanilla (aucun framework, aucun build)\n  design_system: \"Design system « Nova » : tokens et composants dans ds/ (ds/nova-tokens.css), documentation interne Nova v2.\"\n  styling: (non spécifié)\n  constraints: (non spécifié)\n  accessibility: (non spécifié)\nphases:\n  - id: 1\n    name: Fondations Nova + composants\n    status: TODO\n    covers: [US-1]\n    context: \"Première phase : matérialise les tokens Nova dans assets/css/tokens.css et pose l'accueil.\"\n    files_to_read: [spec.md]\n    tasks:\n      - Matérialiser les tokens Nova dans assets/css/tokens.css\n      - Créer index.html (accueil, bouton primaire vers la liste)\n    verdict: PENDING\n    critic_feedback: \"\"\n  - id: 2\n    name: Écran liste des membres\n    status: TODO\n    covers: [US-2]\n    context: \"Les fondations Nova existent (phase 1). Tu assembles l'écran liste sans créer de nouveau composant.\"\n    files_to_read: [index.html]\n    tasks:\n      - Créer screens/membres.html avec la liste mockée des membres\n    verdict: PENDING\n    critic_feedback: \"\"\n"
+      }
+    },
+    {
+      "label": "4 · designer-dev phase 1 (fondations Nova)",
+      "sentinel": ".phase_1.attempt1.done",
+      "expect": [
+        "Designer-Dev",
+        "Nova",
+        "RÈGLE ANTI-HALLUCINATION"
+      ],
+      "touched": [
+        "assets/css/tokens.css",
+        "index.html"
+      ],
+      "write": {
+        "assets/css/tokens.css": ":root {\n  --nova-primary: #0f62fe;\n  --nova-text: #161616;\n  --nova-space-2: 8px;\n}\n",
+        "index.html": "<!DOCTYPE html>\n<html lang=\"fr\"><head><meta charset=\"utf-8\"><title>Annuaire</title>\n<link rel=\"stylesheet\" href=\"assets/css/tokens.css\">\n<style>.btn--primary { background: var(--nova-primary); color: #fff; padding: var(--nova-space-2); }</style>\n</head><body>\n<main><h1>Annuaire d'équipe</h1>\n<a class=\"btn btn--primary\" href=\"screens/membres.html\">Voir les membres</a></main>\n</body></html>\n"
+      }
+    },
+    {
+      "label": "5 · vérificateur phase 1 (verdict OK)",
+      "sentinel": ".phase_1.attempt1.verdict",
+      "skip_sentinel": true,
+      "expect": [
+        "Vérificateur de phase",
+        "Nova",
+        "DESIGN SYSTEM"
+      ],
+      "write": {
+        ".phase_1.attempt1.verdict": "OK\n"
+      }
+    },
+    {
+      "label": "6 · designer-dev phase 2 (écran liste)",
+      "sentinel": ".phase_2.attempt1.done",
+      "expect": [
+        "ASSEMBLES",
+        "Nova"
+      ],
+      "touched": [
+        "screens/membres.html"
+      ],
+      "write": {
+        "screens/membres.html": "<!DOCTYPE html>\n<html lang=\"fr\"><head><meta charset=\"utf-8\"><title>Membres</title>\n<link rel=\"stylesheet\" href=\"../assets/css/tokens.css\">\n<style>.list__item { color: var(--nova-text); padding: var(--nova-space-2); }</style>\n</head><body>\n<main><h1>Membres</h1>\n<ul class=\"list\"><li class=\"list__item\">Alex Martin — Designer</li><li class=\"list__item\">Sam Diop — Dev</li></ul>\n<a class=\"btn btn--primary\" href=\"../index.html\">Retour</a></main>\n</body></html>\n"
+      }
+    },
+    {
+      "label": "7 · vérificateur phase 2 (verdict OK)",
+      "sentinel": ".phase_2.attempt1.verdict",
+      "skip_sentinel": true,
+      "expect": [
+        "Vérificateur de phase",
+        "Nova"
+      ],
+      "write": {
+        ".phase_2.attempt1.verdict": "OK\n"
+      }
+    },
+    {
+      "label": "8 · review finale (3 volets, verdict OK)",
+      "sentinel": ".pipeline_review.attempt1.verdict",
+      "skip_sentinel": true,
+      "expect": [
+        "review_report.md",
+        "DESIGN SYSTEM",
+        "tokens.css comme source unique",
+        "Nova"
+      ],
+      "write": {
+        "review_report.md": "# Review\n\n## Synthèse\nConforme (UX, blackboard, design system Nova).\n",
+        ".pipeline_review.attempt1.verdict": "OK\n"
+      }
+    }
+  ],
+  "assert": {
+    "exit_code": 0,
+    "tasks": 8,
+    "files_present": [
+      "assets/css/tokens.css",
+      "screens/membres.html",
+      "review_report.md"
+    ],
+    "phases": {
+      "1": {
+        "status": "DONE",
+        "verdict": "OK",
+        "skills_required": "['ux', 'proto-coding']"
+      },
+      "2": {
+        "status": "DONE",
+        "verdict": "OK",
+        "skills_required": "['ux', 'proto-coding']"
+      }
+    },
+    "stdout_contains": [
+      "Design system déclaré dans 'need.md'",
+      "produite et VÉRIFIÉE",
+      "Prototype CONFORME",
+      "Compétences appliquées à chaque phase (skills_required) : ux, proto-coding"
+    ],
+    "stdout_excludes": [
+      "Continuer avec les tokens par défaut du prototype"
+    ]
+  }
+}

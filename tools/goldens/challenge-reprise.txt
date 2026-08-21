@@ -1,0 +1,18 @@
+✓ Validation du fichier de besoins (need.md) : OK
+🔄 'need_review.md' existante trouvée mais JAMAIS entérinée (run interrompu ?).
+
+==================================================
+🔍 REVUE DU BESOIN PRÊTE : relis 'need_review.md' (questions [BLOQUANT] en priorité).
+   Elle ne modifie rien : mets à jour 'need.md' TOI-MÊME, puis relance le pipeline de ton choix.
+==================================================
+
+▶️  Entériner cette revue du besoin ? (y/n) : 
+🏁 Revue du besoin 'need_review.md' entérinée.
+   📁 Journal du run : .mm-runs/<RUNID>-challenge-need/
+
+──────────────────────────────────────────────────
+➡️  Exploite la revue : tranche les questions [BLOQUANT], mets à jour 'need.md',
+   puis relance le pipeline de ton choix (Spec.py, Technical-Plan.py, Safe-Coding.py…).
+   AUCUN pipeline ne lit 'need_review.md' ni n'exige '.need_reviewed' : zéro couplage,
+   zéro ralentissement — cette revue ne vaut que par ce que TU en retires.
+──────────────────────────────────────────────────

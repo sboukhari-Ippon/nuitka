@@ -1,0 +1,44 @@
+{
+ "title": "challenge du besoin : need.md -> revue conforme (citations réelles) -> porte y -> .need_reviewed",
+ "script": "Challenge-Need.py",
+ "seed": {
+  "need.md": "# Besoin fonctionnel\n\nUne fonction slugify(texte) pour générer des slugs d'URL. Les tirets multiples sont réduits parfois.\n"
+ },
+ "stdin": "y\n",
+ "steps": [
+  {
+   "label": "challenger de besoin",
+   "sentinel": ".pipeline_challenge.done",
+   "expect": [
+    "revue de besoin",
+    "need_review.md",
+    "MOT POUR MOT",
+    "Questions à trancher avant la spec"
+   ],
+   "write": {
+    "need_review.md": "# Revue du besoin — slugify\n\n## Ambiguïtés\n- [BLOQUANT] \"Les tirets multiples sont réduits parfois\" — le mot « parfois » est indécidable : dans quels cas exactement ?\n\n## Contradictions\nAucune.\n\n## Zones d'ombre\n- [MINEUR] Comportement sur une chaîne vide non spécifié (que se passe-t-il si l'entrée est vide ?).\n\n## Présupposés\n- [MINEUR] Le besoin suppose un alphabet latin sans le dire.\n\n## Questions à trancher avant la spec\n1. [BLOQUANT] La réduction des tirets multiples est-elle systématique ? (oui/non)\n"
+   }
+  }
+ ],
+ "assert": {
+  "exit_code": 0,
+  "tasks": 1,
+  "files_present": [
+   "need_review.md",
+   ".need_reviewed"
+  ],
+  "files_absent": [
+   ".pipeline_challenge.done",
+   "failReport.md"
+  ],
+  "stdout_contains": [
+   "Entériner cette revue du besoin ? (y/n)",
+   "Revue du besoin 'need_review.md' entérinée",
+   "AUCUN pipeline ne lit 'need_review.md'"
+  ],
+  "audit_expects": {
+   "events_subsequence": ["run_start", "agent_task", "gate", "run_end"],
+   "final_status": "success"
+  }
+ }
+}

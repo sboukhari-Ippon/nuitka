@@ -1,0 +1,39 @@
+# Espace de travail de l'app (registre, verrou, journaux) — jamais versionné
+.mm-app/
+.maistermind-app/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Sauvegardes d'équipement
+*.bak-*
+
+# Binaires Nuitka (7-15 Mo pièce, artefacts de build — pas des sources).
+# Règle : un binaire porte le nom de son script SANS extension ; les sources
+# .py restent versionnées, elles.
+*/*/MAIsterMind_App
+*/*/engine/MAIsterMind
+*/*/engine/MAIsterMind_code
+*/*/engine/MAIsterMind_TDD
+*/*/engine/MAIsterMind_ATDD
+*/*/engine/MAIsterMind_skill-adapt
+*/*/engine/MAIsterMind_fix
+*/*/engine/MAIsterMind_proto
+*/*/engine/MAIsterMind_spec
+*/*/engine/MAIsterMind_tech-plan
+*/*/engine/MAIsterMind_documentation
+*/*/engine/MAIsterMind_audit-design
+*/*/engine/MAIsterMind_audit-a11y-RGAA
+# Orchestrateurs Yolo : même règle, nom sans extension (les .py restent versionnés).
+*/*/engine/Yolo
+*/*/engine/Yolo-TDD
+*/*/engine/Yolo-ATDD
+
+# Sorties de build locales
+out/
+dist/
+*.tar.gz
+
+# Outillage local de l'assistant — jamais versionné
+.claude/

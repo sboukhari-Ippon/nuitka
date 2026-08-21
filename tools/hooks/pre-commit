@@ -1,0 +1,29 @@
+#!/bin/sh
+# Hook pre-commit MAIsterMind — UNIQUEMENT les vérifications rapides (~2-3 s) :
+# les 5 checkers de synchronisation/parité + les tests unitaires. La grosse suite
+# (scénarios mock + goldens, ~7 min 30) reste MANUELLE, à lancer avant un commit
+# jalon : python3 tools/run_mock_scenarios.py --golden check
+#
+# Installation (une fois par clone) : git config core.hooksPath tools/hooks
+# Contournement ponctuel (assumé, jamais l'habitude) : git commit --no-verify
+
+set -e
+cd "$(git rev-parse --show-toplevel)"
+
+fail() {
+    echo ""
+    echo "⛔ pre-commit : $1 a échoué — commit refusé."
+    echo "   Corrige (le plus souvent : propager FR/Ubuntu vers les 5 autres variantes),"
+    echo "   ou contourne ponctuellement avec : git commit --no-verify"
+    exit 1
+}
+
+echo "pre-commit : vérifications rapides (checkers + tests unitaires)..."
+python3 tools/check_variants_sync.py  > /dev/null || fail "check_variants_sync"
+python3 tools/check_gate_labels.py    > /dev/null || fail "check_gate_labels"
+python3 tools/check_message_parity.py > /dev/null || fail "check_message_parity"
+python3 tools/check_runner_parity.py  > /dev/null || fail "check_runner_parity"
+python3 tools/check_unused_imports.py > /dev/null || fail "check_unused_imports"
+python3 tools/test_audit_units.py     > /dev/null 2>&1 || fail "test_audit_units"
+python3 tools/test_mm_audit.py        > /dev/null 2>&1 || fail "test_mm_audit"
+echo "pre-commit : tout est vert."

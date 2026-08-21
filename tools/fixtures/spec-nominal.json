@@ -1,0 +1,41 @@
+{
+  "title": "spec seule : besoin -> spec validée (porte y)",
+  "script": "Spec.py",
+  "seed": {
+    "need.md": "# Besoin fonctionnel\n\nUne fonction slugify(texte) -> slug d'URL.\n"
+  },
+  "stdin": "y\n",
+  "steps": [
+    {
+      "label": "agent PO",
+      "sentinel": ".pipeline_spec.done",
+      "expect": [
+        "Product Owner",
+        "need.md",
+        "spec.md",
+        "Hors périmètre"
+      ],
+      "write": {
+        "spec.md": "# Spécification — slugify\n\n## Objectif\nTransformer un texte en slug d'URL.\n\n## User stories\n- US-1 : slugify(\"Bonjour Monde\") -> \"bonjour-monde\"\n\n## Hors périmètre\n- Translittération des alphabets non latins.\n"
+      }
+    }
+  ],
+  "assert": {
+    "exit_code": 0,
+    "tasks": 1,
+    "files_present": [
+      "spec.md",
+      ".spec_approved"
+    ],
+    "files_absent": [
+      ".pipeline_spec.done",
+      ".opencode_po.md",
+      ".oc_short_prompt.txt",
+      "failReport.md"
+    ],
+    "stdout_contains": [
+      "Valider la spécification ? (y/n)",
+      "validée et approuvée"
+    ]
+  }
+}

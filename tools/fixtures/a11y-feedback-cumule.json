@@ -1,0 +1,85 @@
+{
+ "title": "audit RGAA : deux échecs pour des raisons DIFFÉRENTES -> la tentative 3 reçoit les deux erreurs (feedback cumulatif)",
+ "script": "Audit-A11Y-RGAA.py",
+ "seed": {
+  "form.html": "<form>\n  <input type=\"text\" name=\"email\">\n  <button>Envoyer</button>\n</form>\n<img src=\"logo.png\">\n",
+  "styles.css": "body { color: #767676; background: #ffffff; }\n"
+ },
+ "stdin": "y\ny\n",
+ "steps": [
+  {
+   "label": "cartographe",
+   "sentinel": ".a11y_map.attempt1.done",
+   "expect": ["cartographie d'interface"],
+   "write": {
+    "a11y_map.yaml": "project: \"Mini formulaire\"\nsocle:\n  intent: \"\"\n  files: []\ncomposants:\n  intent: \"\"\n  files: []\nzones:\n  - id: 1\n    name: \"Formulaire\"\n    intent: \"Écran unique : saisie d'un email\"\n    files:\n      - \"form.html\"\n      - \"styles.css\"\n"
+   }
+  },
+  {
+   "label": "T01 tentative 1 : critères manquants",
+   "sentinel": ".a11y_t1-z1.attempt1.done",
+   "expect": ["T1 « Images »", "Premier passage"],
+   "write": {
+    "audit_a11y/T01_images__Z01_formulaire.md": "# T1 : Images — Z1 : Formulaire\n\n## Verdicts\n- 1.1 : C\n\n## Constats\nAucun constat.\n\n## Bilan\n- Verdicts : C : 1, NC : 0, NA : 0, AVM : 0\n"
+   }
+  },
+  {
+   "label": "T01 tentative 2 : NC sans constat (erreur différente)",
+   "sentinel": ".a11y_t1-z1.attempt2.done",
+   "expect": ["MANQUANT"],
+   "forbid": ["à NE PAS"],
+   "write": {
+    "audit_a11y/T01_images__Z01_formulaire.md": "# T1 : Images — Z1 : Formulaire\n\n## Verdicts\n- 1.1 : NC — image sans alternative\n- 1.2 : C\n- 1.3 : NA\n- 1.4 : NA\n- 1.5 : NA\n- 1.6 : NA\n- 1.7 : NA\n- 1.8 : NA\n- 1.9 : NA\n\n## Constats\nAucun constat.\n\n## Bilan\n- Verdicts : C : 1, NC : 1, NA : 7, AVM : 0\n"
+   }
+  },
+  {
+   "label": "T01 tentative 3 : les DEUX erreurs sont dans le prompt",
+   "sentinel": ".a11y_t1-z1.attempt3.done",
+   "expect": ["NC sans constat", "à NE PAS", "MANQUANT"],
+   "write": {
+    "audit_a11y/T01_images__Z01_formulaire.md": "# T1 : Images — Z1 : Formulaire\n\n## Verdicts\n- 1.1 : NC — image sans alternative textuelle\n- 1.2 : C\n- 1.3 : NA\n- 1.4 : NA\n- 1.5 : NA\n- 1.6 : NA\n- 1.7 : NA\n- 1.8 : NA\n- 1.9 : NA\n\n## Constats\n### K1 — 1.1 — Image sans alternative textuelle\n- **Impact :** 3 — Majeur\n- **Localisation :** form.html:5\n- **Extrait :** <img src=\"logo.png\">\n- **Constat :** La balise img du logo n'a pas d'attribut alt.\n- **Impact utilisateur :** Un lecteur d'écran annonce le nom du fichier.\n- **Correction :** Ajouter un alt descriptif.\n\n## Bilan\n- Verdicts : C : 1, NC : 1, NA : 7, AVM : 0\n"
+   }
+  },
+  {
+   "label": "passe T03 couleurs",
+   "sentinel": ".a11y_t3-z1.attempt1.done",
+   "expect": ["T3 « Couleurs »", "Premier passage"],
+   "write": {
+    "audit_a11y/T03_couleurs__Z01_formulaire.md": "# T3 : Couleurs — Z1 : Formulaire\n\n## Verdicts\n- 3.1 : AVM — vérifier au rendu\n- 3.2 : C\n- 3.3 : NA — aucun composant graphique complexe\n\n## Constats\nAucun constat.\n\n## Bilan\n- Verdicts : C : 1, NC : 0, NA : 1, AVM : 1\n"
+   }
+  },
+  {
+   "label": "passe T11 formulaires",
+   "sentinel": ".a11y_t11-z1.attempt1.done",
+   "expect": ["T11 « Formulaires »"],
+   "write": {
+    "audit_a11y/T11_formulaires__Z01_formulaire.md": "# T11 : Formulaires — Z1 : Formulaire\n\n## Verdicts\n- 11.1 : NC — champ sans étiquette\n- 11.2 : NA\n- 11.3 : NA\n- 11.4 : NA\n- 11.5 : NA\n- 11.6 : NA\n- 11.7 : NA\n- 11.8 : NA\n- 11.9 : AVM — pertinence à confirmer au rendu\n- 11.10 : NA\n- 11.11 : NA\n- 11.12 : NA\n- 11.13 : NA\n\n## Constats\n### K1 — 11.1 — Champ de formulaire sans étiquette\n- **Impact :** 4 — Bloquant\n- **Localisation :** form.html:2\n- **Extrait :** <input type=\"text\" name=\"email\">\n- **Constat :** L'input email n'a ni label associé ni aria-label.\n- **Impact utilisateur :** Un utilisateur de lecteur d'écran ne sait pas quoi saisir.\n- **Correction :** Associer un label via for/id.\n\n## Bilan\n- Verdicts : C : 0, NC : 1, NA : 11, AVM : 1\n"
+   }
+  },
+  {
+   "label": "synthèse exécutive",
+   "sentinel": ".a11y_synthese.attempt1.done",
+   "expect": ["Synthèse exécutive"],
+   "write": {
+    "audit_a11y/_synthese.md": "## Synthèse exécutive\n\nPré-audit statique RGAA : deux non-conformités à fort impact (image sans\nalternative, champ sans étiquette). Une part des vérifications reste manuelle.\nCeci est un pré-audit statique, pas une attestation de conformité.\n"
+   }
+  }
+ ],
+ "assert": {
+  "exit_code": 0,
+  "tasks": 7,
+  "files_present": [
+   "accessibility_audit_report.md",
+   "declaration_accessibilite.md"
+  ],
+  "files_absent": [
+   "failReport.md"
+  ],
+  "stdout_contains": [
+   "Audit d'accessibilité terminé"
+  ],
+  "stdout_excludes": [
+   "RAPPORT PARTIEL"
+  ]
+ }
+}

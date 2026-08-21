@@ -1,0 +1,59 @@
+
+==============================================================
+🧬 PROFIL D'ADAPTATION — quelques questions, zéro agent payé.
+   Les skills livrés sont des gabarits (Java/Spring, React/TS) :
+   décris ta stack, l'usine les réécrit pour elle.
+==============================================================
+
+   [1] Backend + Frontend
+   [2] Backend seul
+   [3] Frontend seul
+   → Périmètre à adapter (1/2/3) : 
+▶️  Adapter aussi les skills de testing associés ? (y/n) :    → Stack backend cible (ex. Kotlin + Spring Boot) :    → Stack frontend cible (ex. Vue 3 + Vite) :    → Conventions particulières à imposer (- si aucune) : 
+   [1] 200 lignes par skill (défaut recommandé)
+   [2] 250 lignes par skill
+   [3] 300 lignes par skill
+   → Limite de lignes par skill (1/2/3) : 
+   [1] Standard : modèles ≥ 100B (cloud ou gros local)
+   [2] Compact : petit modèle local ~27B (ex. Qwen3 27B) — consignes plus courtes et mécaniques
+   → Gabarit du modèle cible (1/2) :    ✓ Profil sauvegardé dans 'skill_adapt_profile.yaml' (éditable à la main).
+
+🎯 Périmètre : 2 skill(s) → backend-coding, frontend-coding
+
+🧬 [GÉNÉRATION] Adaptation du skill 'backend-coding' pour : Python 3.12 + FastAPI
+🧪 [mock] harness de test démarré (session simulée '<SESSION>').
+🧪 [mock] génération backend-coding → .pipeline_skill_adapt.done
+   ⏳ En attente de 'skill_adapt-backend-coding.md' (signal de fin : '.pipeline_skill_adapt.done')...
+   ✓ Garde-fous Python : structure, frontmatter et limite de lignes respectés.
+   🔎 [REVUE QUALITÉ] Audit indépendant de 'skill_adapt-backend-coding.md'...
+🧪 [mock] revue backend-coding → .pipeline_skill_review.done
+   ⏳ En attente de 'skill_review.md' (signal de fin : '.pipeline_skill_review.done')...
+   ✅ Revue qualité : CONFORME.
+
+==================================================
+📋 PROPOSITION PRÊTE : relis 'skill_adapt-backend-coding.md' (elle remplacera './.agents/skills/backend-coding/SKILL.md', ancien contenu sauvegardé en .bak).
+   Tu peux l'éditer directement avant de valider : le fichier fait foi.
+==================================================
+
+▶️  Écraser le skill 'backend-coding' avec la version adaptée ? (y/n) :    ✅ './.agents/skills/backend-coding/SKILL.md' écrasé (ancien contenu : './.agents/skills/backend-coding/SKILL.md.bak').
+
+🧬 [GÉNÉRATION] Adaptation du skill 'frontend-coding' pour : Vue 3 + Vite
+🧪 [mock] génération frontend-coding → .pipeline_skill_adapt.done
+   ⏳ En attente de 'skill_adapt-frontend-coding.md' (signal de fin : '.pipeline_skill_adapt.done')...
+   ✓ Garde-fous Python : structure, frontmatter et limite de lignes respectés.
+   🔎 [REVUE QUALITÉ] Audit indépendant de 'skill_adapt-frontend-coding.md'...
+🧪 [mock] revue frontend-coding → .pipeline_skill_review.done
+   ⏳ En attente de 'skill_review.md' (signal de fin : '.pipeline_skill_review.done')...
+   ✅ Revue qualité : CONFORME.
+
+==================================================
+📋 PROPOSITION PRÊTE : relis 'skill_adapt-frontend-coding.md' (elle remplacera './.agents/skills/frontend-coding/SKILL.md', ancien contenu sauvegardé en .bak).
+   Tu peux l'éditer directement avant de valider : le fichier fait foi.
+==================================================
+
+▶️  Écraser le skill 'frontend-coding' avec la version adaptée ? (y/n) :    ✅ './.agents/skills/frontend-coding/SKILL.md' écrasé (ancien contenu : './.agents/skills/frontend-coding/SKILL.md.bak').
+
+🧾 Rapport écrit dans 'skill_adapt_report.md'.
+
+🏁 Adaptation terminée : 2/2 skill(s) écrasé(s). Les prochains runs de production utiliseront ces skills adaptés tels quels.
+   📁 Journal du run : .mm-runs/<RUNID>-skill-adapt/

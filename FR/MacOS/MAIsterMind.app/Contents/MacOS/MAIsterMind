@@ -1,0 +1,28 @@
+#!/bin/sh
+# =============================================================================
+# MAIsterMind — exécutable du bundle .app (double-clic Finder, macOS).
+# La .app vit À LA RACINE du dossier d'installation : on remonte de trois
+# niveaux (Contents/MacOS/ → .app → dossier), puis on lance l'app — binaire
+# compilé d'abord, source .py en repli (mode dev).
+#
+# Premier lancement après un transfert : le binaire de l'app n'est peut-être
+# pas encore exécutable (zip) ou encore en quarantaine (téléchargement) — on
+# répare ICI, puis l'app répare elle-même son moteur au démarrage
+# (heal_engine_binaries). Aucun terminal n'est ouvert : l'app journalise dans
+# .mm-app/launcher.log et s'éteint par le bouton ⏻ de l'UI.
+# =============================================================================
+HERE="$(cd "$(dirname "$0")/../../.." && pwd)"
+cd "$HERE" || exit 1
+
+if [ -f "./MAIsterMind_App" ]; then
+    chmod +x ./MAIsterMind_App 2>/dev/null
+    xattr -d com.apple.quarantine ./MAIsterMind_App 2>/dev/null
+    exec ./MAIsterMind_App
+elif [ -f "./MAIsterMind_App.py" ]; then
+    chmod +x ./MAIsterMind_App.py 2>/dev/null
+    exec /usr/bin/env python3 ./MAIsterMind_App.py
+fi
+
+# Ni binaire ni source à côté de la .app : bundle déplacé hors du dossier ?
+osascript -e 'display alert "MAIsterMind" message "MAIsterMind_App introuvable : la MAIsterMind.app doit rester dans son dossier d'"'"'installation (elle peut être liée dans ~/Applications, pas déplacée)." as critical' 2>/dev/null
+exit 1

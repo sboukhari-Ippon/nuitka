@@ -1,0 +1,143 @@
+{
+ "title": "échec de phase : 3 tentatives, feedback retransmis, REJECTED, exit ≠ 0",
+ "script": "Safe-Coding.py",
+ "seed": {
+  "need.md": "# Besoin fonctionnel\n\nUne fonction slugify(texte) -> slug d'URL.\n"
+ },
+ "stdin": "y\ny\n",
+ "steps": [
+  {
+   "label": "1 · agent PO",
+   "sentinel": ".pipeline_spec.done",
+   "expect": [
+    "Product Owner",
+    "spec.md"
+   ],
+   "write": {
+    "spec.md": "# Spécification — slugify\n\n## User stories\n- US-1 : slugify(\"Bonjour Monde\") -> \"bonjour-monde\"\n- US-2 : les tirets multiples sont réduits\n\n## Hors périmètre\n- Translittération des alphabets non latins.\n"
+   }
+  },
+  {
+   "label": "2 · agent Architecte",
+   "sentinel": ".pipeline_plan.done",
+   "expect": [
+    "plan.md"
+   ],
+   "write": {
+    "plan.md": "# Plan d'implémentation — slugify\n\n## Stack & Vérification\n- Python 3, tests unittest.\n- verify_cmd : python3 verify.py\n\n## Phases\n1. Normalisation (minuscules, accents)\n2. Nettoyage des tirets\n"
+   }
+  },
+  {
+   "label": "3 · compilateur blackboard",
+   "sentinel": ".pipeline_blackboard.done",
+   "expect": [
+    "blackboard.yaml"
+   ],
+   "write": {
+    "blackboard.yaml": "project: slugify\nverify_cmd: python3 verify.py\nglobal_rules:\n  language: Python 3\n  style: PEP 8\n  testing: unittest\n  architecture: module unique\nphases:\n  - id: 1\n    name: Normalisation\n    nature: feature\n    status: TODO\n    verdict: PENDING\n    skills: []\n    tasks:\n      - Créer src/slug.py avec slugify()\n      - Minuscules et accents retirés\n"
+   }
+  },
+  {
+   "label": "4 · scaffold",
+   "sentinel": ".phase_0.attempt1.done",
+   "expect": [
+    "squelette",
+    "python3 verify.py"
+   ],
+   "touched": [
+    "verify.py",
+    "tests/__init__.py",
+    "tests/test_health.py"
+   ],
+   "write": {
+    "verify.py": "import sys, unittest\nsuite = unittest.TestLoader().discover(\"tests\", pattern=\"test_*.py\", top_level_dir=\".\")\nresult = unittest.TextTestRunner(verbosity=0).run(suite)\nko = len(result.failures) + len(result.errors)\nprint(f\"{result.testsRun - ko} passed, {ko} failed\")\nsys.exit(0 if result.wasSuccessful() else 1)\n",
+    "tests/__init__.py": "",
+    "tests/test_health.py": "import unittest\n\nclass Health(unittest.TestCase):\n    def test_health(self):\n        self.assertTrue(True)\n"
+   }
+  },
+  {
+   "label": "5 · codeur phase 1, tentative 1",
+   "sentinel": ".phase_1.attempt1.done",
+   "expect": [
+    "Normalisation"
+   ],
+   "touched": [
+    "src/slug.py",
+    "tests/test_p1.py"
+   ],
+   "write": {
+    "src/slug.py": "def slugify(texte):\n    return \"TOUJOURS FAUX\"\n",
+    "tests/test_p1.py": "import sys, unittest\nsys.path.insert(0, \"src\")\nfrom slug import slugify\n\nclass Normalisation(unittest.TestCase):\n    def test_minuscules(self):\n        self.assertEqual(slugify(\"BONJOUR\"), \"bonjour\")\n"
+   }
+  },
+  {
+   "label": "5 · codeur phase 1, tentative 2",
+   "sentinel": ".phase_1.attempt2.done",
+   "expect": [
+    "Normalisation",
+    "TOUJOURS FAUX"
+   ],
+   "touched": [
+    "src/slug.py",
+    "tests/test_p1.py"
+   ],
+   "write": {
+    "src/slug.py": "def slugify(texte):\n    return \"TOUJOURS FAUX\"\n",
+    "tests/test_p1.py": "import sys, unittest\nsys.path.insert(0, \"src\")\nfrom slug import slugify\n\nclass Normalisation(unittest.TestCase):\n    def test_minuscules(self):\n        self.assertEqual(slugify(\"BONJOUR\"), \"bonjour\")\n"
+   }
+  },
+  {
+   "label": "5 · codeur phase 1, tentative 3",
+   "sentinel": ".phase_1.attempt3.done",
+   "expect": [
+    "Normalisation",
+    "TOUJOURS FAUX"
+   ],
+   "touched": [
+    "src/slug.py",
+    "tests/test_p1.py"
+   ],
+   "write": {
+    "src/slug.py": "def slugify(texte):\n    return \"TOUJOURS FAUX\"\n",
+    "tests/test_p1.py": "import sys, unittest\nsys.path.insert(0, \"src\")\nfrom slug import slugify\n\nclass Normalisation(unittest.TestCase):\n    def test_minuscules(self):\n        self.assertEqual(slugify(\"BONJOUR\"), \"bonjour\")\n"
+   }
+  }
+ ],
+ "assert": {
+  "exit_code": 1,
+  "tasks": 7,
+  "files_present": [
+   "blackboard.yaml",
+   "failReport.md"
+  ],
+  "files_absent": [
+   ".phase_1.attempt1.done",
+   ".phase_1.attempt2.done",
+   ".phase_1.attempt3.done",
+   "refactoring_report.md"
+  ],
+  "phases": {
+   "1": {
+    "status": "TODO",
+    "verdict": "REJECTED"
+   }
+  },
+  "stdout_contains": [
+   "[TENTATIVE 3/3]",
+   "[REJET] Tentative 3",
+   "n'a pas convergé après 3 tentatives",
+   "Le modèle actuel (mock-model) cale sur cette étape"
+  ],
+  "stdout_excludes": [
+   "a tout validé en un seul run"
+  ],
+  "audit_expects": {
+   "events_subsequence": [
+    "run_start",
+    "verdict",
+    "run_end"
+   ],
+   "final_status": "failed"
+  }
+ }
+}

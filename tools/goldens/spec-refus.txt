@@ -1,0 +1,14 @@
+✓ Validation du fichier de besoins (need.md) : OK
+🧪 [mock] harness de test démarré (session simulée '<SESSION>').
+
+📖 [ETAPE 1 : AGENT PO] Affinage du besoin en spécification métier dans le TUI Cloud...
+🧪 [mock] agent PO → .pipeline_spec.done
+   ⏳ En attente de 'spec.md' (signal de fin : '.pipeline_spec.done')...
+✅ [ETAPE 1] Spécification 'spec.md' créée avec succès !
+
+==================================================
+📋 SPÉCIFICATION PRÊTE : relis 'spec.md' (hypothèses et hors-périmètre en priorité).
+   Tu peux la modifier directement dans un autre terminal avant de valider.
+==================================================
+
+▶️  Valider la spécification ? (y/n) : ⏹️  Annulé par l'utilisateur. Précise 'need.md', supprime 'spec.md', puis relance.

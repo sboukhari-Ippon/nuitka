@@ -1,0 +1,176 @@
+name: Build release bundles (Nuitka)
+
+# Compile l'app + les 16 orchestrateurs en binaires et assemble des ARCHIVES DE
+# DISTRIBUTION completes (app + lanceur double-clic + engine/ + docs), une par
+# variante langue x plateforme. L'archive extraite se lance au double-clic :
+# l'app remet elle-meme son moteur en etat (chmod/quarantaine), personne ne
+# tape jamais chmod +x.
+#
+# Matrice (heritee de l'audit du 2026-06-13, decisions inchangees) :
+#   - Runners EPINGLES (pas de -latest) : un build sur label flottant n'est pas
+#     reproductible (macos-latest -> macOS 26 le 15/06/2026, windows-latest
+#     change de MSVC la meme semaine).
+#   - ubuntu-22.04 : baseline glibc 2.35 — le binaire tourne sur Ubuntu 22.04+,
+#     Debian 12+ et WSL. Un build sur 24.04 (glibc 2.39) ne tournerait pas sur 22.04.
+#   - Variante Windows = usage WSL uniquement (cf. INSTALL.md) -> binaires LINUX,
+#     compiles sur runner ubuntu + lanceur MAIsterMind.bat pour le double-clic
+#     cote Windows. AUCUN .exe natif : les orchestrateurs pilotent tmux
+#     (inexistant sous Windows natif), et un onefile Nuitka .exe est
+#     regulierement classe trojan par les antivirus meme signe
+#     (https://github.com/Nuitka/Nuitka/issues/3842).
+#   - macOS : Nuitka ne produit pas d'universal binary -> un job Apple Silicon
+#     (macos-15) + un job Intel (macos-15-intel). Le bundle MAIsterMind.app
+#     (double-clic Finder) est copie tel quel dans l'archive.
+#   - L'app est BILINGUE A BORD et identique dans les 6 variantes : compilee UNE
+#     fois par job, copiee dans les archives FR et ENG (11 compilations evitees
+#     par tag, non negligeable en minutes macOS x10 sur depot prive).
+#
+# Distribution : tar.gz UNIQUEMENT — le zip perd les bits executables ; le tar
+# les preserve, et l'app auto-repare en dernier filet. Pour une distribution
+# perenne, attacher les tar.gz a une Release GitHub.
+#
+# Declenchement :
+#   - au push d'un tag vX.Y.Z  (ex: git tag v3.0.0 && git push --tags)
+#   - manuellement depuis l'onglet Actions (Run workflow)
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-22.04,   tag: Ubuntu,  suffix: linux-x64,     artifact: Ubuntu }
+          - { os: ubuntu-22.04,   tag: Windows, suffix: linux-x64-wsl, artifact: Windows }
+          - { os: macos-15,       tag: MacOS,   suffix: macos-arm64,   artifact: MacOSarm64 }
+          - { os: macos-15-intel, tag: MacOS,   suffix: macos-x64,     artifact: MacOSx64 }
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      # Versions epinglees : reproductibilite entre deux tags. [onefile] installe
+      # zstandard : sans lui le onefile n'est PAS compresse (26 Mo -> 7,3 Mo piece).
+      - name: Install Nuitka and deps
+        run: pip install "nuitka[onefile]==4.1.2" pyyaml
+
+      # Verrou : on ne compile JAMAIS des binaires depuis des variantes desynchronisees.
+      - name: Check variants synchronization
+        run: python tools/check_variants_sync.py
+
+      # Verrou : on ne compile jamais un moteur dont les pipelines mock sont rouges.
+      - name: Run mock scenarios
+        run: python tools/run_mock_scenarios.py
+
+      # L'app une fois par job (identique dans les 6 variantes, cf. check ci-dessus).
+      - name: Build the app (once per job)
+        shell: bash
+        run: |
+          mkdir -p out
+          python -m nuitka --onefile --assume-yes-for-downloads --remove-output \
+            --output-dir=out --output-filename=MAIsterMind_App FR/${{ matrix.tag }}/MAIsterMind_App.py
+
+      - name: Build orchestrators and assemble bundles
+        shell: bash
+        run: |
+          set -euo pipefail
+          for LANG in FR ENG; do
+            SRC="$LANG/${{ matrix.tag }}"
+            DST="dist/$LANG/MAIsterMind"
+            mkdir -p "$DST/engine"
+
+            # 1. Les 16 orchestrateurs de la langue (le binaire = basename du .py).
+            #    mm_runner.py, mm_core.py et mm_audit.py sont des MODULES, pas des
+            #    points d'entree : ils ne donnent pas de binaire. Nuitka les suit tout
+            #    seul (imports du meme dossier) et les embarque dans chacun des 16
+            #    onefile ; les compiler a part ne produirait que des binaires morts
+            #    de 8 Mo dans la distro.
+            for py in "$SRC"/engine/*.py; do
+              name="$(basename "$py" .py)"
+              case "$name" in mm_runner|mm_audit|mm_core) continue ;; esac
+              echo "==> $LANG/${{ matrix.tag }} : $name"
+              python -m nuitka --onefile --assume-yes-for-downloads --remove-output \
+                --output-dir="$DST/engine" --output-filename="$name" "$py"
+            done
+
+            # 1bis. Controle que les modules (mm_runner.py, mm_core.py, mm_audit.py)
+            #    sont BIEN embarques : lance le binaire le plus court dans un dossier
+            #    vide avec un harness impose. Spec importe les trois : sans l'un d'eux,
+            #    l'echec serait un ModuleNotFoundError a l'import ; avec, on obtient le
+            #    refus metier attendu (need.md manquant). C'est le seul controle qui
+            #    distingue les deux.
+            EMPTY="$(mktemp -d)"
+            set +e
+            # (binaire renomme : Spec — l'ancien nom MAIsterMind_spec n'existe plus)
+            OUT="$(cd "$EMPTY" && MM_AGENT_HARNESS=opencode "$OLDPWD/$DST/engine/Spec" 2>&1)"
+            RC=$?
+            set -e
+            echo "$OUT"
+            case "$OUT" in
+              *ModuleNotFoundError*|*"No module named"*)
+                echo "::error::module mm_* absent du binaire onefile ($LANG)"; exit 1 ;;
+            esac
+            case "$OUT" in
+              *need.md*) echo "==> modules mm_* embarques et importes : OK ($LANG)" ;;
+              *) echo "::error::sortie inattendue du controle mm_runner ($LANG), rc=$RC"; exit 1 ;;
+            esac
+            rm -rf "$EMPTY"
+
+            # 2. Le moteur : manifeste + gabarit + sources d'equipement des projets.
+            cp "$SRC/engine/orchestrators.json" "$DST/engine/"
+            cp "$SRC/engine/need.md" "$DST/engine/"
+            cp -R "$SRC/engine/.agents" "$DST/engine/.agents"
+            # Les artefacts des DEUX harness voyagent : le choix se fait a l'equipement
+            # d'un projet (dans l'app), pas a la compilation. Aucune matrice de build en
+            # plus — un seul binaire sait piloter l'un ou l'autre.
+            cp -R "$SRC/engine/.opencode" "$DST/engine/.opencode"
+            cp -R "$SRC/engine/.codex" "$DST/engine/.codex"
+            cp "$SRC/engine/AGENTS.md" "$DST/engine/"
+
+            # 3. L'app compilee + le lanceur double-clic de la plateforme + les docs.
+            #    (Toujours en if/fi : sous set -e, un `[ -f ] && cp` dont le test est
+            #    faux tuerait le job sur les variantes sans .bat/.app.)
+            cp out/MAIsterMind_App "$DST/MAIsterMind_App"
+            cp "$SRC/install.sh" "$DST/"
+            cp LICENSE "$DST/"
+            if [ -f "$SRC/MAIsterMind.bat" ]; then cp "$SRC/MAIsterMind.bat" "$DST/"; fi
+            if [ -d "$SRC/MAIsterMind.app" ]; then cp -R "$SRC/MAIsterMind.app" "$DST/MAIsterMind.app"; fi
+            for doc in README.md INSTALL.md SCHEMAS.html useCasesFr.md useCasesEng.md; do
+              if [ -f "$SRC/$doc" ]; then cp "$SRC/$doc" "$DST/"; fi
+            done
+
+            # 4. Bits executables poses DANS l'archive (le tar les preserve ; l'app
+            #    auto-repare en filet si un transfert les perd quand meme).
+            # (les binaires ne portent plus le prefixe MAIsterMind :
+            #  on pose le bit sur tous les fichiers reguliers d'engine/ — les binaires
+            #  Nuitka ; les .json/.md co-livres n'en souffrent pas)
+            chmod +x "$DST/MAIsterMind_App" "$DST/install.sh"
+            find "$DST/engine" -maxdepth 1 -type f -exec chmod +x {} +
+            if [ -f "$DST/MAIsterMind.app/Contents/MacOS/MAIsterMind" ]; then
+              chmod +x "$DST/MAIsterMind.app/Contents/MacOS/MAIsterMind"
+            fi
+
+            lang_lc="$(echo "$LANG" | tr '[:upper:]' '[:lower:]')"
+            tar -czf "MAIsterMind-$lang_lc-${{ matrix.suffix }}.tar.gz" -C "dist/$LANG" MAIsterMind
+          done
+
+      # retention courte : ~7-10 MB par binaire onefile x 33 par job — le stockage
+      # artifacts d'un depot prive Free est limite a 500 MB. archive: false (v7) :
+      # le tar.gz est uploade tel quel (pas re-zippe, bits preserves au telechargement).
+      - name: Upload bundles
+        uses: actions/upload-artifact@v7
+        with:
+          name: MAIsterMind-${{ matrix.artifact }}
+          path: MAIsterMind-*-${{ matrix.suffix }}.tar.gz
+          archive: false
+          retention-days: 14
+          if-no-files-found: error

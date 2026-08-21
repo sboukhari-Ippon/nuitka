@@ -1,0 +1,116 @@
+🧮 Scan déterministe du périmètre (déclencheurs de packs, contrastes)...
+
+==================================================
+♿ AUDIT D'ACCESSIBILITÉ (RGAA 4.1.2) — Périmètre découvert :
+   Répertoire : <WS>/projet
+   2 fichier(s) UI à auditer. Aperçu :
+      - form.html
+      - styles.css
+   Routage des 13 packs thématiques (déclencheurs détectés) :
+      - T01 Images : 1 fichier(s) déclencheur(s)
+      - T02 Cadres : aucun déclencheur → critères NA (pack sauté)
+      - T03 Couleurs : 1 fichier(s) déclencheur(s) + passe socle garantie
+      - T04 Multimédia : aucun déclencheur → critères NA (pack sauté)
+      - T05 Tableaux : aucun déclencheur → critères NA (pack sauté)
+      - T06 Liens : aucun déclencheur → critères NA (pack sauté)
+      - T07 Scripts : aucun déclencheur → critères NA (pack sauté)
+      - T08 Éléments obligatoires : aucun déclencheur + passe socle garantie
+      - T09 Structuration de l'information : aucun déclencheur + passe socle garantie
+      - T10 Présentation de l'information : aucun déclencheur + passe socle garantie
+      - T11 Formulaires : 1 fichier(s) déclencheur(s)
+      - T12 Navigation : aucun déclencheur + passe socle garantie
+      - T13 Consultation : aucun déclencheur → critères NA (pack sauté)
+   Contrastes : 1 paire(s) CSS littérale(s) mesurée(s) (pire ratio : 4.54:1) — fournies à la passe Couleurs.
+   Contexte métier : aucun ('spec.md'/'need.md' absents) — l'interface est auditée telle qu'elle se présente.
+   Déroulé : 1 cartographie (sautée si 'a11y_map.yaml' valide) + N passes d'audit (pack × compartiment, contexte réinitialisé entre chaque ; décompte exact affiché avec la carte AVANT de payer) + 1 synthèse + agrégation Python → 'accessibility_audit_report.md' + 'declaration_accessibilite.md' (racine).
+==================================================
+
+▶️  Lancer l'audit d'accessibilité sur ce périmètre ? (y/n) : ℹ️  Pas de dépôt git préexistant : la garde read-only mécanique est inactive (l'interdiction de modifier le projet reste portée par les prompts).
+
+==================================================
+🗺️  ÉTAPE É1 : CARTOGRAPHIE D'INTERFACE (1 passe LLM)
+==================================================
+🧪 [mock] harness de test démarré (session simulée '<SESSION>').
+
+🚀 [TENTATIVE 1/3] Lancement du Cartographe d'interface...
+🧪 [mock] cartographe → .a11y_map.attempt1.done
+   ⏳ En attente de 'a11y_map.yaml' (signal de fin : '.a11y_map.attempt1.done')...
+🧪 [mock] harness de test démarré (session simulée '<SESSION>').
+
+============================================================
+🗺️  CARTE D'INTERFACE — Mini formulaire : 1 compartiment(s), 3 passe(s) d'audit
+Compartiment                       | Fichiers | Packs audités
+-----------------------------------+----------+-------------------------------
+Z1 : Formulaire                    |        2 | T01 T03 T11
+
+   ⏭️  Pack(s) jamais déclenché(s) (critères déclarés NA mécaniquement) : T02 Cadres, T04 Multimédia, T05 Tableaux, T06 Liens, T07 Scripts, T08 Éléments obligatoires, T09 Structuration de l'information, T10 Présentation de l'information, T12 Navigation, T13 Consultation
+
+   ✏️  La carte est ÉDITABLE : 'a11y_map.yaml' (l'ordre des zones = l'ordre de lecture du rapport ; déplace un fichier de compartiment pour changer le routage).
+============================================================
+
+▶️  Valider cette carte et lancer l'audit d'accessibilité ? (y/n) : 🧪 [mock] harness de test démarré (session simulée '<SESSION>').
+
+==================================================
+🔎 PASSE 1/3 : T01 Images × Z1 : Formulaire
+==================================================
+
+🚀 [TENTATIVE 1/3] T01 Images × Z1 : Formulaire — lancement de l'Auditeur accessibilité...
+🧪 [mock] T01 tentative 1 : sentinelle seule, aucun livrable → .a11y_t1-z1.attempt1.done
+   ⏳ En attente de 'audit_a11y/T01_images__Z01_formulaire.md' (signal de fin : '.a11y_t1-z1.attempt1.done')...
+   ⛔ Sentinelle '.a11y_t1-z1.attempt1.done' présente mais livrable absent ou vide : échec immédiat de la tentative (inutile d'attendre le timeout).
+⏱️  L'auditeur n'a pas signalé la fin de la passe. Nouvelle tentative.
+🧪 [mock] harness de test démarré (session simulée '<SESSION>').
+
+🚀 [TENTATIVE 2/3] T01 Images × Z1 : Formulaire — lancement de l'Auditeur accessibilité...
+🧪 [mock] T01 tentative 2 : livrable valide (le feedback dédié a été transmis) → .a11y_t1-z1.attempt2.done
+   ⏳ En attente de 'audit_a11y/T01_images__Z01_formulaire.md' (signal de fin : '.a11y_t1-z1.attempt2.done')...
+✅ Passe 1/3 terminée : verdicts dans 'audit_a11y/T01_images__Z01_formulaire.md'.
+🧪 [mock] harness de test démarré (session simulée '<SESSION>').
+
+==================================================
+🔎 PASSE 2/3 : T03 Couleurs × Z1 : Formulaire
+==================================================
+
+🚀 [TENTATIVE 1/3] T03 Couleurs × Z1 : Formulaire — lancement de l'Auditeur accessibilité...
+🧪 [mock] passe T03 couleurs → .a11y_t3-z1.attempt1.done
+   ⏳ En attente de 'audit_a11y/T03_couleurs__Z01_formulaire.md' (signal de fin : '.a11y_t3-z1.attempt1.done')...
+✅ Passe 2/3 terminée : verdicts dans 'audit_a11y/T03_couleurs__Z01_formulaire.md'.
+🧪 [mock] harness de test démarré (session simulée '<SESSION>').
+
+==================================================
+🔎 PASSE 3/3 : T11 Formulaires × Z1 : Formulaire
+==================================================
+
+🚀 [TENTATIVE 1/3] T11 Formulaires × Z1 : Formulaire — lancement de l'Auditeur accessibilité...
+🧪 [mock] passe T11 formulaires → .a11y_t11-z1.attempt1.done
+   ⏳ En attente de 'audit_a11y/T11_formulaires__Z01_formulaire.md' (signal de fin : '.a11y_t11-z1.attempt1.done')...
+✅ Passe 3/3 terminée : verdicts dans 'audit_a11y/T11_formulaires__Z01_formulaire.md'.
+🧪 [mock] harness de test démarré (session simulée '<SESSION>').
+
+==================================================
+🪧 ÉTAPE É3 : SYNTHÈSE EXÉCUTIVE (CHAPEAU DU RAPPORT)
+==================================================
+
+🚀 [TENTATIVE 1/3] Lancement du Rédacteur de la synthèse...
+🧪 [mock] synthèse exécutive → .a11y_synthese.attempt1.done
+   ⏳ En attente de 'audit_a11y/_synthese.md' (signal de fin : '.a11y_synthese.attempt1.done')...
+✅ Synthèse exécutive prête : 'audit_a11y/_synthese.md'.
+
+==================================================
+🧩 ÉTAPE É4 : ASSEMBLAGE MÉCANIQUE → 'accessibility_audit_report.md'
+==================================================
+✅ 'accessibility_audit_report.md' assemblé : 2 NC, 41 AVM, conformité démontrable 50.0 % (4.4–95.6 %).
+✅ Squelette de déclaration pré-rempli : 'declaration_accessibilite.md' (état : non conforme (sur la base du taux plancher ; un audit complet peut requalifier cet état)).
+
+🏁 [CONGRATULATIONS] Audit d'accessibilité terminé !
+   📄 Rapport consolidé : 'accessibility_audit_report.md' — conformité démontrable 50.0 %
+      (fourchette 4.4–95.6 %), 2 NC, 41 AVM.
+   📄 Squelette de déclaration : 'declaration_accessibilite.md' (à compléter, non publiable en l'état).
+   🗂️  Verdicts détaillés par passe : 'audit_a11y/' ; carte d'interface : 'a11y_map.yaml'.
+   ♿ Prochaine étape recommandée : couvrir les 41 critère(s) AVM par une
+      vérification manuelle (clavier, lecteur d'écran, zoom) pour transformer la fourchette
+      en taux ferme.
+   ♻️  Pour rejouer UNE passe (après correction du code, p. ex.) : supprime son fichier dans
+      'audit_a11y/' et relance — seul le manquant est rejoué, l'agrégation est refaite.
+      Pour tout refaire (carte comprise) : supprime 'audit_a11y/' et 'a11y_map.yaml' puis relance.
+   📁 Journal du run : .mm-runs/<RUNID>-audit-a11y/
