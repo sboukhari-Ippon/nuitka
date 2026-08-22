@@ -166,11 +166,21 @@ jobs:
       # retention courte : ~7-10 MB par binaire onefile x 33 par job — le stockage
       # artifacts d'un depot prive Free est limite a 500 MB. archive: false (v7) :
       # le tar.gz est uploade tel quel (pas re-zippe, bits preserves au telechargement).
-      - name: Upload bundles
+      # archive: false n'accepte QU'UN fichier par artifact -> un artifact par langue.
+      - name: Upload bundle (FR)
         uses: actions/upload-artifact@v7
         with:
-          name: MAIsterMind-${{ matrix.artifact }}
-          path: MAIsterMind-*-${{ matrix.suffix }}.tar.gz
+          name: MAIsterMind-${{ matrix.artifact }}-FR
+          path: MAIsterMind-fr-${{ matrix.suffix }}.tar.gz
+          archive: false
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Upload bundle (ENG)
+        uses: actions/upload-artifact@v7
+        with:
+          name: MAIsterMind-${{ matrix.artifact }}-ENG
+          path: MAIsterMind-eng-${{ matrix.suffix }}.tar.gz
           archive: false
           retention-days: 14
           if-no-files-found: error
