@@ -27,18 +27,18 @@ navigateur.
 
 | Besoin | Script | need.md |
 |---|---|---|
-| Développer avec tests — le mode le plus robuste | `Safe-Coding` | requis |
+| Développer avec tests — le mode le plus robuste | `Coding` | requis |
 | Développer sans tests (POC, script jetable, glue) | `Coding-Without-Tests` | requis |
-| Développer en TDD (cycles red → green → refactor) | `Safe-TDD` | requis |
-| Développer en ATDD (lots par user story) | `Safe-ATDD` | requis |
-| Prototype cliquable HTML/CSS/JS (designers) | `Design-Prototype` | requis |
-| Brownfield/legacy : arbitrer « régression ou évolution ? » pendant le run | `Advanced-Coding` / `Advanced-TDD` / `Advanced-ATDD` | requis |
+| Développer test-first par cycles red → green → refactor (inspiré du TDD) | `Test-First` | requis |
+| Développer acceptance-first par lots de user story (inspiré de l'ATDD) | `Acceptance-First` | requis |
+| Prototype cliquable HTML/CSS/JS (designers) | `Design-Prototype` (bêta) | requis |
+| Brownfield/legacy : l'arbitrage « régression ou évolution ? » est intégré aux trois (revue d'impact, triage) | `Coding` / `Test-First` / `Acceptance-First` | requis |
 | Challenger le besoin AVANT de payer une spec | `Challenge-Need` | requis |
 | Cadrer : la spec seule, validée avec le métier | `Spec` | requis |
 | Penser avec un gros modèle, produire ensuite avec un petit | `Technical-Plan`, puis une usine | requis |
-| Documenter un projet existant (lecture seule) | `Documentation` | non |
-| Audit UX — 10 heuristiques de Nielsen (lecture seule) | `Audit-Design` | non |
-| Pré-audit d'accessibilité RGAA 4.1.2 (lecture seule) | `Audit-A11Y-RGAA` | non |
+| Documenter un projet existant (lecture seule) | `Documentation` (bêta) | non |
+| Audit UX — 10 heuristiques de Nielsen (lecture seule) | `Audit-Design` (bêta) | non |
+| Pré-audit d'accessibilité RGAA 4.1.2 (lecture seule) | `Pre-Audit-A11Y-RGAA` (bêta) | non |
 | Réparer un run arrêté sur suite rouge | `Guided-Fix` | non |
 | Adapter les skills livrés à TA stack | `Skills-Adaptation` | non |
 
@@ -57,13 +57,13 @@ Les binaires s'utilisent en direct, sans Python ni venv, depuis la racine de TON
 
 ```bash
 cd /chemin/vers/ton/projet
-/chemin/vers/MAIsterMind/engine/Safe-Coding
+/chemin/vers/MAIsterMind/engine/Coding
 ```
 
 `MM_AGENT_HARNESS=opencode|codex` impose le harness pour un lancement ; sinon il est déduit
 de l'équipement. Suivre un run en direct : `tmux attach -t <session>` (nom affiché au
 lancement ; `Ctrl+B` puis `D` pour sortir sans couper l'IA). En dev, depuis le dépôt source :
-`python3 engine/Safe-Coding.py`.
+`python3 engine/Coding.py`.
 
 Dépannage express :
 - **Forcer l'arrêt d'un run** : `tmux kill-session -t <session>`.

@@ -33,25 +33,110 @@ without migration, never removed):
     agent_task   {role, attempt, prompt_bytes}
     sentinel     {path, declared_files}
     verdict      {cmd, exit, duration_s, output_bytes, attempt}
+    toolchain    {node_path, node_version, expected, login_path_probed}
     guard        {name, action}
     gate         {id, gate_kind, answer}
     phase_status {id, status} · run_end {status, totals}
+                 status ∈ success | failed | interrupted (Ctrl-C, session killed)
+                 | aborted (exit without closure, atexit safety net)
+
+The folder also carries `orchestrator.log`: a copy of everything the orchestrator
+displayed (the tmux pane is recycled on the next run, this file remains).
 """
 
+import atexit
 import json
 import os
 import shutil
+import sys
 import time
 
 RUNS_DIR       = ".mm-runs"
 RETENTION_RUNS = 20     # decision B: we keep the last 20 runs per piloted project
+EQUIP_MARKER   = ".mm-equip.json"   # source of distro_version when the orchestrator does not pass it
+ORCH_LOG       = "orchestrator.log" # copy of everything the orchestrator displays (the tmux pane
+                                    # is recycled on the next run; this file remains)
 
 # Current run state (module-level singleton). dir=None ⇔ journal disabled.
-_STATE = {"dir": None, "events_path": None, "started": None, "meta": {}, "counters": {}}
+_STATE = {"dir": None, "events_path": None, "started": None, "meta": {}, "counters": {},
+          "tee": None}
+
+
+class _Tee:
+    """Duplicates what the orchestrator writes (stdout/stderr) into ORCH_LOG. Transparent:
+    same bytes to the original output, no exception raised from the log."""
+
+    def __init__(self, stream, log):
+        self._stream = stream
+        self._log = log
+
+    def write(self, data):
+        written = self._stream.write(data)
+        try:
+            self._log.write(data)
+            self._log.flush()
+        except Exception:
+            pass
+        return written
+
+    def flush(self):
+        self._stream.flush()
+        try:
+            self._log.flush()
+        except Exception:
+            pass
+
+    def __getattr__(self, name):
+        return getattr(self._stream, name)
+
+
+def _install_tee(run_path: str):
+    """Hooks up the stdout/stderr copy → orchestrator.log (best-effort)."""
+    try:
+        log = open(os.path.join(run_path, ORCH_LOG), "a", encoding="utf-8", errors="replace")
+    except OSError:
+        return
+    _STATE["tee"] = (sys.stdout, sys.stderr, log)
+    sys.stdout = _Tee(sys.stdout, log)
+    sys.stderr = _Tee(sys.stderr, log)
+
+
+def _remove_tee():
+    tee = _STATE.get("tee")
+    if not tee:
+        return
+    out, err, log = tee
+    sys.stdout, sys.stderr = out, err
+    try:
+        log.close()
+    except Exception:
+        pass
+    _STATE["tee"] = None
 
 
 def _reset():
-    _STATE.update(dir=None, events_path=None, started=None, meta={}, counters={})
+    _remove_tee()
+    _STATE.update(dir=None, events_path=None, started=None, meta={}, counters={}, tee=None)
+
+
+def _marker_distro_version(project_dir: str) -> str:
+    """distro_version of the project's equipment marker ('' if absent/unreadable)."""
+    try:
+        with open(os.path.join(project_dir, EQUIP_MARKER), "r", encoding="utf-8") as f:
+            return str((json.load(f) or {}).get("distro_version") or "")
+    except Exception:
+        return ""
+
+
+def _at_exit():
+    """Safety net: a run that ends without end() (sys.exit off the nominal path, uncaught
+    exception) is closed 'aborted' rather than left without run_end — a truncated
+    events.jsonl was indistinguishable from a crash."""
+    if enabled():
+        end("aborted")
+
+
+atexit.register(_at_exit)
 
 
 def enabled() -> bool:
@@ -94,6 +179,8 @@ def start(project_dir: str, orchestrator_id: str, harness_name: str,
             suffix += 1
             run_path = os.path.join(runs_root, f"{stamp}-{orchestrator_id}-{suffix}")
         os.makedirs(os.path.join(run_path, "artifacts"))
+        if not distro_version:
+            distro_version = _marker_distro_version(project_dir)
         _STATE.update(dir=run_path,
                       events_path=os.path.join(run_path, "events.jsonl"),
                       started=time.time(),
@@ -105,6 +192,7 @@ def start(project_dir: str, orchestrator_id: str, harness_name: str,
                                                          time.gmtime())},
                       counters={})
         _prune(runs_root)
+        _install_tee(run_path)
         event("run_start", orchestrator=orchestrator_id, distro_version=distro_version,
               harness=harness_name, model=model)
     except Exception:

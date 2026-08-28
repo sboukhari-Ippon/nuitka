@@ -30,8 +30,8 @@ sh install.sh
 
 # Mode expert (terminal) : ./MAIsterMind_App
 # Les binaires restent utilisables en direct depuis la racine de TON projet :
-#   /chemin/vers/ce/dossier/engine/Safe-Coding
+#   /chemin/vers/ce/dossier/engine/Coding
 
 # Secours (uniquement si un binaire est « killed » au lancement — signature
 # ad hoc cassée par le transfert) : re-signe-le puis relance :
-# codesign --force -s - engine/Safe-Coding
+# codesign --force -s - engine/Coding

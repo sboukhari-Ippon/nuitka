@@ -1,6 +1,6 @@
 {
  "title": "audit RGAA : sonde NC positive (html sans lang) + verdict C sur 8.3 -> « verdict C SUSPECT » en annexe, indices injectés au prompt",
- "script": "Audit-A11Y-RGAA.py",
+ "script": "Pre-Audit-A11Y-RGAA.py",
  "seed": {
   "page.html": "<html>\n<head><title>Accueil</title></head>\n<body><p>Bonjour</p></body>\n</html>\n"
  },
@@ -24,7 +24,7 @@
     "SUSPECT"
    ],
    "write": {
-    "audit_a11y/T08_elements-obligatoires__Z01_accueil.md": "# T8 : Éléments obligatoires — Z1 : Accueil\n\n## Verdicts\n- 8.1 : C\n- 8.2 : AVM — validité W3C à confirmer hors ligne\n- 8.3 : C\n- 8.4 : NA\n- 8.5 : NC — titre de page non pertinent\n- 8.6 : NA\n- 8.7 : NA\n- 8.8 : NA\n- 8.9 : NA\n- 8.10 : NA\n\n## Constats\n### K1 — 8.5 — Titre de page générique\n- **Impact :** 2 — Modéré\n- **Localisation :** page.html:2\n- **Extrait :** <head><title>Accueil</title></head>\n- **Constat :** Le titre « Accueil » n'identifie pas le site ni le contenu.\n- **Impact utilisateur :** Les onglets et l'historique sont indifférenciables.\n- **Correction :** Titre de la forme « Contenu — Site ».\n\n## Bilan\n- Verdicts : C : 2, NC : 1, NA : 6, AVM : 1\n"
+    "pre_audit_a11y/T08_elements-obligatoires__Z01_accueil.md": "# T8 : Éléments obligatoires — Z1 : Accueil\n\n## Verdicts\n- 8.1 : C\n- 8.2 : AVM — validité W3C à confirmer hors ligne\n- 8.3 : C\n- 8.4 : NA\n- 8.5 : NC — titre de page non pertinent\n- 8.6 : NA\n- 8.7 : NA\n- 8.8 : NA\n- 8.9 : NA\n- 8.10 : NA\n\n## Constats\n### K1 — 8.5 — Titre de page générique\n- **Impact :** 2 — Modéré\n- **Localisation :** page.html:2\n- **Extrait :** <head><title>Accueil</title></head>\n- **Constat :** Le titre « Accueil » n'identifie pas le site ni le contenu.\n- **Impact utilisateur :** Les onglets et l'historique sont indifférenciables.\n- **Correction :** Titre de la forme « Contenu — Site ».\n\n## Bilan\n- Verdicts : C : 2, NC : 1, NA : 6, AVM : 1\n"
    }
   },
   {
@@ -32,7 +32,7 @@
    "sentinel": ".a11y_synthese.attempt1.done",
    "expect": ["Synthèse exécutive"],
    "write": {
-    "audit_a11y/_synthese.md": "## Synthèse exécutive\n\nPré-audit statique RGAA d'une page unique : un titre de page générique à\ncorriger, et un verdict C sur la langue de la page contredit par une sonde\nmécanique (html sans attribut lang) — à relire en priorité. Ceci est un\npré-audit statique, pas une attestation de conformité.\n"
+    "pre_audit_a11y/_synthese.md": "## Synthèse exécutive\n\nPré-audit statique RGAA d'une page unique : un titre de page générique à\ncorriger, et un verdict C sur la langue de la page contredit par une sonde\nmécanique (html sans attribut lang) — à relire en priorité. Ceci est un\npré-audit statique, pas une attestation de conformité.\n"
    }
   }
  ],
@@ -40,17 +40,17 @@
   "exit_code": 0,
   "tasks": 3,
   "files_present": [
-   "accessibility_audit_report.md"
+   "accessibility_pre_audit_report.md"
   ],
   "files_absent": [
    "failReport.md"
   ],
   "stdout_contains": [
    "Sondes NC : 1 indice(s) mécanique(s) détecté(s)",
-   "Audit d'accessibilité terminé"
+   "Pré-audit d'accessibilité terminé"
   ],
   "files_contain": {
-   "accessibility_audit_report.md": [
+   "accessibility_pre_audit_report.md": [
     "Verdict(s) C SUSPECT(s)",
     "critère 8.3 (C) contre `page.html:1`"
    ]

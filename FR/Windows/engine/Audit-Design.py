@@ -4,7 +4,7 @@
 Orchestrateur IA - Usine à AUDIT DESIGN avec un harness d'agent + tmux (grille Nielsen)
 ─────────────────────────────────────────────────────────────────────────────
 VARIANTE « AUDIT » : elle n'écrit AUCUN code — elle évalue une interface web EXISTANTE
-(prototype issu de Design-Prototype.py, front-end produit par Safe-Coding.py, ou tout
+(prototype issu de Design-Prototype.py, front-end produit par Coding.py, ou tout
 autre projet web) contre les 10 heuristiques d'utilisabilité de Nielsen, et livre un
 rapport consolidé 'design_audit_report.md' (sévérités 0 à 4, localisations,
 recommandations actionnables).
@@ -59,7 +59,7 @@ import mm_audit
 # fichier via mm_core.configure(...) — tous les noms y sont alors définis.
 import mm_core
 from mm_core import (
-    is_ui_file, signal_handler,
+    is_ui_file, signal_handler, wait_should_continue,
 )
 
 # ─── HARNESS D'AGENT ──────────────────────────────────────────────────────────
@@ -176,7 +176,9 @@ def wait_for_deliverable(filepath: str, sentinel: str, timeout: int = MAX_PHASE_
     stable_streak = 0
     last_size = -1
     structural_warned = False
-    while time.time() - start < timeout:
+    activity = {}   # état de wait_should_continue : prolongation si l'agent travaille encore,
+                    # arrêt immédiat s'il est figé sur une demande de permission
+    while wait_should_continue(start, timeout, activity):
         time.sleep(POLL_INTERVAL)
         file_ready = os.path.exists(filepath) and os.path.getsize(filepath) > 0
         if file_ready and os.path.exists(sentinel):

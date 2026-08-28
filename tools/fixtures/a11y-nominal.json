@@ -1,6 +1,6 @@
 {
- "title": "audit RGAA : périmètre -> carte (socle vide) -> 3 passes -> synthèse -> rapport + déclaration",
- "script": "Audit-A11Y-RGAA.py",
+ "title": "audit RGAA : périmètre -> carte (socle vide) -> 3 passes -> synthèse -> rapport + synthèse",
+ "script": "Pre-Audit-A11Y-RGAA.py",
  "seed": {
   "form.html": "<form>\n  <input type=\"text\" name=\"email\">\n  <button>Envoyer</button>\n</form>\n<img src=\"logo.png\">\n",
   "styles.css": "body { color: #767676; background: #ffffff; }\n"
@@ -25,13 +25,13 @@
    "sentinel": ".a11y_t1-z1.attempt1.done",
    "expect": [
     "T1 « Images »",
-    "audit_a11y/T01_images__Z01_formulaire.md",
+    "pre_audit_a11y/T01_images__Z01_formulaire.md",
     "1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9",
     "MOTIFS DÉTECTÉS PAR L'ORCHESTRATEUR",
     "form.html:5 — motif"
    ],
    "write": {
-    "audit_a11y/T01_images__Z01_formulaire.md": "# T1 : Images — Z1 : Formulaire\n\n## Verdicts\n- 1.1 : NC — image sans alternative textuelle\n- 1.2 : C\n- 1.3 : NA — aucune image porteuse d'information complexe\n- 1.4 : NA\n- 1.5 : NA\n- 1.6 : NA\n- 1.7 : NA\n- 1.8 : NA\n- 1.9 : NA\n\n## Constats\n### K1 — 1.1 — Image sans alternative textuelle\n- **Impact :** 3 — Majeur\n- **Localisation :** form.html:5\n- **Extrait :** <img src=\"logo.png\">\n- **Constat :** La balise img du logo n'a pas d'attribut alt.\n- **Impact utilisateur :** Un lecteur d'écran annonce le nom du fichier.\n- **Correction :** Ajouter un alt descriptif (ou vide si décorative).\n\n## Bilan\n- Verdicts : C : 1, NC : 1, NA : 7, AVM : 0\n"
+    "pre_audit_a11y/T01_images__Z01_formulaire.md": "# T1 : Images — Z1 : Formulaire\n\n## Verdicts\n- 1.1 : NC — image sans alternative textuelle\n- 1.2 : C\n- 1.3 : NA — aucune image porteuse d'information complexe\n- 1.4 : NA\n- 1.5 : NA\n- 1.6 : NA\n- 1.7 : NA\n- 1.8 : NA\n- 1.9 : NA\n\n## Constats\n### K1 — 1.1 — Image sans alternative textuelle\n- **Impact :** 3 — Majeur\n- **Localisation :** form.html:5\n- **Extrait :** <img src=\"logo.png\">\n- **Constat :** La balise img du logo n'a pas d'attribut alt.\n- **Impact utilisateur :** Un lecteur d'écran annonce le nom du fichier.\n- **Correction :** Ajouter un alt descriptif (ou vide si décorative).\n\n## Bilan\n- Verdicts : C : 1, NC : 1, NA : 7, AVM : 0\n"
    }
   },
   {
@@ -42,10 +42,10 @@
     "MESURES DE CONTRASTE",
     "MOTIFS DÉTECTÉS PAR L'ORCHESTRATEUR",
     "styles.css:1 — motif",
-    "audit_a11y/T03_couleurs__Z01_formulaire.md"
+    "pre_audit_a11y/T03_couleurs__Z01_formulaire.md"
    ],
    "write": {
-    "audit_a11y/T03_couleurs__Z01_formulaire.md": "# T3 : Couleurs — Z1 : Formulaire\n\n## Verdicts\n- 3.1 : AVM — vérifier au rendu que l'information n'est jamais donnée par la seule couleur\n- 3.2 : C\n- 3.3 : NA — aucun composant d'interface ni élément graphique complexe\n\n## Constats\nAucun constat.\n\n## Bilan\n- Verdicts : C : 1, NC : 0, NA : 1, AVM : 1\n"
+    "pre_audit_a11y/T03_couleurs__Z01_formulaire.md": "# T3 : Couleurs — Z1 : Formulaire\n\n## Verdicts\n- 3.1 : AVM — vérifier au rendu que l'information n'est jamais donnée par la seule couleur\n- 3.2 : C\n- 3.3 : NA — aucun composant d'interface ni élément graphique complexe\n\n## Constats\nAucun constat.\n\n## Bilan\n- Verdicts : C : 1, NC : 0, NA : 1, AVM : 1\n"
    }
   },
   {
@@ -53,10 +53,10 @@
    "sentinel": ".a11y_t11-z1.attempt1.done",
    "expect": [
     "T11 « Formulaires »",
-    "audit_a11y/T11_formulaires__Z01_formulaire.md"
+    "pre_audit_a11y/T11_formulaires__Z01_formulaire.md"
    ],
    "write": {
-    "audit_a11y/T11_formulaires__Z01_formulaire.md": "# T11 : Formulaires — Z1 : Formulaire\n\n## Verdicts\n- 11.1 : NC — champ sans étiquette\n- 11.2 : NA\n- 11.3 : NA\n- 11.4 : NA\n- 11.5 : NA\n- 11.6 : NA\n- 11.7 : NA\n- 11.8 : NA\n- 11.9 : AVM — pertinence de l'intitulé du bouton à confirmer au rendu\n- 11.10 : NA\n- 11.11 : NA\n- 11.12 : NA\n- 11.13 : NA\n\n## Constats\n### K1 — 11.1 — Champ de formulaire sans étiquette\n- **Impact :** 4 — Bloquant\n- **Localisation :** form.html:2\n- **Extrait :** <input type=\"text\" name=\"email\">\n- **Constat :** L'input email n'a ni label associé, ni aria-label, ni title.\n- **Impact utilisateur :** Un utilisateur de lecteur d'écran ne sait pas quoi saisir.\n- **Correction :** Associer un label via for/id.\n\n## Bilan\n- Verdicts : C : 0, NC : 1, NA : 11, AVM : 1\n"
+    "pre_audit_a11y/T11_formulaires__Z01_formulaire.md": "# T11 : Formulaires — Z1 : Formulaire\n\n## Verdicts\n- 11.1 : NC — champ sans étiquette\n- 11.2 : NA\n- 11.3 : NA\n- 11.4 : NA\n- 11.5 : NA\n- 11.6 : NA\n- 11.7 : NA\n- 11.8 : NA\n- 11.9 : AVM — pertinence de l'intitulé du bouton à confirmer au rendu\n- 11.10 : NA\n- 11.11 : NA\n- 11.12 : NA\n- 11.13 : NA\n\n## Constats\n### K1 — 11.1 — Champ de formulaire sans étiquette\n- **Impact :** 4 — Bloquant\n- **Localisation :** form.html:2\n- **Extrait :** <input type=\"text\" name=\"email\">\n- **Constat :** L'input email n'a ni label associé, ni aria-label, ni title.\n- **Impact utilisateur :** Un utilisateur de lecteur d'écran ne sait pas quoi saisir.\n- **Correction :** Associer un label via for/id.\n\n## Bilan\n- Verdicts : C : 0, NC : 1, NA : 11, AVM : 1\n"
    }
   },
   {
@@ -67,7 +67,7 @@
     "ZÉRO invention"
    ],
    "write": {
-    "audit_a11y/_synthese.md": "## Synthèse exécutive\n\nPré-audit statique RGAA de l'écran de formulaire : deux non-conformités à fort\nimpact (image sans alternative textuelle, champ de saisie sans étiquette), le\nreste des critères évalués est non applicable ou à vérifier manuellement.\nLes chantiers prioritaires sont l'étiquetage du champ email et l'alternative\ntextuelle du logo. Une part des vérifications reste manuelle (rendu visuel,\nlecteur d'écran). Ceci est un pré-audit statique, pas une attestation de\nconformité.\n"
+    "pre_audit_a11y/_synthese.md": "## Synthèse exécutive\n\nPré-audit statique RGAA de l'écran de formulaire : deux non-conformités à fort\nimpact (image sans alternative textuelle, champ de saisie sans étiquette), le\nreste des critères évalués est non applicable ou à vérifier manuellement.\nLes chantiers prioritaires sont l'étiquetage du champ email et l'alternative\ntextuelle du logo. Une part des vérifications reste manuelle (rendu visuel,\nlecteur d'écran). Ceci est un pré-audit statique, pas une attestation de\nconformité.\n"
    }
   }
  ],
@@ -75,13 +75,13 @@
   "exit_code": 0,
   "tasks": 5,
   "files_present": [
-   "accessibility_audit_report.md",
-   "declaration_accessibilite.md",
+   "accessibility_pre_audit_report.md",
+   "accessibility_pre_audit_summary.md",
    "a11y_map.yaml",
-   "audit_a11y/T01_images__Z01_formulaire.md",
-   "audit_a11y/T03_couleurs__Z01_formulaire.md",
-   "audit_a11y/T11_formulaires__Z01_formulaire.md",
-   "audit_a11y/_synthese.md"
+   "pre_audit_a11y/T01_images__Z01_formulaire.md",
+   "pre_audit_a11y/T03_couleurs__Z01_formulaire.md",
+   "pre_audit_a11y/T11_formulaires__Z01_formulaire.md",
+   "pre_audit_a11y/_synthese.md"
   ],
   "files_absent": [
    "failReport.md",
@@ -93,20 +93,23 @@
    ".opencode_a11y.md"
   ],
   "stdout_contains": [
-   "Lancer l'audit d'accessibilité sur ce périmètre ? (y/n)",
-   "Valider cette carte et lancer l'audit d'accessibilité ? (y/n)",
+   "Lancer le pré-audit d'accessibilité sur ce périmètre ? (y/n)",
+   "Valider cette carte et lancer le pré-audit d'accessibilité ? (y/n)",
    "PASSE 1/3",
    "PASSE 3/3",
-   "Audit d'accessibilité terminé"
+   "Pré-audit d'accessibilité terminé"
   ],
   "files_contain": {
-   "accessibility_audit_report.md": [
-    "<!-- généré par Audit-A11Y-RGAA -->",
+   "accessibility_pre_audit_report.md": [
+    "<!-- généré par Pre-Audit-A11Y-RGAA -->",
     "Image sans alternative textuelle",
     "Champ de formulaire sans étiquette"
    ],
-   "declaration_accessibilite.md": [
-    "SQUELETTE"
+   "accessibility_pre_audit_summary.md": [
+    "<!-- généré par Pre-Audit-A11Y-RGAA -->",
+    "## Chiffres clés",
+    "## Non-conformités démontrées",
+    "## Reste à vérifier manuellement"
    ]
   }
  }

@@ -19,7 +19,7 @@
 ➡️  Étapes suivantes possibles (reprise par fichiers : la spec approuvée est reprise
    telle quelle, l'étape PO ne sera PAS rejouée) :
    - python3 Technical-Plan.py   → s'arrêter au blackboard (plan technique seul)
-   - python3 Safe-Coding.py             → dérouler tout le pipeline jusqu'au code
+   - python3 Coding.py             → dérouler tout le pipeline jusqu'au code
    Astuce : c'est le bon moment pour changer de modèle (/model dans le TUI ou
    '.mock/config.json') — gros modèle pour penser, petit modèle pour produire.
 ──────────────────────────────────────────────────

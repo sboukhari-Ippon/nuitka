@@ -32,6 +32,8 @@ CHEMINS (RÈGLE N°1 : RECOPIE, N'INVENTE JAMAIS) :
 
 - Chaque chemin de files: et de tests: est RECOPIÉ À L'IDENTIQUE depuis les listes « FICHIERS À ASSIGNER » fournies par l'orchestrateur. Un chemin absent de ces listes est INTERDIT (il sera rejeté mécaniquement).
 - Chaque fichier est assigné à UNE SEULE zone.
+- Une entrée de files: ou tests: peut être un RÉPERTOIRE : son chemin, tel qu'il apparaît dans les listes ou leur résumé par répertoire, terminé par « / » (ex. "src/cart/"). Elle assigne à la zone tous les fichiers du périmètre qu'il contient (récursivement) et qui ne sont pas déjà assignés ailleurs. C'est la façon normale de couvrir un gros dépôt : jamais des centaines de chemins recopiés un à un.
+- La zone « Divers » est FACULTATIVE : tu peux l'omettre ou la déclarer avec files: [] — l'orchestrateur y range mécaniquement ce que tu n'auras pas assigné. Elle doit rester un résiduel : si elle recueille l'essentiel du projet, ta carte sera rejetée.
 - Les fichiers de la liste CODE vont dans files: ; les fichiers de la liste TESTS vont dans tests:, rangés dans la zone dont ils vérifient le comportement. Une zone sans test existant déclare tests: [].
 - Tu ne fournis JAMAIS de slug ni de chemin de fichier de sortie pour les zones : l'orchestrateur les calcule lui-même.
 

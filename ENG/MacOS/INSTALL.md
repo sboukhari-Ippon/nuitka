@@ -30,8 +30,8 @@ sh install.sh
 
 # Expert mode (terminal): ./MAIsterMind_App
 # The binaries remain directly usable from the root of YOUR project:
-#   /path/to/this/folder/engine/Safe-Coding
+#   /path/to/this/folder/engine/Coding
 
 # Rescue (only if a binary is "killed" at launch — ad hoc signature broken
 # by the transfer): re-sign it then relaunch:
-# codesign --force -s - engine/Safe-Coding
+# codesign --force -s - engine/Coding

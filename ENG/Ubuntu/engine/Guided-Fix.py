@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Arbitrated repairer for red-suite halts — companion of Safe-Coding.py.
+Arbitrated repairer for red-suite halts — companion of Coding.py.
 ─────────────────────────────────────────────────────────────────────────────
 When a MAIsterMind run halts (phase REJECTED after MAX_ATTEMPTS, run killed mid-phase,
 unresolved post-refactoring regression), the human only had two options: manual surgery
@@ -97,7 +97,7 @@ AGENT_CONFIG_FILE     = RUNNER.config_file
 SPEC_APPROVED_SENTINEL = ".spec_approved"
 
 # Offloaded instructions file and tmux prompt buffer (RELATIVE paths: the only valid
-# choice on all 3 OSes, cf. Safe-Coding.py).
+# choice on all 3 OSes, cf. Coding.py).
 TMP_FIX_FILE          = RUNNER.tmp_file("fix")
 TMP_PROMPT_BUFFER     = RUNNER.prompt_buffer
 
@@ -114,7 +114,7 @@ VERIFY_FEEDBACK_LIMIT = 4000           # max size of an output sent back to an a
 DIFF_PROMPT_LIMIT     = 6000           # max size of the culprit diff injected into prompts
 STABLE_POLLS_FALLBACK = 15             # sentinel-less safety net for the diagnosis report
 
-# Handshake states with Safe-Coding.py: a repair CLAIM, not a verdict. MAIsterMind
+# Handshake states with Coding.py: a repair CLAIM, not a verdict. MAIsterMind
 # revalidates by execution on relaunch and stamps DONE/OK itself.
 FIXED_STATUS          = "FIXED"
 FIXED_VERDICT         = "PENDING_RECHECK"
@@ -141,7 +141,7 @@ def cleanup_fix_sentinels(slot: str = None):
 
 def read_declared_files(slot: str, attempt: int) -> list:
     """List of the files declared by the agent in its sentinel (list markers stripped,
-    cf. read_touched_files in Safe-Coding.py)."""
+    cf. read_touched_files in Coding.py)."""
     path = fix_sentinel(slot, attempt)
     if not os.path.exists(path):
         return []
@@ -171,7 +171,7 @@ def wait_for_file_creation(filepath: str, timeout: int = MAX_PHASE_TIMEOUT) -> b
 def wait_for_report_file(filepath: str, sentinel: str, timeout: int = MAX_PHASE_TIMEOUT,
                          structural_check=None) -> bool:
     """Wait for the diagnosis report: sentinel first, stability safety net as fallback
-    (same contract as wait_for_pipeline_file in Safe-Coding.py)."""
+    (same contract as wait_for_pipeline_file in Coding.py)."""
     start = time.time()
     print(f"   ⏳ Waiting for '{filepath}' (completion signal: '{sentinel}')...")
     stable_streak = 0
@@ -202,7 +202,7 @@ def wait_for_report_file(filepath: str, sentinel: str, timeout: int = MAX_PHASE_
     return False
 
 
-# ─── BLACKBOARD (ATOMIC read / write, cf. Safe-Coding.py) ─────────────────────
+# ─── BLACKBOARD (ATOMIC read / write, cf. Coding.py) ─────────────────────
 
 # Last journaled phase statuses (TRANSITION detection by save_blackboard).
 _PHASE_STATUS_SEEN = {}
@@ -233,7 +233,7 @@ def save_blackboard(data: dict):
 _GIT = {"enabled": False}
 GIT_IDENTITY = ["-c", "user.name=MAIsterMind", "-c", "user.email=factory@local"]
 
-# Same body as Safe-Coding.py (with '.fix_*'): a project started BEFORE this evolution
+# Same body as Coding.py (with '.fix_*'): a project started BEFORE this evolution
 # has a .gitignore without this pattern — without the append-only net below, commit_all
 # (add -A) would commit the fix sentinels as noise.
 GITIGNORE_BODY = f"""# MAIster-Mind orchestration artifacts (ephemeral)
@@ -250,7 +250,7 @@ __pycache__/
 
 def ensure_orchestration_ignored():
     """Guarantees the orchestration patterns in an existing .gitignore (append-only,
-    idempotent, best-effort — cf. Safe-Coding.py). Does not create a .gitignore: that is
+    idempotent, best-effort — cf. Coding.py). Does not create a .gitignore: that is
     the main factory's job."""
     if not os.path.exists(".gitignore"):
         return
@@ -334,7 +334,7 @@ def files_changed_since(ref: str) -> set:
 # ─── FILE CLASSIFICATION (same heuristics as the factory) ─────────────────────
 
 def is_test_file(path: str) -> bool:
-    """Multi-language heuristic, deliberately BROAD on the test side (cf. Safe-Coding.py)."""
+    """Multi-language heuristic, deliberately BROAD on the test side (cf. Coding.py)."""
     p = str(path).strip().strip("'\"`").replace("\\", "/")
     if not p:
         return False
@@ -362,9 +362,9 @@ _ORCH_BASENAMES = {
 
 
 _ORCHESTRATOR_SCRIPTS = frozenset({
-    "Safe-Coding.py", "Coding-Without-Tests.py", "Safe-TDD.py", "Safe-ATDD.py",
-    "Design-Prototype.py", "Advanced-Coding.py", "Advanced-TDD.py", "Advanced-ATDD.py",
-    "Spec.py", "Technical-Plan.py", "Audit-Design.py", "Audit-A11Y-RGAA.py",
+    "Coding.py", "Coding-Without-Tests.py", "Test-First.py", "Acceptance-First.py",
+    "Design-Prototype.py",
+    "Spec.py", "Technical-Plan.py", "Audit-Design.py", "Pre-Audit-A11Y-RGAA.py",
     "Documentation.py", "Guided-Fix.py", "Skills-Adaptation.py",
     "MAIsterMind_App.py", "mm_runner.py",
 })
@@ -417,7 +417,7 @@ def resolve_verify_cmd(phase: dict, blackboard: dict) -> str:
 
 
 def run_verify(cmd: str, timeout: int = VERIFY_TIMEOUT) -> tuple:
-    """Runs the verification OUTSIDE tmux. (ok, output, timed_out) — cf. Safe-Coding.py."""
+    """Runs the verification OUTSIDE tmux. (ok, output, timed_out) — cf. Coding.py."""
     print(f"   🧪 Verification by execution: {cmd}")
     env = os.environ.copy()
     local_bin = os.path.abspath(os.path.join("node_modules", ".bin"))
@@ -452,7 +452,7 @@ def run_verify_resilient(cmd: str) -> tuple:
 
 
 def parse_test_count(output: str):
-    """Best-effort count of passed tests (same patterns as Safe-Coding.py)."""
+    """Best-effort count of passed tests (same patterns as Coding.py)."""
     if not output:
         return None
     maven = re.findall(r"Tests run:\s*(\d+)", output)
@@ -500,7 +500,7 @@ def collect_spec_us_ids(spec_text: str) -> set:
 
 def extract_spec_slice(spec_text: str, covers: list) -> str:
     """Spec slice limited to the covered US (+ common trunk) — graceful degradation:
-    without a usable 'covers', the WHOLE spec (cf. Safe-Coding.py)."""
+    without a usable 'covers', the WHOLE spec (cf. Coding.py)."""
     wanted = {c.strip().upper() for c in (covers or []) if isinstance(c, str) and c.strip()}
     if not wanted:
         return spec_text
@@ -968,7 +968,7 @@ def triage_groups(groups: list, report_path: str):
             print(f"   {step}) Fix of the regressions' code (test files FROZEN).")
             step += 1
         print(f"   {step}) Full verification run by Python; on green, FIXED marker")
-        print(f"      set — you will relaunch Safe-Coding.py yourself for the revalidation.")
+        print(f"      set — you will relaunch Coding.py yourself for the revalidation.")
         print(f"{'=' * 62}")
         answer = input("\n▶️  Confirm this arbitration and launch the repair? "
                        "(y = yes / n = redo the triage / q = abandon): ").strip().lower()
@@ -1046,13 +1046,13 @@ def main():
     # ── Prerequisite: a MAIsterMind run took place (blackboard = resume state). ──
     if not os.path.exists(BLACKBOARD_FILE):
         print(f"❌ '{BLACKBOARD_FILE}' not found: nothing to repair here. Launch "
-              f"Safe-Coding.py first (this script heals production halts, not the pipeline).")
+              f"Coding.py first (this script heals production halts, not the pipeline).")
         sys.exit(1)
     try:
         blackboard = load_blackboard()
     except Exception as err:
         print(f"❌ '{BLACKBOARD_FILE}' unreadable (invalid or corrupted YAML): {err}")
-        print(f"   → Fix or delete '{BLACKBOARD_FILE}' then relaunch Safe-Coding.py.")
+        print(f"   → Fix or delete '{BLACKBOARD_FILE}' then relaunch Coding.py.")
         sys.exit(1)
     if not isinstance(blackboard, dict) or not isinstance(blackboard.get("phases"), list):
         print(f"❌ '{BLACKBOARD_FILE}' has no usable 'phases' block: nothing to repair.")
@@ -1092,18 +1092,18 @@ def main():
                   f"(cf. UC4). Phase {broken_phase.get('id', '?')} can be marked '{FIXED_STATUS}': "
                   f"MAIsterMind will revalidate it by execution on relaunch, without re-paying a coder.")
             answer = input(f"\n▶️  Mark phase {broken_phase.get('id', '?')} '{FIXED_STATUS}' "
-                           f"and let you relaunch Safe-Coding.py? (y/n): ").strip().lower()
+                           f"and let you relaunch Coding.py? (y/n): ").strip().lower()
             mm_audit.event("gate", id="fix-mark-fixed", gate_kind="yn", answer=answer)
             if answer == "y":
                 mark_phase_fixed(broken_phase, blackboard)
                 record_test_count(initial_output, blackboard)
                 update_protected_test_files(blackboard, git_head_sha(), broken_phase)
                 commit_all(f"fix(phase {broken_phase.get('id', '?')}): green state observed (manual repair)")
-                print(f"\n🏁 Marker set. Relaunch 'python3 Safe-Coding.py' to revalidate and continue.")
+                print(f"\n🏁 Marker set. Relaunch 'python3 Coding.py' to revalidate and continue.")
             else:
                 print("⏹️  Nothing was changed.")
             sys.exit(0)
-        print("\n✅ The verification suite passes: nothing to repair. Relaunch Safe-Coding.py "
+        print("\n✅ The verification suite passes: nothing to repair. Relaunch Coding.py "
               "if you want to continue or replay the final polish.")
         sys.exit(0)
 
@@ -1301,7 +1301,7 @@ def main():
         result_lines.append(f"- Phase {broken_phase.get('id', '?')} "
                             f"\"{broken_phase.get('name', '(unnamed)')}\" marked **{FIXED_STATUS}**: "
                             f"MAIsterMind will revalidate it by execution on relaunch.")
-    result_lines.append("- Next step: relaunch `python3 Safe-Coding.py` (MANUAL relaunch: "
+    result_lines.append("- Next step: relaunch `python3 Coding.py` (MANUAL relaunch: "
                         "the resume is interactive anyway).")
     append_report(report_path, "\n".join(result_lines))
     summary = []
@@ -1323,10 +1323,10 @@ def main():
    📄 Audit trail: '{report_path}' (committed with the repair).""")
     if broken_phase:
         print(f"""   🔁 Phase {broken_phase.get('id', '?')} \"{broken_phase.get('name', '(unnamed)')}\" marked {FIXED_STATUS}:
-      relaunch 'python3 Safe-Coding.py' — it revalidates by execution (without
+      relaunch 'python3 Coding.py' — it revalidates by execution (without
       re-paying a coder) then continues the run at the next phase.""")
     else:
-        print("""   🔁 No phase to mark (halt outside production): relaunch 'python3 Safe-Coding.py'
+        print("""   🔁 No phase to mark (halt outside production): relaunch 'python3 Coding.py'
       if you want to replay the final polish, or ship as is.""")
     print(f"{'=' * 62}")
     # Closing the run journal (path captured BEFORE end, which resets the state).

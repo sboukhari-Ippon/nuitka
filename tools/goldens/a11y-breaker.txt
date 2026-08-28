@@ -1,7 +1,7 @@
 🧮 Scan déterministe du périmètre (déclencheurs de packs, contrastes)...
 
 ==================================================
-♿ AUDIT D'ACCESSIBILITÉ (RGAA 4.1.2) — Périmètre découvert :
+♿ PRÉ-AUDIT D'ACCESSIBILITÉ (RGAA 4.1.2) — Périmètre découvert :
    Répertoire : <WS>/projet
    2 fichier(s) UI à auditer. Aperçu :
       - form.html
@@ -22,10 +22,10 @@
       - T13 Consultation : aucun déclencheur → critères NA (pack sauté)
    Contrastes : 1 paire(s) CSS littérale(s) mesurée(s) (pire ratio : 4.54:1) — fournies à la passe Couleurs.
    Contexte métier : aucun ('spec.md'/'need.md' absents) — l'interface est auditée telle qu'elle se présente.
-   Déroulé : 1 cartographie (sautée si 'a11y_map.yaml' valide) + N passes d'audit (pack × compartiment, contexte réinitialisé entre chaque ; décompte exact affiché avec la carte AVANT de payer) + 1 synthèse + agrégation Python → 'accessibility_audit_report.md' + 'declaration_accessibilite.md' (racine).
+   Déroulé : 1 cartographie (sautée si 'a11y_map.yaml' valide) + N passes d'audit (pack × compartiment, contexte réinitialisé entre chaque ; décompte exact affiché avec la carte AVANT de payer) + 1 synthèse + agrégation Python → 'accessibility_pre_audit_report.md' + 'accessibility_pre_audit_summary.md' (racine).
 ==================================================
 
-▶️  Lancer l'audit d'accessibilité sur ce périmètre ? (y/n) : ℹ️  Pas de dépôt git préexistant : la garde read-only mécanique est inactive (l'interdiction de modifier le projet reste portée par les prompts).
+▶️  Lancer le pré-audit d'accessibilité sur ce périmètre ? (y/n) : ℹ️  Pas de dépôt git préexistant : la garde read-only mécanique est inactive (l'interdiction de modifier le projet reste portée par les prompts).
 
 ==================================================
 🗺️  ÉTAPE É1 : CARTOGRAPHIE D'INTERFACE (1 passe LLM)
@@ -48,7 +48,7 @@ Z1 : Formulaire                    |        2 | T01 T03 T11
    ✏️  La carte est ÉDITABLE : 'a11y_map.yaml' (l'ordre des zones = l'ordre de lecture du rapport ; déplace un fichier de compartiment pour changer le routage).
 ============================================================
 
-▶️  Valider cette carte et lancer l'audit d'accessibilité ? (y/n) : 🧪 [mock] harness de test démarré (session simulée '<SESSION>').
+▶️  Valider cette carte et lancer le pré-audit d'accessibilité ? (y/n) : 🧪 [mock] harness de test démarré (session simulée '<SESSION>').
 
 ==================================================
 🔎 PASSE 1/3 : T01 Images × Z1 : Formulaire
@@ -56,28 +56,28 @@ Z1 : Formulaire                    |        2 | T01 T03 T11
 
 🚀 [TENTATIVE 1/3] T01 Images × Z1 : Formulaire — lancement de l'Auditeur accessibilité...
 🧪 [mock] T01 tentative 1 (hors format) → .a11y_t1-z1.attempt1.done
-   ⏳ En attente de 'audit_a11y/T01_images__Z01_formulaire.md' (signal de fin : '.a11y_t1-z1.attempt1.done')...
+   ⏳ En attente de 'pre_audit_a11y/T01_images__Z01_formulaire.md' (signal de fin : '.a11y_t1-z1.attempt1.done')...
 ⚠️  [REJET] Tentative 1 : verdicts hors format (1 anomalie(s) : verdict(s) MANQUANT(s) pour : 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9).
 🧪 [mock] harness de test démarré (session simulée '<SESSION>').
 
 🚀 [TENTATIVE 2/3] T01 Images × Z1 : Formulaire — lancement de l'Auditeur accessibilité...
 🧪 [mock] T01 tentative 2 (hors format) → .a11y_t1-z1.attempt2.done
-   ⏳ En attente de 'audit_a11y/T01_images__Z01_formulaire.md' (signal de fin : '.a11y_t1-z1.attempt2.done')...
+   ⏳ En attente de 'pre_audit_a11y/T01_images__Z01_formulaire.md' (signal de fin : '.a11y_t1-z1.attempt2.done')...
 ⚠️  [REJET] Tentative 2 : verdicts hors format (1 anomalie(s) : verdict(s) MANQUANT(s) pour : 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9).
 🧪 [mock] harness de test démarré (session simulée '<SESSION>').
 
 🚀 [TENTATIVE 3/3] T01 Images × Z1 : Formulaire — lancement de l'Auditeur accessibilité...
 🧪 [mock] T01 tentative 3 (hors format) → .a11y_t1-z1.attempt3.done
-   ⏳ En attente de 'audit_a11y/T01_images__Z01_formulaire.md' (signal de fin : '.a11y_t1-z1.attempt3.done')...
+   ⏳ En attente de 'pre_audit_a11y/T01_images__Z01_formulaire.md' (signal de fin : '.a11y_t1-z1.attempt3.done')...
 ⚠️  [REJET] Tentative 3 : verdicts hors format (1 anomalie(s) : verdict(s) MANQUANT(s) pour : 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9).
 🧪 [mock] harness de test démarré (session simulée '<SESSION>').
 
 ============================================================
 ❌ La passe « T01 Images × Z1 : Formulaire » n'a pas abouti après 3 tentatives.
 
-   Cause : Ton fichier 'audit_a11y/T01_images__Z01_formulaire.md' ne passe pas le contrôle mécanique : verdict(s) MANQUANT(s) pour : 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9. Rappels : la section '## Verdicts' liste EXACTEMENT ces critères (1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9) avec un statut C, NC, NA ou AVM ; chaque NC a un constat '### K<i> — <critère> — <titre>' avec son champ '- **Extrait :**' recopiant EXACTEMENT une ligne du fichier cité ; le Bilan est verrouillé '- Verdicts : C : <a>, NC : <b>, NA : <c>, AVM : <d>'. Réécris le fichier entièrement.
+   Cause : Ton fichier 'pre_audit_a11y/T01_images__Z01_formulaire.md' ne passe pas le contrôle mécanique : verdict(s) MANQUANT(s) pour : 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9. Rappels : la section '## Verdicts' liste EXACTEMENT ces critères (1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9) avec un statut C, NC, NA ou AVM ; chaque NC a un constat '### K<i> — <critère> — <titre>' avec son champ '- **Extrait :**' recopiant EXACTEMENT une ligne du fichier cité ; le Bilan est verrouillé '- Verdicts : C : <a>, NC : <b>, NA : <c>, AVM : <d>'. Réécris le fichier entièrement.
 Erreurs déjà rencontrées aux essais précédents, à NE PAS réintroduire :
-- Ton fichier 'audit_a11y/T01_images__Z01_formulaire.md' ne passe pas le contrôle mécanique : verdict(s) MANQUANT(s) pour : 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9. Rappels : la section '## Verdicts' lis
+- Ton fichier 'pre_audit_a11y/T01_images__Z01_formulaire.md' ne passe pas le contrôle mécanique : verdict(s) MANQUANT(s) pour : 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9. Rappels : la section '## Verdicts'
 
 💡 Le modèle actuel (mock-model) cale sur cette passe (souvent un problème d'appels
    d'outils : le fichier de verdicts ou la sentinelle ne sont jamais créés, ou le
@@ -97,28 +97,28 @@ Erreurs déjà rencontrées aux essais précédents, à NE PAS réintroduire :
 
 🚀 [TENTATIVE 1/3] T03 Couleurs × Z1 : Formulaire — lancement de l'Auditeur accessibilité...
 🧪 [mock] T03 tentative 1 (hors format) → .a11y_t3-z1.attempt1.done
-   ⏳ En attente de 'audit_a11y/T03_couleurs__Z01_formulaire.md' (signal de fin : '.a11y_t3-z1.attempt1.done')...
+   ⏳ En attente de 'pre_audit_a11y/T03_couleurs__Z01_formulaire.md' (signal de fin : '.a11y_t3-z1.attempt1.done')...
 ⚠️  [REJET] Tentative 1 : verdicts hors format (1 anomalie(s) : verdict(s) MANQUANT(s) pour : 3.2, 3.3).
 🧪 [mock] harness de test démarré (session simulée '<SESSION>').
 
 🚀 [TENTATIVE 2/3] T03 Couleurs × Z1 : Formulaire — lancement de l'Auditeur accessibilité...
 🧪 [mock] T03 tentative 2 (hors format) → .a11y_t3-z1.attempt2.done
-   ⏳ En attente de 'audit_a11y/T03_couleurs__Z01_formulaire.md' (signal de fin : '.a11y_t3-z1.attempt2.done')...
+   ⏳ En attente de 'pre_audit_a11y/T03_couleurs__Z01_formulaire.md' (signal de fin : '.a11y_t3-z1.attempt2.done')...
 ⚠️  [REJET] Tentative 2 : verdicts hors format (1 anomalie(s) : verdict(s) MANQUANT(s) pour : 3.2, 3.3).
 🧪 [mock] harness de test démarré (session simulée '<SESSION>').
 
 🚀 [TENTATIVE 3/3] T03 Couleurs × Z1 : Formulaire — lancement de l'Auditeur accessibilité...
 🧪 [mock] T03 tentative 3 (hors format) → .a11y_t3-z1.attempt3.done
-   ⏳ En attente de 'audit_a11y/T03_couleurs__Z01_formulaire.md' (signal de fin : '.a11y_t3-z1.attempt3.done')...
+   ⏳ En attente de 'pre_audit_a11y/T03_couleurs__Z01_formulaire.md' (signal de fin : '.a11y_t3-z1.attempt3.done')...
 ⚠️  [REJET] Tentative 3 : verdicts hors format (1 anomalie(s) : verdict(s) MANQUANT(s) pour : 3.2, 3.3).
 🧪 [mock] harness de test démarré (session simulée '<SESSION>').
 
 ============================================================
 ❌ La passe « T03 Couleurs × Z1 : Formulaire » n'a pas abouti après 3 tentatives.
 
-   Cause : Ton fichier 'audit_a11y/T03_couleurs__Z01_formulaire.md' ne passe pas le contrôle mécanique : verdict(s) MANQUANT(s) pour : 3.2, 3.3. Rappels : la section '## Verdicts' liste EXACTEMENT ces critères (3.1, 3.2, 3.3) avec un statut C, NC, NA ou AVM ; chaque NC a un constat '### K<i> — <critère> — <titre>' avec son champ '- **Extrait :**' recopiant EXACTEMENT une ligne du fichier cité ; le Bilan est verrouillé '- Verdicts : C : <a>, NC : <b>, NA : <c>, AVM : <d>'. Réécris le fichier entièrement.
+   Cause : Ton fichier 'pre_audit_a11y/T03_couleurs__Z01_formulaire.md' ne passe pas le contrôle mécanique : verdict(s) MANQUANT(s) pour : 3.2, 3.3. Rappels : la section '## Verdicts' liste EXACTEMENT ces critères (3.1, 3.2, 3.3) avec un statut C, NC, NA ou AVM ; chaque NC a un constat '### K<i> — <critère> — <titre>' avec son champ '- **Extrait :**' recopiant EXACTEMENT une ligne du fichier cité ; le Bilan est verrouillé '- Verdicts : C : <a>, NC : <b>, NA : <c>, AVM : <d>'. Réécris le fichier entièrement.
 Erreurs déjà rencontrées aux essais précédents, à NE PAS réintroduire :
-- Ton fichier 'audit_a11y/T03_couleurs__Z01_formulaire.md' ne passe pas le contrôle mécanique : verdict(s) MANQUANT(s) pour : 3.2, 3.3. Rappels : la section '## Verdicts' liste EXACTEMENT ces critères (
+- Ton fichier 'pre_audit_a11y/T03_couleurs__Z01_formulaire.md' ne passe pas le contrôle mécanique : verdict(s) MANQUANT(s) pour : 3.2, 3.3. Rappels : la section '## Verdicts' liste EXACTEMENT ces critèr
 
 💡 Le modèle actuel (mock-model) cale sur cette passe (souvent un problème d'appels
    d'outils : le fichier de verdicts ou la sentinelle ne sont jamais créés, ou le

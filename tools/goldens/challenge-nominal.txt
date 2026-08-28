@@ -19,7 +19,7 @@
 
 ──────────────────────────────────────────────────
 ➡️  Exploite la revue : tranche les questions [BLOQUANT], mets à jour 'need.md',
-   puis relance le pipeline de ton choix (Spec.py, Technical-Plan.py, Safe-Coding.py…).
+   puis relance le pipeline de ton choix (Spec.py, Technical-Plan.py, Coding.py…).
    AUCUN pipeline ne lit 'need_review.md' ni n'exige '.need_reviewed' : zéro couplage,
    zéro ralentissement — cette revue ne vaut que par ce que TU en retires.
 ──────────────────────────────────────────────────

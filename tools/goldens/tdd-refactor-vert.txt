@@ -26,6 +26,17 @@
    ⏳ En attente de 'plan.md' (signal de fin : '.pipeline_plan.done')...
 ✅ [ETAPE 2] Plan 'plan.md' créé avec succès !
 
+🔎 [ETAPE 2BIS : AGENT REVUE D'IMPACT] Analyse de l'impact du plan sur l'existant...
+🧪 [mock] 3 · agent Revue d'Impact (étape 2bis) → .pipeline_impact.done
+   ⏳ En attente de 'impact.md' (signal de fin : '.pipeline_impact.done')...
+✅ [ETAPE 2BIS] Revue d'impact 'impact.md' créée avec succès !
+
+==================================================
+🔎 REVUE D'IMPACT PRÊTE : relis 'impact.md' — chaque impact validé ici sera cassé SANS nouvel arrêt en production (test supprimé par l'orchestrateur).
+   Tu peux la modifier directement dans un autre terminal avant de valider.
+==================================================
+
+▶️  Valider la revue d'impact et continuer ? (y/n) : 
 📖 [ETAPE 3 : COMPILATEUR BLACKBOARD] Génération du Blackboard YAML dans le TUI Cloud...
 🧪 [mock] 3 · compilateur blackboard → .pipeline_blackboard.done
    ⏳ En attente de 'blackboard.yaml' (signal de fin : '.pipeline_blackboard.done')...
@@ -90,6 +101,10 @@
    ⏳ En attente de la génération de '.phase_2.attempt1.done'...
   → Codeur terminé (1 fichier(s) déclaré(s)). Vérification par EXÉCUTION...
    🧪 Vérification par exécution : python3 verify.py
+🧐 Suite verte : routage vers le Vérificateur LLM de phase (agent indépendant)...
+🧪 [mock] vérificateur LLM phase 2 (verdict OK) → .phase_2.attempt1.verdict
+   ⏳ En attente de la génération de '.phase_2.attempt1.verdict'...
+🧐 Vérificateur LLM : la phase a livré toute sa checklist (conforme).
 ℹ️  Brique B inactive (pas de 'mutation_cmd' déclarée).
 ✅ [SUCCÈS] Phase 2 : la suite complète passe — cycle 1 refermé (red → green).
 
@@ -114,5 +129,5 @@
    🧪 Vérification par exécution : python3 verify.py
 ✓ Revérification post-refacto OK : le polish n'a pas introduit de régression détectable.
 
-🏁 [CONGRATULATIONS] L'usine TDD a refermé tous ses cycles (red → green → refactor) en un seul run !
-   📁 Journal du run : .mm-runs/<RUNID>-tdd/
+🏁 [CONGRATULATIONS] L'usine Test-First a refermé tous ses cycles (red → green → refactor) en un seul run !
+   📁 Journal du run : .mm-runs/<RUNID>-test-first/

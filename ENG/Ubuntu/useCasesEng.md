@@ -1,4 +1,4 @@
-# Use cases — `Safe-Coding.py`
+# Use cases — `Coding.py`
 
 Audience: a developer driving the code factory ("universal verdict" variant, valid for the 6 flavors FR/ENG × Ubuntu/MacOS/Windows; does not cover `Coding-Without-Tests.py`).
 
@@ -30,12 +30,12 @@ The most upstream gate is the cheapest of all: a vague need costs a spec, a plan
 
 1. Write `need.md`, then run `python3 Challenge-Need.py` (opt-in: no other pipeline depends on it).
 2. An agent with a fresh context produces `need_review.md`: ambiguities, contradictions, grey areas, assumptions, questions to settle — each point marked `[BLOCKING]` or `[MINOR]`, every quote of the need checked mechanically (an invented quote is rejected).
-3. **Single gate**: endorse the review (`y`). It changes nothing: settle the `[BLOCKING]` questions, update `need.md` YOURSELF, then relaunch the pipeline of your choice (`Spec.py`, `Safe-Coding.py`…).
+3. **Single gate**: endorse the review (`y`). It changes nothing: settle the `[BLOCKING]` questions, update `need.md` YOURSELF, then relaunch the pipeline of your choice (`Spec.py`, `Coding.py`…).
 
 ## UC1 — Normal usage: from need to delivered code
 
 1. Write `need.md` at the root of the target project (be precise, but it is the spec validation that locks the scope).
-2. Run `python3 Safe-Coding.py` (venv activated).
+2. Run `python3 Coding.py` (venv activated).
 3. **Gate 1**: review `spec.md` ("Assumptions & Questions" and "Out of scope" sections first), type `y`.
 4. **Gate 2**: review the blackboard summary (phases, `verify_cmd`, US — user stories — coverage), type `y`.
 5. The script carries on by itself: executable scaffold (step 0), phase-by-phase production (3 attempts max each, verdict = exit code of `verify_cmd`), final refactoring re-verified.
@@ -122,20 +122,20 @@ You are picking up a project (legacy, a validated prototype, code inherited from
 2. A mapper proposes a breakdown into functional zones (`doc_map.yaml`) — checked by the script (full coverage, a "Miscellaneous" zone for the remainder), then validated by you (the YAML is editable before the `y`: rename, re-split, reorder — the order of the zones becomes the reading order).
 3. One documentation pass per zone (context reset between each), then a 100% Python assembly produce **`documentation.md`** at the root: features sourced as `file:line`, acceptance tests in Given/When/Then form with a **Covered** status (an existing test verifies them, cited) or **Proposed** (to be written — the coverage appendix gives the count: that is your test backlog).
 
-Natural chaining: with the documentation in hand, describe the evolution in `need.md` and chain with `Technical-Plan.py` (big model) then `Safe-Coding.py` (small model) — see UC6. After the evolution, delete the files of the touched zones in `doc_zones/` and relaunch: only those zones are re-documented, and the assembly is redone.
+Natural chaining: with the documentation in hand, describe the evolution in `need.md` and chain with `Technical-Plan.py` (big model) then `Coding.py` (small model) — see UC6. After the evolution, delete the files of the touched zones in `doc_zones/` and relaunch: only those zones are re-documented, and the assembly is redone.
 
 ---
 
 ## UC10 — Pre-auditing the accessibility of an existing interface (RGAA / EAA)
 
-A client must reach compliance (a legal obligation extended to the private sector since June 2025 by the European Accessibility Act), or you want to quantify the accessibility debt of a front-end before a remediation quote. Launch `python3 Audit-A11Y-RGAA.py` from the project root (no `need.md` required):
+A client must reach compliance (a legal obligation extended to the private sector since June 2025 by the European Accessibility Act), or you want to quantify the accessibility debt of a front-end before a remediation quote. Launch `python3 Pre-Audit-A11Y-RGAA.py` from the project root (no `need.md` required):
 
 1. The UI scope AND the routing of the 13 RGAA topics are computed by the orchestrator (regex triggers: no video in the code → the Multimedia pack is never paid for), then confirmed with a y/n before any agent is paid.
 2. A cartographer splits the files into base layer / shared components / screen zones (`a11y_map.yaml`, editable) — the map's y/n displays the EXACT count of passes before paying.
-3. One audit pass per (topic × compartment), each checked by a mechanical parser (a C/NC/NA/AVM verdict for EVERY criterion of the pack, findings located `file:line` with an **exact excerpt verified in the files** — badge ✓ verified / ⚠️ to verify on every finding), then a 100% Python aggregation produce **`accessibility_audit_report.md`**: compliance rate as a range, non-compliances by impact (1 to 4) with fixes, checklist of the remaining manual checks — plus **`declaration_accessibilite.md`**, a pre-filled skeleton to complete.
+3. One audit pass per (topic × compartment), each checked by a mechanical parser (a C/NC/NA/AVM verdict for EVERY criterion of the pack, findings located `file:line` with an **exact excerpt verified in the files** — badge ✓ verified / ⚠️ to verify on every finding), then a 100% Python aggregation produce **`accessibility_pre_audit_report.md`**: compliance rate as a range, non-compliances by impact (1 to 4) with fixes, checklist of the remaining manual checks — plus **`accessibility_pre_audit_summary.md`**, a short results summary (key figures, non-conformities, remaining manual checks).
 4. A pass that does not succeed after 3 attempts does not kill the run: its criteria come out as cautious AVM, the report carries a "PARTIAL report" banner with the appendix of passes to replay, and a relaunch replays only what is missing (2 consecutive failures or > 30% failures = stop, the model is stalling).
 
-Worth knowing: this is a static PRE-audit — criteria that cannot be decided from the code alone are marked AVM (requires manual verification: keyboard, screen reader, 200% zoom), never guessed; the report lists precisely this verification debt. This variant audits against the FRENCH legal framework RGAA 4.1.2, in English (the per-criterion WCAG 2.1 mapping is quoted by reference); a native WCAG pack set may arrive later as a separate `-WCAG` entry point. After remediation, `python3 Audit-A11Y-RGAA.py --rejouer-modifiees <ref>` invalidates only the passes where a file appears in `git diff --name-only <ref>` (without git: delete the files of the affected passes in `audit_a11y/`) and relaunch: only those passes are replayed, the aggregation is redone.
+Worth knowing: this is a static PRE-audit — criteria that cannot be decided from the code alone are marked AVM (requires manual verification: keyboard, screen reader, 200% zoom), never guessed; the report lists precisely this verification debt. This variant audits against the FRENCH legal framework RGAA 4.1.2, in English (the per-criterion WCAG 2.1 mapping is quoted by reference); a native WCAG pack set may arrive later as a separate `-WCAG` entry point. After remediation, `python3 Pre-Audit-A11Y-RGAA.py --rejouer-modifiees <ref>` invalidates only the passes where a file appears in `git diff --name-only <ref>` (without git: delete the files of the affected passes in `pre_audit_a11y/`) and relaunch: only those passes are replayed, the aggregation is redone.
 
 ## UC11 — Repairing a red-suite halt with guided arbitration (`Guided-Fix.py`)
 
@@ -144,7 +144,7 @@ The run halted (phase `REJECTED` after 3 attempts, run killed mid-phase, unresol
 1. **Entry verdict then diagnosis**: Python re-runs `verify_cmd` — already green (you repaired by hand?) → it simply offers to set the `FIXED` marker without paying for an agent; timeout → infra incident reported, no arbitration to render. On confirmed red, the state at halt is committed (`wip(fix)`), then an agent writes **`fix_report-<uid>.md`**: the failures grouped by **broken business behavior**, each with its red tests, the spec criterion concerned, the suspect change (exact diff of the faulty phase) and an AI reading.
 2. **Triage**: for each behavior, you answer in the console — `r` (UNWANTED regression: the tests are right, the code will be fixed), `e` (desired evolution: the code is right, spec then tests will be aligned), `o` (display the detail right here). The question to ask yourself each time: "is the spec's criterion still right?". A recap of the action plan is confirmed before paying for any agent (`n` redoes the triage, `q` abandons without changing anything).
 3. **Guarded repair**: evolutions first — update of `spec.md` proposed by an agent and validated by you (diff displayed, file editable before the `y`; `n` restores), then adaptation of the tests with the production FROZEN by git — regressions next: code fix with ALL test files FROZEN. The verdict remains Python's execution of `verify_cmd` (3 rounds max).
-4. **Handshake**: on green, the faulty phase is marked `FIXED` — never `DONE`: it is a claim, not a verdict — and everything is committed, report included (audit trail). Relaunch `python3 Safe-Coding.py` yourself: it REVALIDATES the phase by execution (without re-paying a coder) then continues the run at the next phase.
+4. **Handshake**: on green, the faulty phase is marked `FIXED` — never `DONE`: it is a claim, not a verdict — and everything is committed, report included (audit trail). Relaunch `python3 Coding.py` yourself: it REVALIDATES the phase by execution (without re-paying a coder) then continues the run at the next phase.
 
 Worth knowing: each session produces a uniquely-named report — the history of your arbitrations survives relaunches, unlike `failReport.md` which MAIsterMind purges at startup. If the repair does not converge, the report documents the failure and your decisions: bump the model one notch and relaunch `Guided-Fix.py` (new triage), or fix by hand then relaunch it (it will observe the green and set the marker without paying for an agent).
 

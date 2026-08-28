@@ -84,6 +84,8 @@ The "Mutation testing command" makes the acceptance tests *falsifiable beyond th
     1. [Very precise action 1]
     2. [Very precise action 2]
 * **Expected deliverable:** [Exact files created or modified].
+* **Tests to remove:** [OPTIONAL — EXISTING test files made obsolete because the spec withdraws or replaces the behavior they describe: the orchestrator removes them ITSELF at phase start (no agent touches them). "(none)" otherwise].
+* **Tests to modify:** [OPTIONAL — EXISTING test files this implementation phase is ALLOWED to modify because the spec changes the behavior they describe. "(none)" otherwise. Outside these two lists, tests stay FROZEN during implementation: never plan "remove/adapt a test" in the Micro Instructions without declaring it here, the mechanical guard would restore the file].
 * **✅ Validation Checklist:**
     - [ ] Objective success criterion 1
     - [ ] Objective success criterion 2

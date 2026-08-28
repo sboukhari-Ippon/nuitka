@@ -32,6 +32,8 @@ PATHS (RULE #1: COPY, NEVER INVENT):
 
 - Every path in files: is COPIED VERBATIM from the "UI FILES TO ASSIGN" list provided by the orchestrator. A path absent from that list is FORBIDDEN (it will be rejected mechanically).
 - Each file is assigned to A SINGLE bucket (socle, composants, OR one zone).
+- An entry of files: may be a DIRECTORY: its path, as it appears in the list or in its per-directory summary, ending with "/" (e.g. "src/pages/checkout/"). It assigns to the bucket every file of the scope it contains (recursively) that is not already assigned elsewhere. This is the normal way to cover a large repository: never hundreds of paths copied one by one.
+- The "Miscellaneous" zone is OPTIONAL: you may omit it or declare it with files: [] — the orchestrator mechanically puts there whatever you did not assign. It must remain a residue: if it collects most of the project, your map will be rejected.
 - You NEVER provide a slug or an output file path: the orchestrator computes them itself.
 
 THE THREE BUCKETS (ASSIGNMENT CRITERION)

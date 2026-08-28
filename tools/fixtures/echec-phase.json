@@ -1,10 +1,10 @@
 {
  "title": "échec de phase : 3 tentatives, feedback retransmis, REJECTED, exit ≠ 0",
- "script": "Safe-Coding.py",
+ "script": "Coding.py",
  "seed": {
   "need.md": "# Besoin fonctionnel\n\nUne fonction slugify(texte) -> slug d'URL.\n"
  },
- "stdin": "y\ny\n",
+ "stdin": "y\ny\ny\n",
  "steps": [
   {
    "label": "1 · agent PO",
@@ -25,6 +25,13 @@
    ],
    "write": {
     "plan.md": "# Plan d'implémentation — slugify\n\n## Stack & Vérification\n- Python 3, tests unittest.\n- verify_cmd : python3 verify.py\n\n## Phases\n1. Normalisation (minuscules, accents)\n2. Nettoyage des tirets\n"
+   }
+  },
+  {
+   "label": "3 · agent Revue d'Impact (étape 2bis)",
+   "sentinel": ".pipeline_impact.done",
+   "write": {
+    "impact.md": "# Revue d'impact\n\n## Comportements existants qui vont casser\nAucun impact : projet vierge, le plan est purement additif.\n\n## Journal des suppressions\n"
    }
   },
   {
@@ -71,6 +78,22 @@
    }
   },
   {
+   "label": "agent de Triage phase 1, tentative 1 (cassure IMPRÉVUE)",
+   "sentinel": ".phase_1.attempt1.triage",
+   "skip_sentinel": true,
+   "write": {
+    ".phase_1.attempt1.triage": "IMPREVU: tests/test_p1.py\n"
+   }
+  },
+  {
+   "label": "agent Réparateur phase 1, tentative 1 (DONE, suite toujours rouge)",
+   "sentinel": ".phase_1.attempt1.repair.done",
+   "skip_sentinel": true,
+   "write": {
+    ".phase_1.attempt1.repair.done": "DONE\n"
+   }
+  },
+  {
    "label": "5 · codeur phase 1, tentative 2",
    "sentinel": ".phase_1.attempt2.done",
    "expect": [
@@ -84,6 +107,22 @@
    "write": {
     "src/slug.py": "def slugify(texte):\n    return \"TOUJOURS FAUX\"\n",
     "tests/test_p1.py": "import sys, unittest\nsys.path.insert(0, \"src\")\nfrom slug import slugify\n\nclass Normalisation(unittest.TestCase):\n    def test_minuscules(self):\n        self.assertEqual(slugify(\"BONJOUR\"), \"bonjour\")\n"
+   }
+  },
+  {
+   "label": "agent de Triage phase 1, tentative 2 (cassure IMPRÉVUE)",
+   "sentinel": ".phase_1.attempt2.triage",
+   "skip_sentinel": true,
+   "write": {
+    ".phase_1.attempt2.triage": "IMPREVU: tests/test_p1.py\n"
+   }
+  },
+  {
+   "label": "agent Réparateur phase 1, tentative 2 (DONE, suite toujours rouge)",
+   "sentinel": ".phase_1.attempt2.repair.done",
+   "skip_sentinel": true,
+   "write": {
+    ".phase_1.attempt2.repair.done": "DONE\n"
    }
   },
   {
@@ -101,11 +140,27 @@
     "src/slug.py": "def slugify(texte):\n    return \"TOUJOURS FAUX\"\n",
     "tests/test_p1.py": "import sys, unittest\nsys.path.insert(0, \"src\")\nfrom slug import slugify\n\nclass Normalisation(unittest.TestCase):\n    def test_minuscules(self):\n        self.assertEqual(slugify(\"BONJOUR\"), \"bonjour\")\n"
    }
+  },
+  {
+   "label": "agent de Triage phase 1, tentative 3 (cassure IMPRÉVUE)",
+   "sentinel": ".phase_1.attempt3.triage",
+   "skip_sentinel": true,
+   "write": {
+    ".phase_1.attempt3.triage": "IMPREVU: tests/test_p1.py\n"
+   }
+  },
+  {
+   "label": "agent Réparateur phase 1, tentative 3 (DONE, suite toujours rouge)",
+   "sentinel": ".phase_1.attempt3.repair.done",
+   "skip_sentinel": true,
+   "write": {
+    ".phase_1.attempt3.repair.done": "DONE\n"
+   }
   }
  ],
  "assert": {
   "exit_code": 1,
-  "tasks": 7,
+  "tasks": 14,
   "files_present": [
    "blackboard.yaml",
    "failReport.md"
@@ -129,7 +184,7 @@
    "Le modèle actuel (mock-model) cale sur cette étape"
   ],
   "stdout_excludes": [
-   "a tout validé en un seul run"
+   "a tout validé (verdicts mécaniques + vérificateur LLM) en un seul run"
   ],
   "audit_expects": {
    "events_subsequence": [

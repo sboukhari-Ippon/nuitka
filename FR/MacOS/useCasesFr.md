@@ -1,4 +1,4 @@
-# Use cases — `Safe-Coding.py`
+# Use cases — `Coding.py`
 
 Public : développeuse ou développeur qui pilote l'usine à code (variante « verdict universel », valable pour les 6 déclinaisons FR/ENG × Ubuntu/MacOS/Windows ; ne couvre pas `Coding-Without-Tests.py`).
 
@@ -30,12 +30,12 @@ La porte la plus en amont est la moins chère de toutes : un besoin flou coûte 
 
 1. Rédige `need.md`, puis lance `python3 Challenge-Need.py` (opt-in : aucun autre pipeline n'en dépend).
 2. Un agent au contexte neuf produit `need_review.md` : ambiguïtés, contradictions, zones d'ombre, présupposés, questions à trancher — chaque point marqué `[BLOQUANT]` ou `[MINEUR]`, chaque citation du besoin vérifiée mécaniquement (une citation inventée est rejetée).
-3. **Porte unique** : entérine la revue (`y`). Elle ne modifie rien : tranche les questions `[BLOQUANT]`, mets à jour `need.md` TOI-MÊME, puis relance le pipeline de ton choix (`Spec.py`, `Safe-Coding.py`…).
+3. **Porte unique** : entérine la revue (`y`). Elle ne modifie rien : tranche les questions `[BLOQUANT]`, mets à jour `need.md` TOI-MÊME, puis relance le pipeline de ton choix (`Spec.py`, `Coding.py`…).
 
 ## UC1 — Usage normal : du besoin au code livré
 
 1. Rédige `need.md` à la racine du projet cible (sois précis, mais c'est la validation de la spec qui verrouille le périmètre).
-2. Lance `python3 Safe-Coding.py` (venv activé).
+2. Lance `python3 Coding.py` (venv activé).
 3. **Porte 1** : relis `spec.md` (sections « Hypothèses & Questions » et « Hors périmètre » en priorité), tape `y`.
 4. **Porte 2** : relis le résumé du blackboard (phases, `verify_cmd`, couverture des US — user stories), tape `y`.
 5. Le script enchaîne seul : scaffold exécutable (étape 0), production phase par phase (3 tentatives max chacune, verdict = code de sortie de `verify_cmd`), refactoring final re-vérifié.
@@ -122,18 +122,18 @@ Tu reprends un projet (legacy, prototype validé, code hérité d'une autre équ
 2. Un cartographe propose un découpage en zones fonctionnelles (`doc_map.yaml`) — vérifié par le script (couverture totale, zone « Divers » pour le résiduel), puis validé par toi (le YAML est éditable avant le `y` : renomme, redécoupe, réordonne — l'ordre des zones devient l'ordre de lecture).
 3. Une passe de documentation par zone (contexte réinitialisé entre chaque), puis un assemblage 100 % Python produisent **`documentation.md`** à la racine : features sourcées `fichier:ligne`, tests d'acceptance Étant donné/Quand/Alors avec statut **Couvert** (un test existant les vérifie, cité) ou **Proposé** (à écrire — l'annexe de couverture en donne le décompte : c'est ton backlog de tests).
 
-Chaînage naturel : la documentation en main, décris l'évolution dans `need.md` et enchaîne avec `Technical-Plan.py` (gros modèle) puis `Safe-Coding.py` (petit modèle) — cf. UC6. Après l'évolution, supprime les fichiers des zones touchées dans `doc_zones/` et relance : seules ces zones sont re-documentées, l'assemblage est refait.
+Chaînage naturel : la documentation en main, décris l'évolution dans `need.md` et enchaîne avec `Technical-Plan.py` (gros modèle) puis `Coding.py` (petit modèle) — cf. UC6. Après l'évolution, supprime les fichiers des zones touchées dans `doc_zones/` et relance : seules ces zones sont re-documentées, l'assemblage est refait.
 
 ## UC10 — Pré-auditer l'accessibilité d'une interface existante (RGAA / EAA)
 
-Un client doit se mettre en conformité (obligation légale étendue au privé depuis juin 2025 par l'European Accessibility Act), ou tu veux chiffrer la dette d'accessibilité d'un front avant un devis de remédiation. Lance `python3 Audit-A11Y-RGAA.py` depuis la racine du projet (pas de `need.md` requis) :
+Un client doit se mettre en conformité (obligation légale étendue au privé depuis juin 2025 par l'European Accessibility Act), ou tu veux chiffrer la dette d'accessibilité d'un front avant un devis de remédiation. Lance `python3 Pre-Audit-A11Y-RGAA.py` depuis la racine du projet (pas de `need.md` requis) :
 
 1. Le périmètre UI ET le routage des 13 thématiques RGAA sont calculés par l'orchestrateur (déclencheurs regex : pas de vidéo dans le code → le pack Multimédia n'est jamais payé), puis confirmés par un y/n avant le moindre agent.
 2. Un cartographe répartit les fichiers en socle / composants partagés / zones d'écrans (`a11y_map.yaml`, éditable) — le y/n de la carte affiche le décompte EXACT des passes avant de payer.
-3. Une passe d'audit par (thématique × compartiment), chacune contrôlée par un parseur mécanique (verdict C/NC/NA/AVM pour CHAQUE critère du pack, constats localisés `fichier:ligne` avec **extrait exact vérifié dans les fichiers** — badge ✓ vérifié / ⚠️ à vérifier sur chaque constat), puis une agrégation 100 % Python produisent **`accessibility_audit_report.md`** : taux de conformité en fourchette, non-conformités par impact (1 à 4) avec corrections, checklist des vérifications manuelles restantes — plus **`declaration_accessibilite.md`**, squelette pré-rempli à compléter.
+3. Une passe d'audit par (thématique × compartiment), chacune contrôlée par un parseur mécanique (verdict C/NC/NA/AVM pour CHAQUE critère du pack, constats localisés `fichier:ligne` avec **extrait exact vérifié dans les fichiers** — badge ✓ vérifié / ⚠️ à vérifier sur chaque constat), puis une agrégation 100 % Python produisent **`accessibility_pre_audit_report.md`** : taux de conformité en fourchette, non-conformités par impact (1 à 4) avec corrections, checklist des vérifications manuelles restantes — plus **`accessibility_pre_audit_summary.md`**, synthèse courte des résultats (chiffres clés, non-conformités, reste à vérifier).
 4. Une passe qui n'aboutit pas après 3 tentatives ne tue pas le run : ses critères sortent en AVM prudent, le rapport porte un bandeau « Rapport PARTIEL » avec l'annexe des passes à rejouer, et la relance ne rejoue que le manquant (2 échecs consécutifs ou > 30 % d'échecs = arrêt, le modèle cale).
 
-À savoir : c'est un PRÉ-audit statique — les critères indécidables depuis le code sont marqués AVM (à vérifier manuellement : clavier, lecteur d'écran, zoom), jamais devinés ; le rapport liste précisément cette dette de vérification. Après remédiation, `python3 Audit-A11Y-RGAA.py --rejouer-modifiees <ref>` invalide les seules passes dont un fichier apparaît dans `git diff --name-only <ref>` (sans git : supprime les fichiers des passes concernées dans `audit_a11y/`) et relance : seules elles sont rejouées, l'agrégation est refaite.
+À savoir : c'est un PRÉ-audit statique — les critères indécidables depuis le code sont marqués AVM (à vérifier manuellement : clavier, lecteur d'écran, zoom), jamais devinés ; le rapport liste précisément cette dette de vérification. Après remédiation, `python3 Pre-Audit-A11Y-RGAA.py --rejouer-modifiees <ref>` invalide les seules passes dont un fichier apparaît dans `git diff --name-only <ref>` (sans git : supprime les fichiers des passes concernées dans `pre_audit_a11y/`) et relance : seules elles sont rejouées, l'agrégation est refaite.
 
 ## UC11 — Réparer un arrêt sur suite rouge avec arbitrage guidé (`Guided-Fix.py`)
 
@@ -142,7 +142,7 @@ Le run s'est arrêté (phase `REJECTED` après 3 tentatives, run tué en pleine 
 1. **Verdict d'entrée puis diagnostic** : Python re-exécute `verify_cmd` — déjà vert (tu as réparé à la main ?) → il propose simplement de poser le marqueur `FIXED` sans payer d'agent ; timeout → incident d'infra signalé, aucun arbitrage à rendre. Sur rouge confirmé, l'état à l'arrêt est committé (`wip(fix)`), puis un agent écrit **`fix_report-<uid>.md`** : les échecs regroupés par **comportement métier cassé**, chacun avec ses tests rouges, le critère de spec concerné, le changement suspect (diff exact de la phase fautive) et une lecture IA.
 2. **Triage** : pour chaque comportement, tu réponds dans la console — `r` (régression NON souhaitée : les tests ont raison, le code sera corrigé), `e` (évolution souhaitée : le code a raison, spec puis tests seront alignés), `o` (afficher le détail ici même). La question à te poser à chaque fois : « le critère de la spec a-t-il encore raison ? ». Un récapitulatif du plan d'action est confirmé avant de payer le moindre agent (`n` refait le triage, `q` abandonne sans rien modifier).
 3. **Réparation encadrée** : évolutions d'abord — mise à jour de `spec.md` proposée par un agent et validée par toi (diff affiché, fichier éditable avant le `y` ; `n` restaure), puis adaptation des tests avec la production GELÉE par git — régressions ensuite : correction du code avec TOUS les fichiers de test GELÉS. Le verdict reste l'exécution de `verify_cmd` par Python (3 rounds max).
-4. **Handshake** : au vert, la phase fautive est marquée `FIXED` — jamais `DONE` : c'est une réclamation, pas un verdict — et tout est committé, rapport compris (piste d'audit). Relance toi-même `python3 Safe-Coding.py` : il REVALIDE la phase par exécution (sans re-payer de codeur) puis poursuit le run à la phase suivante.
+4. **Handshake** : au vert, la phase fautive est marquée `FIXED` — jamais `DONE` : c'est une réclamation, pas un verdict — et tout est committé, rapport compris (piste d'audit). Relance toi-même `python3 Coding.py` : il REVALIDE la phase par exécution (sans re-payer de codeur) puis poursuit le run à la phase suivante.
 
 À savoir : chaque session produit un rapport à nom unique — l'historique de tes arbitrages survit aux relances, contrairement à `failReport.md` que MAIsterMind purge au démarrage. Si la réparation ne converge pas, le rapport documente l'échec et tes décisions : monte le modèle d'un cran et relance `Guided-Fix.py` (nouveau triage), ou corrige à la main puis relance-le (il constatera le vert et posera le marqueur sans payer d'agent).
 

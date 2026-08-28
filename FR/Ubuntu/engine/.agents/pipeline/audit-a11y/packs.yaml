@@ -1,6 +1,6 @@
 # Manifeste des packs thématiques de l'audit d'accessibilité (RGAA 4.1.2).
 #
-# Lu par Audit-A11Y-RGAA.py au démarrage : modifier CE fichier suffit pour
+# Lu par Pre-Audit-A11Y-RGAA.py au démarrage : modifier CE fichier suffit pour
 # ajuster le routage des passes (les scripts sont distribués en binaires — tout le
 # contenu variable vit dans des fichiers externes comme celui-ci).
 #

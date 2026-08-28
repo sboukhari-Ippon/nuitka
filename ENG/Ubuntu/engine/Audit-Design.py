@@ -4,7 +4,7 @@
 AI Orchestrator - DESIGN AUDIT factory with an agent harness + tmux (Nielsen rubric)
 ─────────────────────────────────────────────────────────────────────────────
 "AUDIT" VARIANT: it writes NO code — it evaluates an EXISTING web interface
-(prototype from Design-Prototype.py, front-end produced by Safe-Coding.py, or any
+(prototype from Design-Prototype.py, front-end produced by Coding.py, or any
 other web project) against Nielsen's 10 usability heuristics, and delivers a
 consolidated report 'design_audit_report.md' (severities 0 to 4, locations,
 actionable recommendations).
@@ -59,7 +59,7 @@ import mm_audit
 # of the file via mm_core.configure(...) — all names are defined by then.
 import mm_core
 from mm_core import (
-    is_ui_file, signal_handler,
+    is_ui_file, signal_handler, wait_should_continue,
 )
 
 # ─── AGENT HARNESS ────────────────────────────────────────────────────────────
@@ -176,7 +176,9 @@ def wait_for_deliverable(filepath: str, sentinel: str, timeout: int = MAX_PHASE_
     stable_streak = 0
     last_size = -1
     structural_warned = False
-    while time.time() - start < timeout:
+    activity = {}   # wait_should_continue state: extension if the agent is still working,
+                    # immediate stop if it is frozen on a permission request
+    while wait_should_continue(start, timeout, activity):
         time.sleep(POLL_INTERVAL)
         file_ready = os.path.exists(filepath) and os.path.getsize(filepath) > 0
         if file_ready and os.path.exists(sentinel):

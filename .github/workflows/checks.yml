@@ -3,7 +3,7 @@ name: Checks (push & PR)
 # Filet de non-régression sur CHAQUE push et PR (plan-big-last, Lot 1) : plus aucun
 # commit ne peut casser silencieusement. Ordre : les checkers rapides d'abord (échec
 # en secondes), les tests unitaires de l'audit, puis les scénarios mock JOUÉS SOUS
-# `--golden check` — une seule passe qui exécute les 27 pipelines de bout en bout,
+# `--golden check` — une seule passe qui exécute les 32 pipelines de bout en bout,
 # vérifie leurs assertions ET diffe strictement leur stdout normalisé contre
 # tools/goldens/ (caractérisation : prérequis absolu de la factorisation du Lot 4).
 #
@@ -53,6 +53,15 @@ jobs:
       - name: Run-journal unit tests
         run: python tools/test_mm_audit.py
 
-      # Les 27 pipelines de bout en bout (MockRunner, zéro LLM) + goldens stricts.
+      # Environnement d'outillage (PATH du shell de login, Node attendu/vu, échantillon
+      # de cartographie, attente adaptative) : fonctions pures de mm_core.
+      - name: Toolchain / cartography unit tests
+        run: python tools/test_toolchain_env.py
+
+      # Validateur de carte du pipeline documentation (Divers facultative, entrées répertoire).
+      - name: Documentation unit tests
+        run: python tools/test_documentation_units.py
+
+      # Les 32 pipelines de bout en bout (MockRunner, zéro LLM) + goldens stricts.
       - name: Mock scenarios + golden transcripts
         run: python tools/run_mock_scenarios.py --golden check

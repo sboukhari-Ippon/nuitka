@@ -1,7 +1,7 @@
 # MAIsterMind — App + Usine (dépôt unifié V3.0)
 *By Selim Boukhari* — [LinkedIn](https://www.linkedin.com/in/selim-boukhari-6356b949/)
 
-MAIsterMind est une usine à code automatisée qui pilote un agent IA en ligne de commande — **OpenCode ou Codex CLI, au choix, projet par projet** — à travers des pipelines structurés et validés par l'humain. Ce dépôt unifie **les 16 orchestrateurs** (les scripts de l'usine, ex-dépôt privé) et **l'app cockpit** (ex-App_v3) : l'app est le point d'entrée grand public — elle découvre les binaires du moteur (`engine/`), équipe les projets, lance les runs dans tmux, affiche leur écran et répond aux portes depuis le navigateur.
+MAIsterMind est une usine à code automatisée qui pilote un agent IA en ligne de commande — **OpenCode ou Codex CLI, au choix, projet par projet** — à travers des pipelines structurés et validés par l'humain. Ce dépôt unifie **les 13 orchestrateurs** (les scripts de l'usine, ex-dépôt privé) et **l'app cockpit** (ex-App_v3) : l'app est le point d'entrée grand public — elle découvre les binaires du moteur (`engine/`), équipe les projets, lance les runs dans tmux, affiche leur écran et répond aux portes depuis le navigateur.
 
 > **Requiert UN harness d'agent** : [OpenCode](https://opencode.ai) ou [Codex CLI](https://github.com/openai/codex).
 > Un seul suffit ; les deux peuvent cohabiter. Voir l'`INSTALL.md` de chaque variante.
@@ -53,7 +53,7 @@ MAIsterMind/                     ← l'archive extraite (ou un dossier source LA
 ├── INSTALL.md · README.md · useCases*.md · LICENSE
 └── engine/                      ← le moteur : ce que l'app découvre et lance
     ├── orchestrators.json       ← manifeste des orchestrateurs et de leurs portes
-    ├── Safe-Coding, Spec… (× 16)← binaires en release, sources .py en dev
+    ├── Coding, Spec… (× 13)      ← binaires en release, sources .py en dev
     ├── need.md                  ← gabarit (mode expert)
     ├── mm_runner.py             ← l'abstraction du harness (module, jamais un binaire)
     ├── mm_core.py               ← fonctions partagées des orchestrateurs (module)
@@ -66,28 +66,25 @@ MAIsterMind/                     ← l'archive extraite (ou un dossier source LA
 
 L'app trouve ses moteurs par la présence du manifeste (à côté d'elle, ou dans ses sous-dossiers immédiats). En dev, le binaire absent retombe sur la source `.py` du même nom : le dépôt s'utilise tel quel, sans compilation.
 
-## Les 16 orchestrateurs
+## Les 13 orchestrateurs
 
 | Binaire | Famille | Portes (validation humaine) | need.md |
 |---|---|---|---|
-| `Safe-Coding` | production (verdict universel) | spec → blackboard | requis |
 | `Coding-Without-Tests` | production (sans tests, vérif LLM) | spec → blackboard | requis |
-| `Safe-TDD` | production (cycles red/green/refactor) | spec → blackboard | requis |
-| `Safe-ATDD` | production (lots par user story) | spec → blackboard | requis |
-| `Design-Prototype` | production (prototypes HTML) | design system → spec → blackboard | requis |
-| `Advanced-Coding` | production (surcouche Yolo : revue d'impact) | spec → impact → blackboard (+ arbitrage mid-run) | requis |
-| `Advanced-TDD` | production (Yolo sur les phases green) | spec → impact → blackboard (+ arbitrage mid-run) | requis |
-| `Advanced-ATDD` | production (Yolo sur les clôtures de lot) | spec → impact → blackboard (+ arbitrage mid-run) | requis |
+| `Design-Prototype` (bêta) | production (prototypes HTML) | design system → spec → blackboard | requis |
+| `Coding` | production (verdict universel ; revue d'impact, vérificateur LLM, triage) | spec → impact → blackboard (+ arbitrage mid-run) | requis |
+| `Test-First` | production (test-first par cycles red/green/refactor, inspiré du TDD ; surcouche sur les phases green) | spec → impact → blackboard (+ arbitrage mid-run) | requis |
+| `Acceptance-First` | production (acceptance-first par lots de user story, inspiré de l'ATDD ; surcouche sur les clôtures de lot) | spec → impact → blackboard (+ arbitrage mid-run) | requis |
 | `Challenge-Need` | cadrage (opt-in, aucun couplage aval) | revue du besoin (unique) | requis |
 | `Spec` | cadrage | spec (unique) | requis |
 | `Technical-Plan` | cadrage | spec (puis plan + blackboard sans production) | requis |
-| `Documentation` | lecture seule | périmètre → carte des zones | optionnel |
-| `Audit-Design` | lecture seule | périmètre (unique) | optionnel |
-| `Audit-A11Y-RGAA` | lecture seule | périmètre → carte d'interface | optionnel |
+| `Documentation` (bêta) | lecture seule | périmètre → carte des zones | optionnel |
+| `Audit-Design` (bêta) | lecture seule | périmètre (unique) | optionnel |
+| `Pre-Audit-A11Y-RGAA` (bêta) | lecture seule | périmètre → carte d'interface | optionnel |
 | `Skills-Adaptation` | outillage | questionnaire guidé → écrasement validé | non |
 | `Guided-Fix` | maintenance | triage régression/évolution + réparation validée | non |
 
-Les 16 sont déclarés dans `engine/orchestrators.json` et pilotables depuis l'app (portes y/n, à choix et à saisie libre). Chaque run laisse un journal local `.mm-runs/<id>/` (chronologie `events.jsonl`, artefacts figés aux transitions, `summary.md` — rétention 20 runs, opt-out `MM_AUDIT=0`). Le détail de chaque pipeline : `SCHEMAS.html` (un onglet par script), `README.md` et `useCases*.md` de la variante.
+Les 13 sont déclarés dans `engine/orchestrators.json` et pilotables depuis l'app (portes y/n, à choix et à saisie libre). Chaque run laisse un journal local `.mm-runs/<id>/` (chronologie `events.jsonl`, artefacts figés aux transitions, `summary.md` — rétention 20 runs, opt-out `MM_AUDIT=0`). Le détail de chaque pipeline : `SCHEMAS.html` (un onglet par script), `README.md` et `useCases*.md` de la variante.
 
 ## Développer et publier
 
@@ -97,11 +94,11 @@ Les 16 sont déclarés dans `engine/orchestrators.json` et pilotables depuis l'a
   - `python3 tools/check_message_parity.py` — normalise les deux côtés avec la même table de valeurs et vérifie qu'aucune chaîne visible n'a changé de VALEUR (c'est lui qui a attrapé un `./` parasite dans un message).
   - `python3 tools/check_gate_labels.py` — les prompts y/n et `orchestrators.json` se correspondent dans les DEUX sens : porte déclarée sans prompt, et prompt y/n sans porte déclarée (celui que l'app ne saurait pas voir).
   - `python3 tools/check_unused_imports.py` — imports morts ET noms inconnus (le second ferme le trou de `py_compile`, qui compile sans broncher un module dont un import manque).
-  - `python3 tools/run_mock_scenarios.py` — déroule les pipelines ENTIERS avec un harness de test (`tools/mm_mock_runner.py`, jamais distribué) sur 32 scénarios (nominal, échecs à 3 tentatives, reprises, cycles TDD/ATDD, triages Yolo, audits, adaptation de skills…). Quelques minutes, zéro token — le `verify_cmd` de chaque scénario lance de VRAIES commandes sur les fichiers écrits : le verdict reste l'exécution. `--golden record|check` compare le stdout normalisé aux transcripts versionnés (`tools/goldens/`) : la caractérisation fait loi.
+  - `python3 tools/run_mock_scenarios.py` — déroule les pipelines ENTIERS avec un harness de test (`tools/mm_mock_runner.py`, jamais distribué) sur 32 scénarios (nominal, échecs à 3 tentatives, reprises, cycles TDD/ATDD, triages d'impact, audits, adaptation de skills…). Quelques minutes, zéro token — le `verify_cmd` de chaque scénario lance de VRAIES commandes sur les fichiers écrits : le verdict reste l'exécution. `--golden record|check` compare le stdout normalisé aux transcripts versionnés (`tools/goldens/`) : la caractérisation fait loi.
   - `python3 tools/test_audit_units.py` — tests unitaires (stdlib) des fonctions pures de l'audit RGAA et du journal de run : parseur de verdicts, extraits de matérialité, sondes, breaker, split de compartiments…
   - `python3 engine/mm_runner.py` — diagnostic : harness retenu pour ce dossier, origine de la décision, préflight des deux (binaire, authentification, modèle).
 - **CI** : `.github/workflows/checks.yml` rejoue tout ça (5 checkers, tests unitaires, 32 scénarios sous `--golden check`) sur chaque push/PR ; `build.yml` l'exécute aussi avant de compiler.
-- **Release** : `git tag v3.0.0 && git push --tags` — `.github/workflows/build.yml` compile (Nuitka onefile, versions épinglées) l'app une fois par job + les 16 orchestrateurs par langue (les modules `mm_runner`/`mm_core`/`mm_audit` sont EMBARQUÉS dans chaque binaire, jamais livrés en `.py`), assemble les archives complètes (lanceurs, skills et LICENSE compris, bits exécutables posés) et les publie en artifacts `tar.gz` (jamais de zip : il écrase les permissions). Attacher les tar.gz à une Release GitHub pour la distribution pérenne.
+- **Release** : `git tag v3.0.0 && git push --tags` — `.github/workflows/build.yml` compile (Nuitka onefile, versions épinglées) l'app une fois par job + les 13 orchestrateurs par langue (les modules `mm_runner`/`mm_core`/`mm_audit` sont EMBARQUÉS dans chaque binaire, jamais livrés en `.py`), assemble les archives complètes (lanceurs, skills et LICENSE compris, bits exécutables posés) et les publie en artifacts `tar.gz` (jamais de zip : il écrase les permissions). Attacher les tar.gz à une Release GitHub pour la distribution pérenne.
 - **Workflow de correctif** : éditer la variante `Ubuntu` d'une langue, recopier tel quel vers `MacOS`/`Windows`, porter la traduction dans l'autre langue, `check_variants_sync.py` jusqu'au vert.
 
 > ⚠️ Ne modifie pas les skills d'orchestration (`.agents/pipeline/`, `refacto`) : c'est le moteur du pipeline. Et ne laisse jamais le code produit devenir une boîte noire — relis-le.

@@ -1,0 +1,129 @@
+
+==================================================
+🔎 AUDIT NIELSEN — Périmètre découvert :
+   Répertoire : <WS>/projet
+   2 fichier(s) UI à auditer. Aperçu :
+      - index.html
+      - styles.css
+   Contexte métier : aucun ('spec.md'/'need.md' absents) — l'interface est auditée telle qu'elle se présente.
+   Déroulé : 10 passes d'audit (une par heuristique, contexte réinitialisé entre chaque) + 1 synthèse → 'design_audit_report.md'.
+==================================================
+
+▶️  Lancer l'audit sur ce périmètre ? (y/n) : ℹ️  Pas de dépôt git préexistant : la garde read-only mécanique est inactive (l'interdiction de modifier le projet reste portée par les prompts).
+🧪 [mock] harness de test démarré (session simulée '<SESSION>').
+
+==================================================
+🔎 PASSE H1/10 : Visibilité de l'état du système
+==================================================
+   ✂️  Grille tranchée pour la passe : 4680/11723 caractères.
+
+🚀 [TENTATIVE 1/3] Passe H1 — lancement de l'Auditeur UX...
+🧪 [mock] auditeur H1 · Visibilité de l'état du système → .audit_h1.attempt1.done
+   ⏳ En attente de 'audit_nielsen/H01_visibilite-etat-systeme.md' (signal de fin : '.audit_h1.attempt1.done')...
+✅ Passe H1 terminée : constats dans 'audit_nielsen/H01_visibilite-etat-systeme.md'.
+
+==================================================
+🔎 PASSE H2/10 : Correspondance entre le système et le monde réel
+==================================================
+   ✂️  Grille tranchée pour la passe : 4667/11723 caractères.
+
+🚀 [TENTATIVE 1/3] Passe H2 — lancement de l'Auditeur UX...
+🧪 [mock] auditeur H2 · Correspondance entre le système et le mo → .audit_h2.attempt1.done
+   ⏳ En attente de 'audit_nielsen/H02_correspondance-monde-reel.md' (signal de fin : '.audit_h2.attempt1.done')...
+✅ Passe H2 terminée : constats dans 'audit_nielsen/H02_correspondance-monde-reel.md'.
+
+==================================================
+🔎 PASSE H3/10 : Contrôle et liberté de l'utilisateur
+==================================================
+   ✂️  Grille tranchée pour la passe : 4651/11723 caractères.
+
+🚀 [TENTATIVE 1/3] Passe H3 — lancement de l'Auditeur UX...
+🧪 [mock] auditeur H3 · Contrôle et liberté de l'utilisateur → .audit_h3.attempt1.done
+   ⏳ En attente de 'audit_nielsen/H03_controle-liberte.md' (signal de fin : '.audit_h3.attempt1.done')...
+✅ Passe H3 terminée : constats dans 'audit_nielsen/H03_controle-liberte.md'.
+
+==================================================
+🔎 PASSE H4/10 : Cohérence et standards
+==================================================
+   ✂️  Grille tranchée pour la passe : 4857/11723 caractères.
+
+🚀 [TENTATIVE 1/3] Passe H4 — lancement de l'Auditeur UX...
+🧪 [mock] auditeur H4 · Cohérence et standards → .audit_h4.attempt1.done
+   ⏳ En attente de 'audit_nielsen/H04_coherence-standards.md' (signal de fin : '.audit_h4.attempt1.done')...
+✅ Passe H4 terminée : constats dans 'audit_nielsen/H04_coherence-standards.md'.
+
+==================================================
+🔎 PASSE H5/10 : Prévention des erreurs
+==================================================
+   ✂️  Grille tranchée pour la passe : 4753/11723 caractères.
+
+🚀 [TENTATIVE 1/3] Passe H5 — lancement de l'Auditeur UX...
+🧪 [mock] auditeur H5 · Prévention des erreurs → .audit_h5.attempt1.done
+   ⏳ En attente de 'audit_nielsen/H05_prevention-erreurs.md' (signal de fin : '.audit_h5.attempt1.done')...
+✅ Passe H5 terminée : constats dans 'audit_nielsen/H05_prevention-erreurs.md'.
+
+==================================================
+🔎 PASSE H6/10 : Reconnaissance plutôt que rappel
+==================================================
+   ✂️  Grille tranchée pour la passe : 4665/11723 caractères.
+
+🚀 [TENTATIVE 1/3] Passe H6 — lancement de l'Auditeur UX...
+🧪 [mock] auditeur H6 · Reconnaissance plutôt que rappel → .audit_h6.attempt1.done
+   ⏳ En attente de 'audit_nielsen/H06_reconnaissance-rappel.md' (signal de fin : '.audit_h6.attempt1.done')...
+✅ Passe H6 terminée : constats dans 'audit_nielsen/H06_reconnaissance-rappel.md'.
+
+==================================================
+🔎 PASSE H7/10 : Flexibilité et efficacité d'utilisation
+==================================================
+   ✂️  Grille tranchée pour la passe : 4653/11723 caractères.
+
+🚀 [TENTATIVE 1/3] Passe H7 — lancement de l'Auditeur UX...
+🧪 [mock] auditeur H7 · Flexibilité et efficacité d'utilisation → .audit_h7.attempt1.done
+   ⏳ En attente de 'audit_nielsen/H07_flexibilite-efficacite.md' (signal de fin : '.audit_h7.attempt1.done')...
+✅ Passe H7 terminée : constats dans 'audit_nielsen/H07_flexibilite-efficacite.md'.
+
+==================================================
+🔎 PASSE H8/10 : Esthétique et design minimaliste
+==================================================
+   ✂️  Grille tranchée pour la passe : 4705/11723 caractères.
+
+🚀 [TENTATIVE 1/3] Passe H8 — lancement de l'Auditeur UX...
+🧪 [mock] auditeur H8 · Esthétique et design minimaliste → .audit_h8.attempt1.done
+   ⏳ En attente de 'audit_nielsen/H08_esthetique-minimalisme.md' (signal de fin : '.audit_h8.attempt1.done')...
+✅ Passe H8 terminée : constats dans 'audit_nielsen/H08_esthetique-minimalisme.md'.
+
+==================================================
+🔎 PASSE H9/10 : Aide à la reconnaissance, au diagnostic et à la récupération des erreurs
+==================================================
+   ✂️  Grille tranchée pour la passe : 4771/11723 caractères.
+
+🚀 [TENTATIVE 1/3] Passe H9 — lancement de l'Auditeur UX...
+🧪 [mock] auditeur H9 · Aide à la reconnaissance, au diagnostic  → .audit_h9.attempt1.done
+   ⏳ En attente de 'audit_nielsen/H09_recuperation-erreurs.md' (signal de fin : '.audit_h9.attempt1.done')...
+✅ Passe H9 terminée : constats dans 'audit_nielsen/H09_recuperation-erreurs.md'.
+
+==================================================
+🔎 PASSE H10/10 : Aide et documentation
+==================================================
+   ✂️  Grille tranchée pour la passe : 4681/11723 caractères.
+
+🚀 [TENTATIVE 1/3] Passe H10 — lancement de l'Auditeur UX...
+🧪 [mock] auditeur H10 · Aide et documentation → .audit_h10.attempt1.done
+   ⏳ En attente de 'audit_nielsen/H10_aide-documentation.md' (signal de fin : '.audit_h10.attempt1.done')...
+✅ Passe H10 terminée : constats dans 'audit_nielsen/H10_aide-documentation.md'.
+
+==================================================
+🧾 SYNTHÈSE : CONSOLIDATION DES 10 PASSES EN UN RAPPORT
+==================================================
+
+🚀 [TENTATIVE 1/3] Lancement de l'agent de synthèse...
+🧪 [mock] synthèse · rapport consolidé → .audit_synthese.attempt1.done
+   ⏳ En attente de 'design_audit_report.md' (signal de fin : '.audit_synthese.attempt1.done')...
+✅ Rapport d'audit consolidé : 'design_audit_report.md'.
+
+🏁 [CONGRATULATIONS] Audit Nielsen terminé !
+   📄 Rapport consolidé : 'design_audit_report.md'
+   🗂️  Constats détaillés par heuristique : 'audit_nielsen/'
+   ♻️  Pour refaire un audit COMPLET (après corrections, p. ex.) : supprime 'audit_nielsen/'
+      puis relance — un fichier de constats conservé fait sauter sa passe (reprise par fichiers).
+   📁 Journal du run : .mm-runs/<RUNID>-audit-design/

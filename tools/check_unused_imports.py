@@ -19,7 +19,7 @@ Le second contrôle est la raison d'être de l'outil : il ferme le trou laissé 
 py_compile, qui compile sans broncher un module dont un import manque.
 
     python3 tools/check_unused_imports.py                       # les 6 variantes
-    python3 tools/check_unused_imports.py FR/Ubuntu/engine/Safe-Coding.py
+    python3 tools/check_unused_imports.py FR/Ubuntu/engine/Coding.py
 """
 
 import argparse

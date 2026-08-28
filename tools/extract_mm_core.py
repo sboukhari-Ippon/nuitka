@@ -27,10 +27,10 @@ BUILTINS = set(dir(builtins))
 
 ROOT = Path(__file__).resolve().parent.parent
 ENGINE = ROOT / "FR" / "Ubuntu" / "engine"
-ORCHESTRATORS = ["Safe-Coding", "Coding-Without-Tests", "Safe-TDD", "Safe-ATDD",
-                 "Design-Prototype", "Advanced-Coding", "Advanced-TDD", "Advanced-ATDD",
+ORCHESTRATORS = ["Coding", "Coding-Without-Tests", "Test-First", "Acceptance-First",
+                 "Design-Prototype",
                  "Spec", "Challenge-Need", "Technical-Plan", "Documentation",
-                 "Audit-Design", "Audit-A11Y-RGAA", "Skills-Adaptation", "Guided-Fix"]
+                 "Audit-Design", "Pre-Audit-A11Y-RGAA", "Skills-Adaptation", "Guided-Fix"]
 # Modules que mm_core importe lui-même.
 KNOWN_MODULES = {"os", "re", "sys", "time", "signal", "subprocess", "shlex", "shutil",
                  "yaml", "json", "hashlib", "unicodedata", "mm_audit"}

@@ -1,6 +1,6 @@
 name: Build release bundles (Nuitka)
 
-# Compile l'app + les 16 orchestrateurs en binaires et assemble des ARCHIVES DE
+# Compile l'app + les 13 orchestrateurs en binaires et assemble des ARCHIVES DE
 # DISTRIBUTION completes (app + lanceur double-clic + engine/ + docs), une par
 # variante langue x plateforme. L'archive extraite se lance au double-clic :
 # l'app remet elle-meme son moteur en etat (chmod/quarantaine), personne ne
@@ -88,18 +88,39 @@ jobs:
             DST="dist/$LANG/MAIsterMind"
             mkdir -p "$DST/engine"
 
-            # 1. Les 16 orchestrateurs de la langue (le binaire = basename du .py).
+            # 1. Les orchestrateurs = ceux DECLARES dans orchestrators.json (champ
+            #    "binary"), et rien d'autre. Le manifeste est la seule verite de l'app
+            #    (elle decouvre <binary> a cote du manifeste) : on compile donc
+            #    exactement ce qu'elle cherchera, sous le nom qu'elle cherchera.
+            #    Deux verrous : un binaire declare sans <binary>.py = build rouge ;
+            #    un .py orphelin (hors modules mm_*) = build rouge aussi (renommage
+            #    oublie ou script retire du manifeste — il finirait en binaire mort
+            #    de 8 Mo dans la distro).
             #    mm_runner.py, mm_core.py et mm_audit.py sont des MODULES, pas des
             #    points d'entree : ils ne donnent pas de binaire. Nuitka les suit tout
-            #    seul (imports du meme dossier) et les embarque dans chacun des 16
-            #    onefile ; les compiler a part ne produirait que des binaires morts
-            #    de 8 Mo dans la distro.
+            #    seul (imports du meme dossier) et les embarque dans chacun des 13
+            #    onefile.
+            #    (Pas de tableau bash ni de mapfile : /bin/bash des runners macOS est
+            #    en 3.2 ; les noms de binaires n'ont pas d'espace, une liste a un nom
+            #    par ligne suffit.)
+            BINARIES="$(python -c 'import json,sys; [print(o["binary"]) for o in json.load(open(sys.argv[1], encoding="utf-8"))["orchestrators"]]' "$SRC/engine/orchestrators.json")"
+            echo "==> $LANG/${{ matrix.tag }} : $(printf '%s\n' $BINARIES | wc -l | tr -d ' ') orchestrateurs declares :" $BINARIES
+            for name in $BINARIES; do
+              if [ ! -f "$SRC/engine/$name.py" ]; then
+                echo "::error::$SRC/engine/$name.py est declare dans orchestrators.json mais n'existe pas"; exit 1
+              fi
+            done
             for py in "$SRC"/engine/*.py; do
               name="$(basename "$py" .py)"
               case "$name" in mm_runner|mm_audit|mm_core) continue ;; esac
+              if ! printf '%s\n' $BINARIES | grep -qx -- "$name"; then
+                echo "::error::$py n'est declare dans aucune entree d'orchestrators.json (script orphelin ou renommage oublie)"; exit 1
+              fi
+            done
+            for name in $BINARIES; do
               echo "==> $LANG/${{ matrix.tag }} : $name"
               python -m nuitka --onefile --assume-yes-for-downloads --remove-output \
-                --output-dir="$DST/engine" --output-filename="$name" "$py"
+                --output-dir="$DST/engine" --output-filename="$name" "$SRC/engine/$name.py"
             done
 
             # 1bis. Controle que les modules (mm_runner.py, mm_core.py, mm_audit.py)
@@ -110,7 +131,8 @@ jobs:
             #    distingue les deux.
             EMPTY="$(mktemp -d)"
             set +e
-            # (binaire renomme : Spec — l'ancien nom MAIsterMind_spec n'existe plus)
+            # (Spec est le plus court des 13 ; s'il etait renomme, le verrou du
+            #  manifeste ci-dessus le dirait avant d'arriver ici.)
             OUT="$(cd "$EMPTY" && MM_AGENT_HARNESS=opencode "$OLDPWD/$DST/engine/Spec" 2>&1)"
             RC=$?
             set -e
@@ -163,7 +185,8 @@ jobs:
             tar -czf "MAIsterMind-$lang_lc-${{ matrix.suffix }}.tar.gz" -C "dist/$LANG" MAIsterMind
           done
 
-      # retention courte : ~7-10 MB par binaire onefile x 33 par job — le stockage
+      # retention courte : ~7-10 MB par binaire onefile x 27 par job (13 x 2 langues
+      # + l'app) — le stockage
       # artifacts d'un depot prive Free est limite a 500 MB. archive: false (v7) :
       # le tar.gz est uploade tel quel (pas re-zippe, bits preserves au telechargement).
       # archive: false n'accepte QU'UN fichier par artifact -> un artifact par langue.

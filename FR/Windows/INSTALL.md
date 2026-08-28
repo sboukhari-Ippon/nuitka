@@ -13,7 +13,7 @@
 # 1. Dans le terminal WSL (Ubuntu), depuis ce dossier, la SEULE commande :
 sh install.sh
 #    → droits d'exécution posés partout, prérequis installés via apt
-#      (tmux, git, node 22), et MAIsterMind.bat copié sur ton Bureau Windows.
+#      (tmux, git, node 22 — 20.19 minimum), et MAIsterMind.bat copié sur ton Bureau Windows.
 
 # 2. Si install.sh a signalé qu'AUCUN harness n'est présent : installe-en UN
 #    DANS WSL (l'un suffit, les deux cohabitent sans problème) :
@@ -28,4 +28,4 @@ sh install.sh
 
 # Mode expert (terminal WSL) : ./MAIsterMind_App
 # Les binaires restent utilisables en direct depuis la racine de TON projet :
-#   /chemin/vers/ce/dossier/engine/Safe-Coding
+#   /chemin/vers/ce/dossier/engine/Coding

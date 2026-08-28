@@ -65,6 +65,8 @@ La « Commande de mutation testing » rend les tests *falsifiables* : elle mute 
     1. [Action 1 très précise]
     2. [Action 2 très précise]
 * **Livrable attendu :** [Fichiers exacts créés ou modifiés].
+* **Tests à supprimer :** [OPTIONNEL — fichiers de test EXISTANTS devenus obsolètes parce que la spec retire ou remplace le comportement qu'ils décrivent : l'orchestrateur les supprime LUI-MÊME au début de la phase (aucun agent n'y touche). « (aucun) » sinon].
+* **Tests à modifier :** [OPTIONNEL — fichiers de test EXISTANTS que cette phase d'implémentation a le DROIT de modifier parce que la spec fait évoluer le comportement qu'ils décrivent. « (aucun) » sinon. Hors de ces deux listes, les tests restent GELÉS en implémentation : ne planifie jamais « supprimer/adapter un test » dans les Instructions Micro sans le déclarer ici, la garde mécanique restaurerait le fichier].
 * **✅ Check-list de Validation :**
     - [ ] Critère de succès objectif 1
     - [ ] Critère de succès objectif 2

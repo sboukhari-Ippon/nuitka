@@ -8,7 +8,7 @@
 # 1. From this folder, the ONLY command to type:
 sh install.sh
 #    → execution permissions set everywhere, prerequisites installed via apt
-#      (tmux, git, node 22 — sudo password may be asked),
+#      (tmux, git, node 22 — 20.19 minimum; sudo password may be asked),
 #      "MAIsterMind" entry added to the applications menu.
 
 # 2. If install.sh reported that NO harness is present: install ONE
@@ -26,4 +26,4 @@ sh install.sh
 
 # Expert mode (terminal): ./MAIsterMind_App
 # The binaries remain directly usable from the root of YOUR project:
-#   /path/to/this/folder/engine/Safe-Coding
+#   /path/to/this/folder/engine/Coding

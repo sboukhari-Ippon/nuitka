@@ -4,7 +4,7 @@
 test_audit_units — tests unitaires des fonctions PURES de l'audit RGAA
 ──────────────────────────────────────────────────────────────────────
 Complément des scénarios mock (qui testent le FLUX de bout en bout) : ici, les cas
-limites des fonctions pures d'`Audit-A11Y-RGAA.py` — parseur de verdicts, scan des
+limites des fonctions pures d'`Pre-Audit-A11Y-RGAA.py` — parseur de verdicts, scan des
 déclencheurs, couleurs/contrastes, extraction de localisations. Un scénario mock
 coûte un projet jetable entier pour UN chemin ; le parseur en a quinze.
 
@@ -26,11 +26,11 @@ import unittest
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
 ENGINE = os.path.join(REPO, "FR", "Ubuntu", "engine")
-AUDIT_PATH = os.path.join(ENGINE, "Audit-A11Y-RGAA.py")
+AUDIT_PATH = os.path.join(ENGINE, "Pre-Audit-A11Y-RGAA.py")
 
 
 def load_audit_module():
-    """Charge Audit-A11Y-RGAA.py comme module (le nom de fichier contient des tirets)
+    """Charge Pre-Audit-A11Y-RGAA.py comme module (le nom de fichier contient des tirets)
     sous harness MOCK : aucun tmux, aucun LLM, et l'import ne touche pas au dépôt
     (cwd déplacé dans un bac à sable AVANT l'exec du module)."""
     workspace = tempfile.mkdtemp(prefix="mm-audit-units-")
@@ -625,13 +625,84 @@ class TestSplitPasses(unittest.TestCase):
                   "intent": "", "files": files}
         triggers = {f: ({1} if f == "f0.html" else set()) for f in files}
         passes = A.build_pass_list([bucket], [self.PACK], triggers)
-        self.assertEqual(len(passes), 3)                         # 25 + 25 + 10
-        self.assertEqual([p["slot"] for p in passes], ["t1-z1a", "t1-z1b", "t1-z1c"])
-        self.assertEqual(len({p["findings_path"] for p in passes}), 3)
-        self.assertEqual([len(p["bucket"]["files"]) for p in passes], [25, 25, 10])
+        self.assertEqual(len(passes), 2)                         # 40 + 20 (fichiers absents : 0 octet)
+        self.assertEqual([p["slot"] for p in passes], ["t1-z1a", "t1-z1b"])
+        self.assertEqual(len({p["findings_path"] for p in passes}), 2)
+        self.assertEqual([len(p["bucket"]["files"]) for p in passes], [40, 20])
         # 'declenche' PAR TRANCHE : seul f0.html (tranche a) porte le motif
-        self.assertEqual([p["declenche"] for p in passes], [True, False, False])
-        self.assertIn("tranche 1/3", passes[0]["label"])
+        self.assertEqual([p["declenche"] for p in passes], [True, False])
+        self.assertIn("tranche 1/2", passes[0]["label"])
+        # La tranche sans motif est NA mécanique : aucun agent sollicité.
+        self.assertEqual([A.pass_needs_agent(p) for p in passes], [True, False])
+        self.assertEqual(len(A.mechanical_na_passes(passes)), 1)
+
+    def test_socle_toujours_reste_confie_a_l_agent(self):
+        pack = dict(self.PACK, toujours=True)
+        bucket = {"kind": "socle", "slot": "socle", "label": "SOCLE", "name": "Socle",
+                  "intent": "", "files": ["a.html", "b.html"]}
+        passes = A.build_pass_list([bucket], [pack], {"a.html": set(), "b.html": set()})
+        self.assertEqual(len(passes), 1)
+        self.assertFalse(passes[0]["declenche"])
+        self.assertTrue(A.pass_needs_agent(passes[0]), "l'absence de motif est un constat potentiel")
+
+    def test_tranches_par_budget_d_octets(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            files = []
+            for i in range(6):
+                path = os.path.join(tmp, f"f{i}.html")
+                with open(path, "w", encoding="utf-8") as f:
+                    f.write("x" * (30 * 1024))          # 30 Ko chacun : 2 par tranche de 80 Ko
+                files.append(path)
+            big = os.path.join(tmp, "big.html")
+            with open(big, "w", encoding="utf-8") as f:
+                f.write("x" * (200 * 1024))             # plus gros que le budget : seul
+            slices = A.slice_bucket_files(files + [big])
+            self.assertEqual([len(s) for s in slices], [2, 2, 2, 1])
+            self.assertEqual(slices[-1], [big])
+
+    def test_fichier_na_mecanique_passe_le_parseur(self):
+        pack = {"id": 1, "slug": "images", "nom": "Images", "criteres": ["1.1", "1.2", "1.3"],
+                "toujours": False, "testabilite": {"1.1": "statique", "1.2": "statique", "1.3": "manuel"},
+                "sondes": []}
+        with tempfile.TemporaryDirectory() as tmp:
+            audit_pass = {"pack": pack, "declenche": False,
+                          "bucket": {"kind": "zone", "name": "Z1 : A", "files": ["x.html"]},
+                          "findings_path": os.path.join(tmp, "pre_audit_a11y", "T01_images__Z01_a-b.md")}
+            A.write_mechanical_na_findings(audit_pass)
+            self.assertTrue(A.findings_ok(audit_pass["findings_path"], pack))
+            data, fatal, _ = A.parse_findings_file(audit_pass["findings_path"], pack)
+            self.assertEqual(fatal, [])
+            self.assertTrue(A.findings_all_na(data))
+            self.assertEqual(A.suspicious_all_na_passes([audit_pass]), [], "non déclenchée : pas suspecte")
+
+
+class TestPerimetreMecanique(SandboxTestCase):
+    """Exclusions mécaniques du périmètre : assets tiers, logique pure sans signal UI."""
+
+    def write(self, rel, content):
+        os.makedirs(os.path.dirname(rel) or ".", exist_ok=True)
+        with open(rel, "w", encoding="utf-8") as f:
+            f.write(content)
+
+    def test_exclusions_et_trace(self):
+        self.write("public/dsfr/dsfr.min.css", "a{}")           # .min. : déjà hors is_ui_file
+        self.write("public/dsfr/utility/icons.css", ".fr-icon{}")
+        self.write("src/styles/overrides.css", ".fr-btn{color:red}")
+        self.write("src/api/route.ts", "export async function GET() { return Response.json({table: 1}) }")
+        self.write("src/ui/menu.ts", "document.querySelector('nav').setAttribute('aria-label','Menu')")
+        self.write("src/app/admin/page.tsx", "export default function Page() { return <AdminList /> }")
+        self.write("src/app/page.tsx", "export default () => <main><h1>Accueil</h1></main>")
+        scope = A.discover_ui_scope()
+        self.assertEqual(scope, ["src/app/admin/page.tsx", "src/app/page.tsx",
+                                 "src/styles/overrides.css", "src/ui/menu.ts"])
+        self.assertEqual(A.SCOPE_EXCLUSIONS["vendor"], ["public/dsfr/utility/icons.css"])
+        self.assertEqual(A.SCOPE_EXCLUSIONS["logic"], ["src/api/route.ts"])
+
+    def test_tsx_sans_signal_reste_dans_le_perimetre(self):
+        self.write("src/x.tsx", "export const X = 1")
+        self.write("src/y.js", "module.exports = 1")
+        self.assertEqual(A.discover_ui_scope(), ["src/x.tsx"])
+        self.assertEqual(A.SCOPE_EXCLUSIONS["logic"], ["src/y.js"])
 
 
 class TestHardReset(unittest.TestCase):
@@ -804,6 +875,70 @@ class TestSlugify(unittest.TestCase):
         self.assertEqual(A.slugify("Formulaire"), "formulaire")
         self.assertEqual(A.slugify("Écran Panier / Détail"), "ecran-panier-detail")
         self.assertEqual(A.slugify("***"), "zone")
+
+
+
+class TestCarteDiversEtRepertoires(unittest.TestCase):
+    """Validateur de carte : « Divers » facultative (le prompt demandait de ne pas y
+    recopier le surplus, le validateur la rejetait vide) et entrées RÉPERTOIRE."""
+
+    SCOPE = ["src/pages/home.tsx", "src/pages/checkout/cart.tsx", "src/pages/checkout/pay.tsx",
+             "src/components/Button.tsx", "src/layout/Header.tsx"]
+
+    def base_map(self, zones):
+        return {"project": "p", "socle": {"intent": "s", "files": ["src/layout/Header.tsx"]},
+                "composants": {"intent": "c", "files": ["src/components/Button.tsx"]},
+                "zones": zones}
+
+    def test_divers_vide_est_completee(self):
+        a11y_map = self.base_map([
+            {"id": 1, "name": "Accueil", "intent": "i", "files": ["src/pages/home.tsx"]},
+            {"id": 2, "name": "Divers", "intent": "r", "files": []},
+        ])
+        fatal, soft = A.validate_and_normalize_a11y_map(a11y_map, self.SCOPE)
+        self.assertEqual(fatal, [])
+        self.assertEqual(sorted(a11y_map["zones"][1]["files"]),
+                         ["src/pages/checkout/cart.tsx", "src/pages/checkout/pay.tsx"])
+        self.assertTrue(any("déclarée vide" in s for s in soft))
+
+    def test_divers_vide_sans_reste_est_retiree(self):
+        a11y_map = self.base_map([
+            {"id": 1, "name": "Tout", "intent": "i",
+             "files": ["src/pages/home.tsx", "src/pages/checkout/cart.tsx", "src/pages/checkout/pay.tsx"]},
+            {"id": 2, "name": "Divers", "intent": "r", "files": []},
+        ])
+        fatal, _ = A.validate_and_normalize_a11y_map(a11y_map, self.SCOPE)
+        self.assertEqual(fatal, [])
+        self.assertEqual([z["name"] for z in a11y_map["zones"]], ["Tout"])
+
+    def test_zone_vide_non_divers_reste_fatale(self):
+        a11y_map = self.base_map([
+            {"id": 1, "name": "Accueil", "intent": "i", "files": ["src/pages/home.tsx"]},
+            {"id": 2, "name": "Paiement", "intent": "i", "files": []},
+        ])
+        fatal, _ = A.validate_and_normalize_a11y_map(a11y_map, self.SCOPE)
+        self.assertTrue(any("Paiement" in f for f in fatal))
+
+    def test_entree_repertoire(self):
+        a11y_map = self.base_map([
+            {"id": 1, "name": "Paiement", "intent": "i", "files": ["src/pages/checkout/"]},
+            {"id": 2, "name": "Accueil", "intent": "i", "files": ["src/pages/"]},
+        ])
+        fatal, _ = A.validate_and_normalize_a11y_map(a11y_map, self.SCOPE)
+        self.assertEqual(fatal, [])
+        self.assertEqual(sorted(a11y_map["zones"][0]["files"]),
+                         ["src/pages/checkout/cart.tsx", "src/pages/checkout/pay.tsx"])
+        self.assertEqual(a11y_map["zones"][1]["files"], ["src/pages/home.tsx"],
+                         "le répertoire parent ne reprend pas ce qui est déjà assigné")
+        self.assertEqual(A.divers_files(a11y_map), [])
+
+    def test_echantillon_carto_privilegie_le_code(self):
+        public = [f"public/dsfr/icons/i-{i:04d}.css" for i in range(700)]
+        src = [f"src/pages/p{i % 15}/f-{i:04d}.tsx" for i in range(300)]
+        block = A.build_carto_scope_block(sorted(public + src))
+        self.assertEqual(block.count("- src/"), 300)
+        self.assertIn("PAR RÉPERTOIRE", block)
+        self.assertIn("public/dsfr/icons/ : 600", block, "400 = 300 src + 100 public")
 
 
 if __name__ == "__main__":

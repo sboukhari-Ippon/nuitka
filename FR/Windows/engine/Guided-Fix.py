@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Réparateur arbitré des arrêts sur suite rouge — compagnon de Safe-Coding.py.
+Réparateur arbitré des arrêts sur suite rouge — compagnon de Coding.py.
 ─────────────────────────────────────────────────────────────────────────────
 Quand un run MAIsterMind s'arrête (phase REJECTED après MAX_ATTEMPTS, run tué en pleine
 phase, régression post-refacto non résorbée), l'humain n'avait que deux options : la
@@ -96,7 +96,7 @@ AGENT_CONFIG_FILE     = RUNNER.config_file
 SPEC_APPROVED_SENTINEL = ".spec_approved"
 
 # Fichier de consignes déporté et tampon de prompt tmux (chemins RELATIFS : seul choix
-# valable sur les 3 OS, cf. Safe-Coding.py).
+# valable sur les 3 OS, cf. Coding.py).
 TMP_FIX_FILE          = RUNNER.tmp_file("fix")
 TMP_PROMPT_BUFFER     = RUNNER.prompt_buffer
 
@@ -113,7 +113,7 @@ VERIFY_FEEDBACK_LIMIT = 4000           # taille max d'une sortie renvoyée à un
 DIFF_PROMPT_LIMIT     = 6000           # taille max du diff coupable injecté aux prompts
 STABLE_POLLS_FALLBACK = 15             # filet sans sentinelle du rapport de diagnostic
 
-# États du handshake avec Safe-Coding.py : une RÉCLAMATION de réparation, pas un verdict.
+# États du handshake avec Coding.py : une RÉCLAMATION de réparation, pas un verdict.
 # MAIsterMind revalide par exécution à la relance et tamponne DONE/OK lui-même.
 FIXED_STATUS          = "FIXED"
 FIXED_VERDICT         = "PENDING_RECHECK"
@@ -140,7 +140,7 @@ def cleanup_fix_sentinels(slot: str = None):
 
 def read_declared_files(slot: str, attempt: int) -> list:
     """Liste des fichiers déclarés par l'agent dans sa sentinelle (marqueurs de liste
-    retirés, cf. read_touched_files de Safe-Coding.py)."""
+    retirés, cf. read_touched_files de Coding.py)."""
     path = fix_sentinel(slot, attempt)
     if not os.path.exists(path):
         return []
@@ -170,7 +170,7 @@ def wait_for_file_creation(filepath: str, timeout: int = MAX_PHASE_TIMEOUT) -> b
 def wait_for_report_file(filepath: str, sentinel: str, timeout: int = MAX_PHASE_TIMEOUT,
                          structural_check=None) -> bool:
     """Attente du rapport de diagnostic : sentinelle prioritaire, filet de stabilité en
-    secours (même contrat que wait_for_pipeline_file de Safe-Coding.py)."""
+    secours (même contrat que wait_for_pipeline_file de Coding.py)."""
     start = time.time()
     print(f"   ⏳ En attente de '{filepath}' (signal de fin : '{sentinel}')...")
     stable_streak = 0
@@ -201,7 +201,7 @@ def wait_for_report_file(filepath: str, sentinel: str, timeout: int = MAX_PHASE_
     return False
 
 
-# ─── BLACKBOARD (lecture / écriture ATOMIQUE, cf. Safe-Coding.py) ─────────────
+# ─── BLACKBOARD (lecture / écriture ATOMIQUE, cf. Coding.py) ─────────────
 
 # Derniers statuts de phase journalisés (détection des TRANSITIONS par save_blackboard).
 _PHASE_STATUS_SEEN = {}
@@ -232,7 +232,7 @@ def save_blackboard(data: dict):
 _GIT = {"enabled": False}
 GIT_IDENTITY = ["-c", "user.name=MAIsterMind", "-c", "user.email=factory@local"]
 
-# Même corps que Safe-Coding.py (avec '.fix_*') : un projet démarré AVANT cette évolution
+# Même corps que Coding.py (avec '.fix_*') : un projet démarré AVANT cette évolution
 # a un .gitignore sans ce motif — sans le filet append-only ci-dessous, commit_all (add -A)
 # committerait les sentinelles de fix comme du bruit.
 GITIGNORE_BODY = f"""# Artefacts d'orchestration MAIster-Mind (éphémères)
@@ -249,7 +249,7 @@ __pycache__/
 
 def ensure_orchestration_ignored():
     """Garantit les motifs d'orchestration dans un .gitignore existant (append-only,
-    idempotent, best-effort — cf. Safe-Coding.py). Ne crée pas de .gitignore : c'est le
+    idempotent, best-effort — cf. Coding.py). Ne crée pas de .gitignore : c'est le
     rôle de l'usine principale."""
     if not os.path.exists(".gitignore"):
         return
@@ -333,7 +333,7 @@ def files_changed_since(ref: str) -> set:
 # ─── CLASSIFICATION DES FICHIERS (mêmes heuristiques que l'usine) ─────────────
 
 def is_test_file(path: str) -> bool:
-    """Heuristique multi-langages, volontairement LARGE côté test (cf. Safe-Coding.py)."""
+    """Heuristique multi-langages, volontairement LARGE côté test (cf. Coding.py)."""
     p = str(path).strip().strip("'\"`").replace("\\", "/")
     if not p:
         return False
@@ -361,9 +361,9 @@ _ORCH_BASENAMES = {
 
 
 _ORCHESTRATOR_SCRIPTS = frozenset({
-    "Safe-Coding.py", "Coding-Without-Tests.py", "Safe-TDD.py", "Safe-ATDD.py",
-    "Design-Prototype.py", "Advanced-Coding.py", "Advanced-TDD.py", "Advanced-ATDD.py",
-    "Spec.py", "Technical-Plan.py", "Audit-Design.py", "Audit-A11Y-RGAA.py",
+    "Coding.py", "Coding-Without-Tests.py", "Test-First.py", "Acceptance-First.py",
+    "Design-Prototype.py",
+    "Spec.py", "Technical-Plan.py", "Audit-Design.py", "Pre-Audit-A11Y-RGAA.py",
     "Documentation.py", "Guided-Fix.py", "Skills-Adaptation.py",
     "MAIsterMind_App.py", "mm_runner.py",
 })
@@ -416,7 +416,7 @@ def resolve_verify_cmd(phase: dict, blackboard: dict) -> str:
 
 
 def run_verify(cmd: str, timeout: int = VERIFY_TIMEOUT) -> tuple:
-    """Exécute la vérification HORS tmux. (ok, output, timed_out) — cf. Safe-Coding.py."""
+    """Exécute la vérification HORS tmux. (ok, output, timed_out) — cf. Coding.py."""
     print(f"   🧪 Vérification par exécution : {cmd}")
     env = os.environ.copy()
     local_bin = os.path.abspath(os.path.join("node_modules", ".bin"))
@@ -451,7 +451,7 @@ def run_verify_resilient(cmd: str) -> tuple:
 
 
 def parse_test_count(output: str):
-    """Compte best-effort des tests passés (mêmes motifs que Safe-Coding.py)."""
+    """Compte best-effort des tests passés (mêmes motifs que Coding.py)."""
     if not output:
         return None
     maven = re.findall(r"Tests run:\s*(\d+)", output)
@@ -499,7 +499,7 @@ def collect_spec_us_ids(spec_text: str) -> set:
 
 def extract_spec_slice(spec_text: str, covers: list) -> str:
     """Tranche de la spec limitée aux US couvertes (+ tronc commun) — dégradation
-    gracieuse : sans 'covers' exploitable, la spec ENTIÈRE (cf. Safe-Coding.py)."""
+    gracieuse : sans 'covers' exploitable, la spec ENTIÈRE (cf. Coding.py)."""
     wanted = {c.strip().upper() for c in (covers or []) if isinstance(c, str) and c.strip()}
     if not wanted:
         return spec_text
@@ -967,7 +967,7 @@ def triage_groups(groups: list, report_path: str):
             print(f"   {step}) Correction du code des régressions (fichiers de test GELÉS).")
             step += 1
         print(f"   {step}) Vérification complète exécutée par Python ; au vert, marqueur FIXED")
-        print(f"      posé — tu relanceras Safe-Coding.py toi-même pour la revalidation.")
+        print(f"      posé — tu relanceras Coding.py toi-même pour la revalidation.")
         print(f"{'=' * 62}")
         answer = input("\n▶️  Confirmer cet arbitrage et lancer la réparation ? "
                        "(y = oui / n = refaire le triage / q = abandonner) : ").strip().lower()
@@ -1045,13 +1045,13 @@ def main():
     # ── Pré-requis : un run MAIsterMind a eu lieu (blackboard = état de reprise). ──
     if not os.path.exists(BLACKBOARD_FILE):
         print(f"❌ '{BLACKBOARD_FILE}' introuvable : rien à réparer ici. Lance d'abord "
-              f"Safe-Coding.py (ce script soigne les arrêts de production, pas le pipeline).")
+              f"Coding.py (ce script soigne les arrêts de production, pas le pipeline).")
         sys.exit(1)
     try:
         blackboard = load_blackboard()
     except Exception as err:
         print(f"❌ '{BLACKBOARD_FILE}' illisible (YAML invalide ou corrompu) : {err}")
-        print(f"   → Corrige ou supprime '{BLACKBOARD_FILE}' puis relance Safe-Coding.py.")
+        print(f"   → Corrige ou supprime '{BLACKBOARD_FILE}' puis relance Coding.py.")
         sys.exit(1)
     if not isinstance(blackboard, dict) or not isinstance(blackboard.get("phases"), list):
         print(f"❌ '{BLACKBOARD_FILE}' sans bloc 'phases' exploitable : rien à réparer.")
@@ -1090,18 +1090,18 @@ def main():
                   f"(cf. UC4). La phase {broken_phase.get('id', '?')} peut être marquée '{FIXED_STATUS}' : "
                   f"MAIsterMind la revalidera par exécution à la relance, sans re-payer de codeur.")
             answer = input(f"\n▶️  Marquer la phase {broken_phase.get('id', '?')} '{FIXED_STATUS}' "
-                           f"et te laisser relancer Safe-Coding.py ? (y/n) : ").strip().lower()
+                           f"et te laisser relancer Coding.py ? (y/n) : ").strip().lower()
             mm_audit.event("gate", id="fix-mark-fixed", gate_kind="yn", answer=answer)
             if answer == "y":
                 mark_phase_fixed(broken_phase, blackboard)
                 record_test_count(initial_output, blackboard)
                 update_protected_test_files(blackboard, git_head_sha(), broken_phase)
                 commit_all(f"fix(phase {broken_phase.get('id', '?')}): état vert constaté (réparation manuelle)")
-                print(f"\n🏁 Marqueur posé. Relance 'python3 Safe-Coding.py' pour revalider et poursuivre.")
+                print(f"\n🏁 Marqueur posé. Relance 'python3 Coding.py' pour revalider et poursuivre.")
             else:
                 print("⏹️  Rien n'a été modifié.")
             sys.exit(0)
-        print("\n✅ La suite de vérification passe : rien à réparer. Relance Safe-Coding.py "
+        print("\n✅ La suite de vérification passe : rien à réparer. Relance Coding.py "
               "si tu veux poursuivre ou rejouer le polish final.")
         sys.exit(0)
 
@@ -1299,7 +1299,7 @@ def main():
         result_lines.append(f"- Phase {broken_phase.get('id', '?')} "
                             f"« {broken_phase.get('name', '(sans nom)')} » marquée **{FIXED_STATUS}** : "
                             f"MAIsterMind la revalidera par exécution à la relance.")
-    result_lines.append("- Prochaine étape : relancer `python3 Safe-Coding.py` (relance MANUELLE : "
+    result_lines.append("- Prochaine étape : relancer `python3 Coding.py` (relance MANUELLE : "
                         "la reprise est de toute façon interactive).")
     append_report(report_path, "\n".join(result_lines))
     summary = []
@@ -1321,10 +1321,10 @@ def main():
    📄 Piste d'audit : '{report_path}' (committée avec la réparation).""")
     if broken_phase:
         print(f"""   🔁 Phase {broken_phase.get('id', '?')} « {broken_phase.get('name', '(sans nom)')} » marquée {FIXED_STATUS} :
-      relance 'python3 Safe-Coding.py' — il revalide par exécution (sans re-payer
+      relance 'python3 Coding.py' — il revalide par exécution (sans re-payer
       de codeur) puis poursuit le run à la phase suivante.""")
     else:
-        print("""   🔁 Aucune phase à marquer (arrêt hors production) : relance 'python3 Safe-Coding.py'
+        print("""   🔁 Aucune phase à marquer (arrêt hors production) : relance 'python3 Coding.py'
       si tu veux rejouer le polish final, ou livre tel quel.""")
     print(f"{'=' * 62}")
     # Clôture du journal de run (chemin capturé AVANT end, qui remet l'état à zéro).

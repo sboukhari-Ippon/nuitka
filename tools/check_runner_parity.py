@@ -50,15 +50,15 @@ REF_DIR   = os.path.join(SIBLINGS, "MAIsterMind_App-codex")      # fork Codex d'
 # 'legacy_start' diffère d'un fork à l'autre (tmux_start_opencode / tmux_start_codex).
 ORCHESTRATORS = [
     # (script,                          rôle,       new_context, capture, model)
-    ("Safe-Coding.py",                  "factory",  True,  True,  True),
+    ("Coding.py",                  "factory",  True,  True,  True),
     ("Spec.py",             "spec",     False, False, False),
     ("Technical-Plan.py",        "techplan", True,  True,  False),
     ("Coding-Without-Tests.py",             "factory",  True,  True,  True),
-    ("Safe-TDD.py",              "tdd",      True,  True,  True),
+    ("Test-First.py",       "test-first",      True,  True,  True),
     ("Design-Prototype.py",            "proto",    True,  True,  True),
     ("Documentation.py",    "doc",      True,  True,  True),
     ("Audit-Design.py",     "audit",    True,  True,  True),
-    ("Audit-A11Y-RGAA.py",  "a11y",     True,  True,  True),
+    ("Pre-Audit-A11Y-RGAA.py",  "a11y",     True,  True,  True),
     ("Guided-Fix.py",              "fix",      True,  False, True),
 ]
 

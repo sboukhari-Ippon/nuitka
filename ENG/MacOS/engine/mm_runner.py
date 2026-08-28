@@ -156,6 +156,12 @@ class AgentRunner:
     width            = 120   # virtual terminal width
     height           = 40
     new_session_wait = 2
+    # Readiness AFTER the fixed boot: a TUI that self-updates on first launch
+    # (OpenCode 1.17 → 1.18, 2026-08-22) swallows the prompt pasted during the download
+    # — 19 min without any session being created. So we wait, at most ready_timeout s,
+    # for the TUI to have taken the screen and for no installation to be in progress.
+    ready_timeout      = 45
+    ready_busy_markers = ("upgrad", "updating", "installing", "downloading")
 
     def __init__(self, project_dir: str, role: str,
                  new_context_check: bool = True,
@@ -242,9 +248,27 @@ class AgentRunner:
 
         self.say("boot")
         time.sleep(self.boot_wait)
+        self.wait_ready()
         self.after_boot()
         self.say("ready")
         self.say("follow")
+
+    def wait_ready(self):
+        """After the fixed boot_wait: waits (at most ready_timeout s) for the TUI to have
+        taken the screen — the command typed at the shell is no longer its last line — and
+        for no update/installation to be displayed. Best-effort: past the delay, we carry
+        on and say so (the first prompt may then be lost)."""
+        deadline = time.time() + self.ready_timeout
+        while time.time() < deadline:
+            screen = self.capture() or ""
+            low = screen.lower()
+            still_shell = screen.rstrip().endswith(self.launch_cmd)
+            busy = any(marker in low for marker in self.ready_busy_markers)
+            if screen.strip() and not still_shell and not busy:
+                return
+            time.sleep(1)
+        print(f"   ⚠️  {self.label}: TUI still booting or updating after "
+              f"{self.ready_timeout}s — carrying on (the first prompt may be lost).")
 
     def after_boot(self):
         """Post-boot hook, before the first solicitation. Pointless for a harness
@@ -397,9 +421,15 @@ class OpenCodeTuiRunner(AgentRunner):
     install_hint   = "install OpenCode: https://opencode.ai/docs"
     auth_cmd       = ("opencode", "auth", "list")
     auth_hint      = "authenticate: opencode auth login"
+    # OpenCode logs (Linux/WSL, then macOS): source of the OBSERVED model when no config
+    # sets it (the model chosen in the TUI via /model is written nowhere else) — otherwise
+    # run.json and failReport said "the current model".
+    log_dirs       = ("~/.local/share/opencode/log",
+                      "~/Library/Application Support/opencode/log")
 
     def configured_model(self) -> str:
-        """Read the model configured in .opencode/opencode.json (for the failure message)."""
+        """Model configured in .opencode/opencode.json; otherwise the model of the last
+        OpenCode session opened in THIS project (OpenCode log); otherwise the fallback."""
         for path in self._config_candidates():
             try:
                 with open(path, "r", encoding="utf-8") as f:
@@ -408,7 +438,36 @@ class OpenCodeTuiRunner(AgentRunner):
                 continue
             if model:
                 return model
+        observed = self._observed_model()
+        if observed:
+            return f"{observed} (observed: last OpenCode session of this project)"
         return MODEL_FALLBACK
+
+    def _observed_model(self) -> str:
+        """'<providerID>/<model.id>' of the last 'message=created id=ses_…' line of the
+        OpenCode log whose directory= is THIS project; '' if not found. Best-effort: the
+        log format may change, the three most recent logs are enough."""
+        pattern = re.compile(r"message=created id=ses_\S+.*?\bdirectory=(\S+).*?"
+                             r"\bmodel\.id=(\S+)\s+model\.providerID=(\S+)")
+        project = os.path.realpath(self.project_dir)
+        for log_dir in self.log_dirs:
+            directory = os.path.expanduser(log_dir)
+            try:
+                logs = sorted((os.path.join(directory, n) for n in os.listdir(directory)
+                               if n.endswith(".log")), key=os.path.getmtime, reverse=True)[:3]
+            except OSError:
+                continue
+            for log_path in logs:
+                try:
+                    with open(log_path, "r", encoding="utf-8", errors="replace") as f:
+                        lines = f.readlines()
+                except OSError:
+                    continue
+                for line in reversed(lines):
+                    match = pattern.search(line)
+                    if match and os.path.realpath(match.group(1)) == project:
+                        return f"{match.group(3)}/{match.group(2)}"
+        return ""
 
     def _auth_state(self) -> tuple:
         """'opencode auth list' exits 0 even with no credential: the count on its

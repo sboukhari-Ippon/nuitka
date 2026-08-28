@@ -85,7 +85,8 @@ import mm_audit
 # fichier via mm_core.configure(...) — tous les noms y sont alors définis.
 import mm_core
 from mm_core import (
-    signal_handler,
+    expand_dir_entry, residual_deliverable_warning, select_carto_sample,
+    signal_handler, wait_should_continue,
 )
 
 # ─── HARNESS D'AGENT ──────────────────────────────────────────────────────────
@@ -137,7 +138,12 @@ STABLE_POLLS_FALLBACK = 15             # filet sans sentinelle : livrable accept
 # Bornes de fenêtre de contexte (mêmes familles que MAX_SCOPE_FILES_IN_PROMPT de l'audit) :
 MAX_ZONE_FILES_IN_PROMPT  = 150   # au-delà, la liste des fichiers d'une zone est tronquée dans le prompt
 MAX_SCOPE_FILES_IN_CARTO  = 400   # au-delà, le surplus du périmètre est résumé par répertoire
-                                  # (les non listés finiront en zone « Divers » via la couverture)
+                                  # (les non listés finiront en zone « Divers » via la couverture,
+                                  # sauf si le cartographe les assigne PAR RÉPERTOIRE : entrée
+                                  # de la carte terminée par '/')
+DIVERS_RETRY_THRESHOLD    = 100   # au-delà de N fichiers en « Divers », la carte est REJOUÉE
+                                  # (tant qu'il reste des tentatives) : un résiduel qui contient
+                                  # l'essentiel du projet n'est pas une cartographie
 SOFT_MAX_FILES_PER_ZONE   = 25    # warn (non bloquant) au-delà : la passe de zone risque de saturer
                                   # (harmonisé avec la borne « 25 fichiers max par zone » de la
                                   # grille doc-map : le cartographe est censé sous-découper avant)
@@ -197,7 +203,9 @@ def wait_for_deliverable(filepath: str, sentinel: str, timeout: int = MAX_PHASE_
     stable_streak = 0
     last_size = -1
     structural_warned = False
-    while time.time() - start < timeout:
+    activity = {}   # état de wait_should_continue : prolongation si l'agent travaille encore,
+                    # arrêt immédiat s'il est figé sur une demande de permission
+    while wait_should_continue(start, timeout, activity):
         time.sleep(POLL_INTERVAL)
         file_ready = os.path.exists(filepath) and os.path.getsize(filepath) > 0
         if file_ready and os.path.exists(sentinel):
@@ -303,6 +311,10 @@ def clean_cited(token: str) -> str:
     return norm_rel(CITED_LINE_SUFFIX_RE.sub("", str(token).strip().replace("\\", "/")))
 
 
+# Caractères qui font d'un token un MOTIF (glob, placeholder, flèche) et non un chemin.
+PATTERN_CHARS = "<>*?{}$|→"
+
+
 def looks_like_path(token: str) -> bool:
     """Un token entre backticks est-il une CITATION DE FICHIER (et non un identifiant de
     code) ? Volontairement strict : '/' ou extension code connue exigés — `canActivate`,
@@ -311,10 +323,37 @@ def looks_like_path(token: str) -> bool:
     t = str(token).strip()
     if not t or " " in t or "(" in t or t.startswith("-"):
         return False
+    if any(ch in t for ch in PATTERN_CHARS):
+        # Glob, placeholder ou flèche : un MOTIF, pas la citation d'un fichier
+        # (`docs/*.md`, `epic/<KEY>`, `tick_*_agent_<TICKET>.json`, `epic/<KEY> → main`).
+        return False
     t = clean_cited(t)
     if "/" in t:
         return True
     return os.path.splitext(t)[1].lower() in CODE_EXTENSIONS
+
+
+def is_project_rooted(cited: str) -> bool:
+    """Un chemin cité avec '/' n'est une SOURCE du projet que si son premier segment est
+    une entrée réelle de la racine (`scripts/…`, `src/…`, `.claude/…`). Sinon c'est un
+    chemin d'exécution ou une référence git (`epic/<KEY>`, `origin/main`, `docs/` créé
+    par un script, `/report`) : la documentation a le droit d'en parler, la garde des
+    sources inventées ne le concerne pas. Constat du 28/08 : 8 faux positifs sur 11 dans
+    une zone de scripts d'orchestration, trois tentatives brûlées."""
+    if "/" not in cited:
+        return True
+    first = cited.split("/", 1)[0]
+    return bool(first) and os.path.exists(first)
+
+
+def suggest_zone_file(cited: str, zone_files) -> str | None:
+    """Un basename nu (`dispatch_plan.sh`) qui correspond à UN seul fichier de la zone :
+    le chemin exact à renvoyer au documentaliste, pour qu'il corrige du premier coup."""
+    if "/" in cited or not zone_files:
+        return None
+    matches = sorted({norm_rel(f) for f in zone_files
+                      if os.path.basename(norm_rel(f)) == cited})
+    return matches[0] if len(matches) == 1 else None
 
 
 def cited_paths(content: str) -> set:
@@ -358,7 +397,7 @@ def count_zone_content(content: str) -> dict:
     return {"features": features, "ats": ats, "covered": covered, "proposed": ats - covered}
 
 
-def zone_content_issues(path: str, test_scope: set) -> list:
+def zone_content_issues(path: str, test_scope: set, zone_files=None) -> list:
     """Écarts VÉRIFIABLES d'un fichier de zone (liste vide = conforme). Chaque écart est
     formulé pour être renvoyé TEL QUEL au documentaliste (feedback exact, jamais vague)."""
     try:
@@ -372,7 +411,13 @@ def zone_content_issues(path: str, test_scope: set) -> list:
     # 1. Sources hallucinées : tout chemin cité doit exister (les citations « Couvert »
     #    sont traitées à part, avec un message plus spécifique).
     for cited in sorted(cited_paths(content) - covered_norm):
-        if not os.path.exists(cited):
+        if os.path.exists(cited) or not is_project_rooted(cited):
+            continue
+        exact = suggest_zone_file(cited, zone_files)
+        if exact:
+            issues.append(f"Le chemin cité `{cited}` est un nom de fichier nu : cite le chemin "
+                          f"exact depuis la racine du projet, `{exact}`.")
+        else:
             issues.append(f"Le chemin cité `{cited}` n'existe pas dans le projet : cite "
                           f"UNIQUEMENT des fichiers que tu as réellement lus (chemin exact "
                           f"recopié depuis ta zone), ou retire cette source.")
@@ -480,9 +525,9 @@ EXCLUDED_DIR_NAMES = {"node_modules", "dist", "build", "out", "coverage", "targe
 # extensions non code.)
 ORCHESTRATION_BASENAME_PATTERN = "MAIsterMind*.py"
 ORCHESTRATOR_SCRIPTS = frozenset({
-    "Safe-Coding.py", "Coding-Without-Tests.py", "Safe-TDD.py", "Safe-ATDD.py",
-    "Design-Prototype.py", "Advanced-Coding.py", "Advanced-TDD.py", "Advanced-ATDD.py",
-    "Spec.py", "Technical-Plan.py", "Audit-Design.py", "Audit-A11Y-RGAA.py",
+    "Coding.py", "Coding-Without-Tests.py", "Test-First.py", "Acceptance-First.py",
+    "Design-Prototype.py",
+    "Spec.py", "Technical-Plan.py", "Audit-Design.py", "Pre-Audit-A11Y-RGAA.py",
     "Documentation.py", "Guided-Fix.py", "Skills-Adaptation.py", "mm_runner.py",
 })
 
@@ -843,6 +888,20 @@ def validate_and_normalize_doc_map(doc_map, code_files: list, test_files: list) 
             for entry in entries:
                 declared += 1
                 p = norm_rel(entry)
+                # Entrée RÉPERTOIRE (chemin terminé par '/') : tous les fichiers du périmètre
+                # qu'il contient, non encore assignés — code ET tests, chacun dans son bucket.
+                # C'est ce qui permet de cartographier un monorepo sans recopier des milliers
+                # de chemins (et sans que le surplus tombe mécaniquement en « Divers »).
+                expanded_code = expand_dir_entry(p, code_files, seen_paths)
+                expanded_tests = expand_dir_entry(p, test_files, seen_paths)
+                if expanded_code or expanded_tests:
+                    for f in expanded_code:
+                        seen_paths[f] = zone["id"]
+                        kept["files"].append(f)
+                    for f in expanded_tests:
+                        seen_paths[f] = zone["id"]
+                        kept["tests"].append(f)
+                    continue
                 if p not in scope:
                     removed.append(p)
                     continue
@@ -861,7 +920,13 @@ def validate_and_normalize_doc_map(doc_map, code_files: list, test_files: list) 
             fatal.append(f"Zone Z{zone['id']} « {zone['name']} » : AUCUN des fichiers listés "
                          f"n'existe dans le périmètre (chemins inventés ?).")
         elif not declared:
-            fatal.append(f"Zone Z{zone['id']} « {zone['name']} » : aucun fichier assigné.")
+            # « Divers » vide n'est pas une faute : le prompt demande de NE PAS y recopier le
+            # surplus (c'est la couverture qui le remplit) — la rejeter contredisait la consigne.
+            if slugify(zone["name"]) == "divers":
+                soft.append(f"Zone Z{zone['id']} « {zone['name']} » déclarée vide : complétée "
+                            f"par le contrôle de couverture (ou retirée si rien ne reste).")
+            else:
+                fatal.append(f"Zone Z{zone['id']} « {zone['name']} » : aucun fichier assigné.")
         if len(zone["files"]) + len(zone["tests"]) > SOFT_MAX_FILES_PER_ZONE:
             soft.append(f"Zone Z{zone['id']} « {zone['name']} » : "
                         f"{len(zone['files']) + len(zone['tests'])} fichiers "
@@ -896,7 +961,29 @@ def validate_and_normalize_doc_map(doc_map, code_files: list, test_files: list) 
                     f"périmètre absent(s) de la carte — ajouté(s) mécaniquement à la zone "
                     f"« Divers » (Z{divers['id']}).")
 
+    # Une « Divers » déclarée vide et restée vide après couverture n'a plus de raison d'être
+    # (une passe de documentation sur zéro fichier n'aurait aucun sens).
+    zones[:] = [z for z in zones
+                if not (isinstance(z, dict) and slugify(str(z.get("name") or "")) == "divers"
+                        and not (z.get("files") or z.get("tests")))]
+
     return fatal, soft
+
+
+def divers_size(doc_map: dict) -> int:
+    """Nombre de fichiers (code + tests) rangés en zone « Divers » — 0 si absente."""
+    for zone in doc_map.get("zones") or []:
+        if isinstance(zone, dict) and slugify(str(zone.get("name") or "")) == "divers":
+            return len(zone.get("files") or []) + len(zone.get("tests") or [])
+    return 0
+
+
+def divers_files(doc_map: dict) -> list:
+    """Fichiers (code + tests) de la zone « Divers » — [] si absente."""
+    for zone in doc_map.get("zones") or []:
+        if isinstance(zone, dict) and slugify(str(zone.get("name") or "")) == "divers":
+            return list(zone.get("files") or []) + list(zone.get("tests") or [])
+    return []
 
 
 def save_doc_map(doc_map: dict):
@@ -922,31 +1009,47 @@ def peek_doc_map():
 
 # ─── PROMPTS DÉPORTÉS PAR FICHIER ─────────────────────────────────────────────
 
-def summarize_by_directory(files: list) -> str:
+def summarize_by_directory(files: list, max_lines: int = 60) -> str:
     """Résumé par répertoire des fichiers NON listés dans le prompt de cartographie
-    (dégradation assumée et affichée : ils finiront en zone « Divers » via la couverture)."""
+    (assignables PAR RÉPERTOIRE : entrée de la carte terminée par '/' ; sinon ils finiront
+    en zone « Divers » via la couverture). Borné à `max_lines` répertoires, les plus
+    peuplés d'abord."""
     counts = {}
     for f in files:
         d = os.path.dirname(f) or "."
         counts[d] = counts.get(d, 0) + 1
-    return "\n".join(f"- {d}/ : {n} fichier(s) non listé(s)" for d, n in sorted(counts.items()))
+    ordered = sorted(counts.items(), key=lambda item: (-item[1], item[0]))
+    lines = [f"- {d}/ : {n} fichier(s) non listé(s)" for d, n in ordered[:max_lines]]
+    if len(ordered) > max_lines:
+        lines.append(f"- (+ {len(ordered) - max_lines} autre(s) répertoire(s))")
+    return "\n".join(lines)
 
 
 def build_carto_scope_blocks(code_files: list, test_files: list) -> tuple:
     """Blocs « fichiers à assigner » du prompt cartographe, bornés à
-    MAX_SCOPE_FILES_IN_CARTO au total. Renvoie (bloc_code, bloc_tests, bloc_surplus)."""
-    listed_code = code_files[:MAX_SCOPE_FILES_IN_CARTO]
+    MAX_SCOPE_FILES_IN_CARTO au total. Renvoie (bloc_code, bloc_tests, bloc_surplus).
+
+    Les fichiers listés sont un ÉCHANTILLON représentatif de tous les répertoires (code
+    applicatif d'abord), pas les N premiers par ordre alphabétique — sur un monorepo, ces
+    N premiers étaient 300 feuilles de style d'icônes et zéro fichier de src/. Le surplus
+    est résumé par répertoire et assignable PAR RÉPERTOIRE."""
+    listed_code = select_carto_sample(code_files, MAX_SCOPE_FILES_IN_CARTO)
     remaining = MAX_SCOPE_FILES_IN_CARTO - len(listed_code)
-    listed_tests = test_files[:max(0, remaining)]
-    overflow = code_files[len(listed_code):] + test_files[len(listed_tests):]
+    listed_tests = select_carto_sample(test_files, max(0, remaining))
+    listed = set(listed_code) | set(listed_tests)
+    overflow = [f for f in code_files + test_files if f not in listed]
     code_block = "\n".join(f"- {f}" for f in listed_code) or "(aucun)"
     tests_block = "\n".join(f"- {f}" for f in listed_tests) or "(aucun)"
     overflow_block = ""
     if overflow:
-        overflow_block = (f"\n(⚠️ Périmètre tronqué à {MAX_SCOPE_FILES_IN_CARTO} fichiers : "
-                          f"{len(overflow)} fichier(s) non listé(s), résumé(s) par répertoire "
-                          f"ci-dessous. NE les assigne PAS : l'orchestrateur les ajoutera "
-                          f"mécaniquement à la zone « Divers ».)\n"
+        overflow_block = (f"\n(⚠️ Périmètre de {len(code_files) + len(test_files)} fichiers : "
+                          f"{len(listed)} listés ci-dessus (échantillon représentatif de tous les "
+                          f"répertoires), {len(overflow)} non listé(s), résumés par répertoire "
+                          f"ci-dessous. Assigne-les PAR RÉPERTOIRE : une entrée de files: dont le "
+                          f"chemin se termine par '/' couvre tous les fichiers du périmètre qu'il "
+                          f"contient (récursivement, code et tests). Ce que tu n'assignes pas ira "
+                          f"mécaniquement en zone « Divers », qui doit rester un résiduel — pas "
+                          f"l'essentiel du projet.)\n"
                           + summarize_by_directory(overflow))
     return code_block, tests_block, overflow_block
 
@@ -967,6 +1070,10 @@ Tu n'écris QUE deux fichiers : '{DOC_MAP_FILE}' à la racine, puis ta sentinell
 {grid_text}
 
 --- FICHIERS À ASSIGNER (découverts par l'orchestrateur ; chemins à RECOPIER tels quels) ---
+Une entrée de files: ou tests: peut aussi être un RÉPERTOIRE (chemin terminé par '/', ex.
+"src/cart/") : elle assigne à la zone tous les fichiers du périmètre qu'il contient et qui
+ne sont pas déjà assignés ailleurs. La zone « Divers » peut être omise ou déclarée vide :
+l'orchestrateur y range mécaniquement ce que tu n'auras pas assigné.
 FICHIERS DE CODE ({len(code_files)}) :
 {code_block}
 
@@ -1213,6 +1320,11 @@ def run_cartography(grid_text: str, code_files: list, test_files: list) -> dict:
         save_doc_map(doc_map)
         _DOC_MAP_STATE["map"] = doc_map
         print(f"♻️  '{DOC_MAP_FILE}' existant et valide : cartographie sautée (reprise).")
+        # Carte écrite APRÈS l'arrêt d'un run resté sans clôture : livrable d'un agent
+        # orphelin, à relire avant de la reprendre comme valide.
+        residual = residual_deliverable_warning(DOC_MAP_FILE, "documentation")
+        if residual:
+            soft = list(soft) + [residual]
         confirm_doc_map(doc_map, soft)
         return doc_map
 
@@ -1282,6 +1394,17 @@ def run_cartography(grid_text: str, code_files: list, test_files: list) -> dict:
                           "moins un fichier existant. Réécris le fichier entièrement.")
             print(f"⚠️  [REJET] Tentative {attempts} : carte structurellement invalide "
                   f"({len(fatal)} anomalie(s)).")
+        elif divers_size(candidate) > DIVERS_RETRY_THRESHOLD and attempts < MAX_ATTEMPTS:
+            # Une « Divers » qui contient l'essentiel du projet n'est pas une cartographie :
+            # on rejoue tant qu'il reste des tentatives, en nommant les répertoires à assigner.
+            overflow = divers_size(candidate)
+            feedback = (f"Ta carte laisse {overflow} fichiers en zone « Divers » (résiduel), soit "
+                        f"l'essentiel du projet : ce n'est pas un découpage fonctionnel. Assigne-les "
+                        f"à des zones fonctionnelles nommées, PAR RÉPERTOIRE (entrée de files: "
+                        f"terminée par '/'). Répertoires concernés :\n"
+                        + summarize_by_directory(divers_files(candidate)))
+            print(f"⚠️  [REJET] Tentative {attempts} : {overflow} fichiers en « Divers » "
+                  f"(> {DIVERS_RETRY_THRESHOLD}) — la carte ne découpe pas le projet.")
         else:
             doc_map, soft = candidate, cand_soft
             break
@@ -1346,7 +1469,7 @@ def run_doc_passes(grid_text: str, doc_map: dict, test_scope: set):
                       f"supprime '{deliverable}' et relance pour la re-documenter.")
             else:
                 print(f"⏭️  Passe Z{zone_id} ({position}/{total}) déjà documentée ('{deliverable}') : sautée.")
-            legacy_issues = zone_content_issues(deliverable, test_scope)
+            legacy_issues = zone_content_issues(deliverable, test_scope, zone.get("files"))
             if legacy_issues:
                 print(f"   ⚠️  Écart(s) vérifiable(s) dans ce fichier repris (ancien run ?) : "
                       f"{len(legacy_issues)} — supprime '{deliverable}' et relance pour le "
@@ -1372,7 +1495,7 @@ def run_doc_passes(grid_text: str, doc_map: dict, test_scope: set):
             # Rattrapage d'un livrable TARDIF (même logique que l'audit) — accepté aux
             # MÊMES conditions qu'un livrable nominal : structure ET gardes de contenu.
             if attempts > 1 and zone_ok(deliverable) \
-                    and not zone_content_issues(deliverable, test_scope):
+                    and not zone_content_issues(deliverable, test_scope, zone.get("files")):
                 print(f"   ♻️  '{deliverable}' est finalement arrivé (livrable tardif) : accepté.")
                 success = True
                 break
@@ -1423,7 +1546,7 @@ def run_doc_passes(grid_text: str, doc_map: dict, test_scope: set):
             # ── GARDES DE CONTENU (mécaniques, zéro LLM) ── : sources citées existantes,
             # « Couvert » adossé à un test réel, Bilan égal au comptage réel. L'écart
             # EXACT est renvoyé au documentaliste — pas un jugement, un fait vérifiable.
-            issues = zone_content_issues(deliverable, test_scope)
+            issues = zone_content_issues(deliverable, test_scope, zone.get("files"))
             if issues:
                 feedback = ("Ton fichier de zone contient des écarts VÉRIFIABLES :\n- "
                             + "\n- ".join(issues)
@@ -1553,7 +1676,7 @@ def run_overview(doc_map: dict):
 # font foi (un fichier d'ancien run ne fausse jamais l'annexe de couverture).
 BILAN_FEATURES_RE = re.compile(r"^\s*-\s*\**Features\**\s*:\s*(\d+)", re.IGNORECASE)
 BILAN_ATS_RE = re.compile(
-    r"^\s*-\s*\**Tests d.acceptance\**\s*:\s*(\d+)\s*"
+    r"^\s*-\s*\**Tests d.accept(?:ance|ation)\**\s*:\s*(\d+)\s*"
     r"\(\s*couverts?\s*:\s*(\d+)\s*[,;]\s*propos[ée]s?\s*:\s*(\d+)\s*\)", re.IGNORECASE)
 
 FEATURE_HEADING_RE = re.compile(r"^###\s+(F\d+\s*[—–-].+)$")

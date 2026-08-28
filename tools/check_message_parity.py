@@ -39,15 +39,15 @@ REPO     = os.path.dirname(HERE)
 SIBLINGS = os.path.dirname(REPO)
 
 SCRIPTS = [
-    ("Safe-Coding.py", "factory"),
+    ("Coding.py", "factory"),
     ("Spec.py", "spec"),
     ("Technical-Plan.py", "techplan"),
     ("Coding-Without-Tests.py", "factory"),
-    ("Safe-TDD.py", "tdd"),
+    ("Test-First.py", "test-first"),
     ("Design-Prototype.py", "proto"),
     ("Documentation.py", "doc"),
     ("Audit-Design.py", "audit"),
-    ("Audit-A11Y-RGAA.py", "a11y"),
+    ("Pre-Audit-A11Y-RGAA.py", "a11y"),
     ("Guided-Fix.py", "fix"),
 ]
 

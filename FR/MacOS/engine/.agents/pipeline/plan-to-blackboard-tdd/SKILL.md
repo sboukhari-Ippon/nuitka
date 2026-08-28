@@ -99,6 +99,8 @@ Le document YAML généré doit obligatoirement respecter la structure hiérarch
 | phases[].covers | Array | Les identifiants d'user stories du champ « Couvre » de la phase, recopiés tels quels (Ex: ["US-1"]). Omets le champ si la phase n'a pas de « Couvre » |
 | phases[].context | String | Recopie du champ « Contexte pour l'exécutant » de la phase (la place de l'exécutant dans le plan). Omets le champ si le plan ne le déclare pas |
 | phases[].files_to_read | Array | Recopie de la liste « Input requis » de la phase (les fichiers que l'exécutant doit lire en premier). Omets le champ si le plan ne le déclare pas |
+| phases[].tests_to_remove | Array | Recopie du champ « Tests à supprimer » de la phase (fichiers de test existants déclarés obsolètes : l'orchestrateur les supprime lui-même au début de la phase). Omets le champ si le plan déclare « (aucun) » ou rien |
+| phases[].tests_to_update | Array | Recopie du champ « Tests à modifier » de la phase (fichiers de test existants que l'exécutant a le droit de modifier). Omets le champ si le plan déclare « (aucun) » ou rien |
 | phases[].tasks | Array | Les « Instructions Micro » de la phase, recopiées en micro-tâches unitaires et vérifiables |
 | phases[].verdict | String | Initialisé obligatoirement à la valeur "PENDING" |
 | phases[].critic_feedback | String | Initialisé obligatoirement à une chaîne vide "" |

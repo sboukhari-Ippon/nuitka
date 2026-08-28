@@ -181,7 +181,7 @@
   <div class="mark" aria-hidden="true"></div>
   <h1>MAIsterMind <small>orchestrator diagrams</small></h1>
   <button class="themebtn" id="themebtn" aria-label="Toggle between light and dark theme" title="Toggle theme"></button>
-  <p>The factory's 16 orchestrators, ENG variant (engine identical across the 3 OSes): pipeline, human gates, verdicts and deliverables — one tab per script.</p>
+  <p>The factory's 13 orchestrators, ENG variant (engine identical across the 3 OSes): pipeline, human gates, verdicts and deliverables — one tab per script.</p>
 </header>
 
 <div class="wrap">
@@ -442,8 +442,8 @@ const TABS = [];
         spec = N("agent","Spec.py","step 1 only"),
         tp = N("agent","Technical-Plan.py","steps 1 to 3"),
         art = N("file","spec.md · plan.md · blackboard.yaml","reused as-is (file-based resume)"),
-        us = N("agent","Full factories ×5","Safe-Coding · Coding-Without-Tests · Safe-TDD · Safe-ATDD · Design-Prototype"),
-        yo = N("agent","Yolo overlay ×3","impact + verifier + triage"),
+        us = N("agent","Full factories ×5","Coding · Coding-Without-Tests · Test-First · Acceptance-First · Design-Prototype"),
+        yo = N("agent","Built-in overlay","impact + verifier + triage, inside Coding · Test-First · Acceptance-First"),
         code = N("file","code + tests + reports"),
         fix = N("agent","Guided-Fix.py","r/e arbitration after the fact"),
         sk = N("agent","Skills-Adaptation.py","rewrites .agents/skills/"),
@@ -451,9 +451,9 @@ const TABS = [];
   TABS.push({
     key:"vue", nav:"overview", grp:"Map",
     eyebrow:"Overview", title:"How the 16 scripts fit together",
-    role:"Everything travels through files: the partial pipelines produce exactly the deliverables the factories resume from, the Yolo scripts are copies of the bases enriched with impact arbitration, and repair as well as audits work on the existing project. Every run leaves a local journal <code>.mm-runs/&lt;id&gt;/</code> (chronology, frozen artifacts, summary — <code>MM_AUDIT=0</code> to disable).",
+    role:"Everything travels through files: the partial pipelines produce exactly the deliverables the factories resume from, the three code factories embed impact arbitration during the run, and repair as well as audits work on the existing project. Every run leaves a local journal <code>.mm-runs/&lt;id&gt;/</code> (chronology, frozen artifacts, summary — <code>MM_AUDIT=0</code> to disable).",
     facts:[["Full factories","5 scripts — from the need to verified code"],
-           ["Yolo overlay","3 scripts — impact arbitration during the run"],
+           ["Built-in overlay","impact review, LLM verifier, triage — inside Coding, Test-First and Acceptance-First"],
            ["Partial pipelines","3 scripts — challenging the need, spec alone, or spec + plan + blackboard"],
            ["Audits, doc & tools","5 scripts — read-only or tooled rewriting"]],
     spec:{
@@ -468,41 +468,7 @@ const TABS = [];
              E(fix.id,us.id,{label:"FIXED → relaunch",kind:"ok",ch:1}),
              E(aud.id,code.id,{label:"reads, never modifies",dash:true,ch:2})]
     },
-    note:"Base-or-Yolo decision rule: new project, local/compact model or tight budget → base (+ fix.py as a safety net); brownfield with breakage risk, solid model → Yolo (arbitration happens during the run)."
-  });
-})();
-
-/* Safe-Coding.py */
-(function(){
-  const p = pipeline13("Architect Agent");
-  const sc = N("agent","Scaffold","executable skeleton"),
-        v0 = N("mech","dry-run verify","the suite runs, non-empty and green, before any code"),
-        cod = N("agent","Coder — phase N","fresh context, sliced spec"),
-        vc = N("mech","verify_cmd","compilation + full suite"),
-        rf = N("agent","Step 5: global refactor","refacto skill"),
-        vr = N("mech","verify_cmd","rollback on persistent regression"),
-        rep = N("file","refactoring_report.md");
-  TABS.push({
-    key:"mm", nav:"Safe-Coding.py", grp:"Full factories",
-    eyebrow:"Full factory · universal verdict", title:"Safe-Coding.py",
-    role:"The reference factory: separate feature and test phases, decided at plan time. Each phase is validated by actually executing the verification command — the exit code is authoritative, no LLM judges.",
-    facts:[["Human gates","2 — spec, blackboard"],
-           ["Verdict","100% mechanical: compilation + full suite at every phase"],
-           ["Deliverables","<code>spec.md</code> <code>plan.md</code> <code>blackboard.yaml</code> code + tests <code>refactoring_report.md</code>"],
-           ["When","New project, local/compact model, tight budget — the most robust mode"]],
-    spec:{
-      cap:"Upstream pipeline (2 human gates), then THE production loop: for each phase of the plan, coder → verify_cmd; red = new attempt by the same coder (3 max, then the run stops); green = commit, then loop to the next phase. Global refactor re-verified at end of run, rollback if the regression is proven.",
-      rows:[p.rows[0],p.rows[1],[sc,v0,cod,vc],[rf,vr,rep]],
-      edges:[...p.edges,
-        E(p.nodes.g2.id,sc.id,{label:"y",kind:"amb"}),
-        E(sc.id,v0.id),E(v0.id,cod.id,{label:"green",kind:"ok"}),E(cod.id,vc.id,{label:"sentinel .done"}),
-        E(vc.id,cod.id,{label:"red: new attempt by the SAME coder (≤3)",kind:"ko",dash:true}),
-        E(vc.id,cod.id,{label:"green: commit → loop to phase N+1",kind:"ok",ch:1}),
-        E(vc.id,rf.id,{label:"last phase DONE",kind:"ok"}),
-        E(rf.id,vr.id),E(vr.id,rf.id,{label:"red: fix ≤3, else ROLLBACK",kind:"ko",dash:true}),
-        E(vr.id,rep.id,{label:"green: commit",kind:"ok"})]
-    },
-    note:"Mechanical guards: anti “ghost coder” (a real git diff is required), tests protected once validated, non-decreasing test count. A stop on a red suite is repaired afterwards with <code>Guided-Fix.py</code>; on relaunch, a <code>FIXED</code> phase is revalidated by execution alone, no coder paid again."
+    note:"The overlay is part of the factories: on a greenfield project the impact review concludes « no impact » and costs one gate; on a brownfield the arbitration happens during the run (fix.py remains the after-the-fact safety net)."
   });
 })();
 
@@ -533,90 +499,6 @@ const TABS = [];
         E(rf.id,rep.id,{label:"no re-verification (no mechanical verdict)"})]
     },
     note:"The verifier cannot be bypassed by the coder: it is a separate, fresh-context instance whose verdict is parsed mechanically."
-  });
-})();
-
-/* Safe-TDD.py */
-(function(){
-  const p = pipeline13("TDD Architect Agent","plan.md (cycles)");
-  const sc = N("agent","Scaffold","green dry run — skipped on cycle resume"),
-        red = N("agent","Red coder","tests only — production FROZEN"),
-        vr = N("mech","verify_cmd","MUST fail"),
-        gre = N("agent","Green coder","minimal production — tests FROZEN"),
-        vg = N("mech","verify_cmd","MUST pass"),
-        rfc = N("agent","Cycle refactor","Beck's 3rd beat — tests frozen"),
-        vrf = N("mech","verify_cmd","must STAY green"),
-        rf5 = N("agent","Step 5: global refactor","inter-cycle duplication"),
-        vr5 = N("mech","verify_cmd","re-verifies the final polish"),
-        rep = N("file","refactoring_report.md");
-  TABS.push({
-    key:"tdd", nav:"Safe-TDD.py", grp:"Full factories",
-    eyebrow:"Full factory · red → green → refactor", title:"Safe-TDD.py",
-    role:"Plan-driven TDD: one cycle per behavior. The red is proven mechanically (inverted verdict), the green brings the full suite back to green, and the cycle refactor is re-verified with rollback to the green commit.",
-    facts:[["Human gates","2 — spec, blackboard"],
-           ["Verdict","Mechanical, interpreted by nature: failure required in red, success in green, suite that STAYS green through the refactor"],
-           ["Git guards","Production frozen in red · tests frozen in green as in refactor · mechanical rollback"],
-           ["When","Well-sliced unit behaviors; the closest to Beck's cycle"]],
-    spec:{
-      cap:"THE loop: one red → green → refactor cycle per behavior of the plan. Red: the suite MUST fail (proof the tests bite). Green: full suite green, commit = rollback point. Re-verified cycle refactor: if it breaks the suite (or times out), mechanical rollback to the green commit and the run continues. Then loop to the next cycle, until the final global refactor.",
-      rows:[p.rows[0],p.rows[1],[sc,red,vr,gre,vg],[rfc,vrf],[rf5,vr5,rep]],
-      edges:[...p.edges,
-        E(p.nodes.g2.id,sc.id,{label:"y",kind:"amb"}),
-        E(sc.id,red.id,{label:"green dry run",kind:"ok"}),
-        E(red.id,vr.id),E(vr.id,red.id,{label:"green, or existing tests broken = reject",kind:"ko",dash:true}),
-        E(vr.id,gre.id,{label:"red reached · commit",kind:"ok"}),
-        E(gre.id,vg.id),E(vg.id,gre.id,{label:"red: feedback, ≤3",kind:"ko",dash:true,ch:1}),
-        E(vg.id,rfc.id,{label:"green · green commit",kind:"ok"}),
-        E(rfc.id,vrf.id),
-        E(vrf.id,rfc.id,{label:"red, shrinking count or timeout: ROLLBACK to the green commit",kind:"ko",dash:true}),
-        E(vrf.id,red.id,{label:"green · commit → loop: next cycle",kind:"ok",ch:1}),
-        E(vrf.id,rf5.id,{label:"last cycle",kind:"ok"}),
-        E(rf5.id,vr5.id),E(vr5.id,rf5.id,{label:"red: fix ≤3, else ROLLBACK",kind:"ko",dash:true}),
-        E(vr5.id,rep.id,{label:"green: commit",kind:"ok"})]
-    },
-    note:"Deliberate departures from orthodox Beck: a batch of tests per red (not one test at a time) and design decided at plan time (not emergent). Mutation testing (brick B, optional) checks warn-only that the suite bites the implementation."
-  });
-})();
-
-/* Safe-ATDD.py */
-(function(){
-  const p = pipeline13("ATDD Architect Agent","plan.md (batches per US)");
-  const sc = N("agent","Scaffold","green dry run — skipped on batch resume"),
-        at = N("agent","atdd-test coder","acceptance suite — production FROZEN"),
-        vt = N("mech","universal verdict","MUST fail"),
-        ai = N("agent","atdd-impl coder ×N","bounded steps — tests FROZEN"),
-        vb = N("mech","build_cmd","compiles production ALONE"),
-        cl = N("agent","Batch-closing coder"),
-        vu = N("mech","universal verdict","full suite green"),
-        mu = N("mech","mutation (brick B)","warn-only — targets the whole batch"),
-        rf = N("agent","Global refactor"), vr5 = N("mech","verify_cmd","re-verifies the final polish"),
-        rep = N("file","refactoring_report.md");
-  TABS.push({
-    key:"atdd", nav:"Safe-ATDD.py", grp:"Full factories",
-    eyebrow:"Full factory · acceptance batches", title:"Safe-ATDD.py",
-    role:"Plan-driven ATDD: one batch per user story. The story's acceptance suite (black box, public contract set at plan time) is written first and must fail; implementation steps compile; the last one brings everything back to green.",
-    facts:[["Human gates","2 — spec, blackboard"],
-           ["Verdict","Mechanical, by nature AND position: failure in test, <code>build_cmd</code> on intermediate steps, universal verdict at closing"],
-           ["Traceability","1 acceptance criterion = 1 test case min. · 1 US = 1 batch (verified)"],
-           ["When","Rich stories with a clear public contract; the acceptance test is the executable spec"]],
-    spec:{
-      cap:"THE loop: one batch per user story. The batch's acceptance suite must fail (attributable red — production frozen), each intermediate step must only compile (build_cmd, production alone — the full suite stays red, that's normal), the closing requires the full suite green then the warn-only mutation on the whole batch; commit, and loop to the next batch. Global refactor re-verified at end of run.",
-      rows:[p.rows[0],p.rows[1],[sc,at,vt,ai,vb],[cl,vu,mu],[rf,vr5,rep]],
-      edges:[...p.edges,
-        E(p.nodes.g2.id,sc.id,{label:"y",kind:"amb"}),
-        E(sc.id,at.id,{label:"green dry run",kind:"ok"}),
-        E(at.id,vt.id),E(vt.id,at.id,{label:"green suite, or existing tests broken = reject",kind:"ko",dash:true}),
-        E(vt.id,ai.id,{label:"red reached · commit · batch milestone",kind:"ok"}),
-        E(ai.id,vb.id),E(vb.id,ai.id,{label:"green: next step (suite still red: normal)",kind:"ok",dash:true}),
-        E(vb.id,cl.id,{label:"last step of the batch"}),
-        E(cl.id,vu.id),E(vu.id,cl.id,{label:"red: feedback, ≤3",kind:"ko",dash:true}),
-        E(vu.id,mu.id,{label:"green",kind:"ok"}),
-        E(mu.id,at.id,{label:"commit → loop: next batch",kind:"ok",ch:1}),
-        E(mu.id,rf.id,{label:"last batch",kind:"ok"}),
-        E(rf.id,vr5.id),E(vr5.id,rf.id,{label:"red: fix ≤3, else ROLLBACK",kind:"ko",dash:true}),
-        E(vr5.id,rep.id,{label:"green: commit",kind:"ok"})]
-    },
-    note:"The compilation command excludes test files (the mode's #1 trap): otherwise no intermediate step can converge while the API expected by the tests does not fully exist."
   });
 })();
 
@@ -661,7 +543,7 @@ const TABS = [];
   });
 })();
 
-/* Advanced-Coding.py */
+/* Coding.py */
 (function(){
   const p = pipeline13("Architect Agent");
   const imp = N("agent","Impact review (2bis)","crosses plan.md with existing code"),
@@ -678,9 +560,9 @@ const TABS = [];
         rf = N("agent","Global refactor"), vr5 = N("mech","verify_cmd","re-verifies the final polish"),
         rep = N("file","refactoring_report.md");
   TABS.push({
-    key:"yolo", nav:"Advanced-Coding.py", grp:"Yolo overlay",
-    eyebrow:"Yolo overlay · every phase", title:"Advanced-Coding.py",
-    role:"The Safe-Coding.py base + impact arbitration during the run: an impact review approved upstream, an LLM verifier on the green path, and on the red path a triage that separates ratified breakage, side effect and true conflict.",
+    key:"coding", nav:"Coding.py", grp:"Full factories",
+    eyebrow:"Full factory · universal verdict · overlay on every phase", title:"Coding.py",
+    role:"Universal verdict + impact arbitration during the run: an impact review approved upstream, an LLM verifier on the green path, and on the red path a triage that separates ratified breakage, side effect and true conflict.",
     facts:[["Human gates","3 fixed (spec, impact, blackboard) + mid-run arbitration on CONFLICT"],
            ["Red path","EVERY red goes to triage: PREVU → mechanical logged deletion; the rest → repairer; CONFLICT (declared by the repairer) → human arbitration"],
            ["Verdict","Mechanical first; the LLM verifier never stamps DONE (a rejection consumes an attempt)"],
@@ -713,7 +595,7 @@ const TABS = [];
   });
 })();
 
-/* Advanced-TDD.py */
+/* Test-First.py */
 (function(){
   const p = pipeline13("TDD Architect Agent","plan.md (cycles)");
   const imp = N("agent","Impact review (2bis)","crosses plan.md with existing code"),
@@ -722,7 +604,7 @@ const TABS = [];
         sc = N("agent","Scaffold","green dry run — skipped on cycle resume"),
         red = N("agent","Red coder","tests only — production FROZEN · no triage, no verifier"),
         vr = N("mech","verify_cmd","MUST fail"),
-        gre = N("agent","Green coder","minimal production — tests FROZEN"),
+        gre = N("agent","Green coder","minimal production — tests FROZEN (except the plan's tests_to_remove / tests_to_update)"),
         vg = N("mech","verify_cmd","MUST pass"),
         ver = N("agent","LLM Verifier","the green's checklist — OK / REJECTED"),
         rfc = N("agent","Cycle refactor","Beck's 3rd beat — tests frozen"),
@@ -735,15 +617,15 @@ const TABS = [];
         vr5 = N("mech","verify_cmd","re-verifies the final polish"),
         rep = N("file","refactoring_report.md");
   TABS.push({
-    key:"ytdd", nav:"Advanced-TDD.py", grp:"Yolo overlay",
-    eyebrow:"Yolo overlay · green phases only", title:"Advanced-TDD.py",
-    role:"The complete Safe-TDD.py base (upstream pipeline with impact review, scaffold, red → green → refactor cycles, global refactor) + the Yolo overlay bounded to green phases: reds keep their inverted verdict intact (a red there is a success — triage would make no sense), and the cycle refactor is played after the verifier.",
+    key:"tdd", nav:"Test-First.py", grp:"Full factories",
+    eyebrow:"Full factory · test-first by red → green → refactor cycles (inspired by TDD) · overlay on green phases", title:"Test-First.py",
+    role:"The complete test-first pipeline (upstream pipeline with impact review, scaffold, red → green → refactor cycles, global refactor) + the overlay bounded to green phases: reds keep their inverted verdict intact (a red there is a success — triage would make no sense), and the cycle refactor is played after the verifier.",
     facts:[["Overlay scope","<code>tdd-green</code> phases ONLY — red and inverted verdict unchanged"],
            ["Human gates","3 fixed (spec, impact, blackboard) + mid-run arbitration on CONFLICT"],
            ["Cycle refactor","Present as in the base: Beck's 3rd beat, mechanical rollback to the green commit"],
-           ["When","TDD on brownfield: existing behavior can break at green, never at red"]],
+           ["When","Test-first on brownfield: existing behavior can break at green, never at red"]],
     spec:{
-      cap:"Same upstream pipeline as Advanced-Coding.py (3 gates including the impact review), scaffold, then THE cycle loop. Red: pure TDD mechanics, the suite MUST fail. Green: green suite → LLM verifier → re-verified cycle refactor (rollback to the green commit if it breaks) → loop to the next cycle. Red suite at green: triage (EVERY red goes through it) — PREVU (expected) deleted mechanically, the rest to the repairer, CONFLICT → human arbitration; every outcome re-verifies, green = back onto the green path, otherwise feedback to the green coder (attempt consumed, ≤3).",
+      cap:"Same upstream pipeline as Coding.py (3 gates including the impact review), scaffold, then THE cycle loop. Red: pure TDD mechanics, the suite MUST fail. Green: green suite → LLM verifier → re-verified cycle refactor (rollback to the green commit if it breaks) → loop to the next cycle. Red suite at green: triage (EVERY red goes through it) — PREVU (expected) deleted mechanically, the rest to the repairer, CONFLICT → human arbitration; every outcome re-verifies, green = back onto the green path, otherwise feedback to the green coder (attempt consumed, ≤3).",
       rows:[p.rows[0],[p.nodes.ar,p.nodes.plan,imp,impf,gi],[p.nodes.bb,p.nodes.bby,p.nodes.g2],
             [sc,red,vr],[gre,vg,ver],[rfc,vrf],[tri,sup,repa,arb],[rf5,vr5,rep]],
       edges:[E(p.nodes.need.id,p.nodes.po.id),E(p.nodes.po.id,p.nodes.spec.id),E(p.nodes.spec.id,p.nodes.g1.id),
@@ -775,7 +657,7 @@ const TABS = [];
   });
 })();
 
-/* Advanced-ATDD.py */
+/* Acceptance-First.py */
 (function(){
   const p = pipeline13("ATDD Architect Agent","plan.md (batches per US)");
   const imp = N("agent","Impact review (2bis)","crosses plan.md with existing code"),
@@ -784,7 +666,7 @@ const TABS = [];
         sc = N("agent","Scaffold","green dry run — skipped on batch resume"),
         at = N("agent","atdd-test coder","inverted verdict intact — production FROZEN"),
         vt = N("mech","verify_cmd","MUST fail"),
-        ai = N("agent","atdd-impl coder ×N","steps intact — tests FROZEN"),
+        ai = N("agent","atdd-impl coder ×N","steps intact — tests FROZEN (except the plan's tests_to_remove / tests_to_update)"),
         vb = N("mech","build_cmd","compiles production ALONE"),
         cl = N("agent","Batch-closing coder"),
         vu = N("mech","verify_cmd","full suite green"),
@@ -798,15 +680,15 @@ const TABS = [];
         vr5 = N("mech","verify_cmd","re-verifies the final polish"),
         rep = N("file","refactoring_report.md");
   TABS.push({
-    key:"yatdd", nav:"Advanced-ATDD.py", grp:"Yolo overlay",
-    eyebrow:"Yolo overlay · batch closings only", title:"Advanced-ATDD.py",
-    role:"The complete Safe-ATDD.py base (upstream pipeline with impact review, scaffold, one batch per user story, global refactor) + the Yolo overlay, bounded to the phases that close a batch: test phases (inverted verdict) and intermediate steps (compilation alone) remain strictly unchanged.",
+    key:"atdd", nav:"Acceptance-First.py", grp:"Full factories",
+    eyebrow:"Full factory · acceptance-first by user-story batches (inspired by ATDD) · overlay on batch closings", title:"Acceptance-First.py",
+    role:"The complete acceptance-first pipeline (upstream pipeline with impact review, scaffold, one batch per user story, global refactor) + the overlay, bounded to the phases that close a batch: test phases (inverted verdict) and intermediate steps (compilation alone) remain strictly unchanged.",
     facts:[["Overlay scope","Batch-CLOSING phases only — test and build_cmd steps unchanged"],
            ["Human gates","3 fixed (spec, impact, blackboard) + mid-run arbitration on CONFLICT"],
            ["Refactor","No per-batch refactor: the 3rd beat is pooled into the final global refactor, re-verified"],
-           ["When","ATDD on brownfield: the closing is where the full suite can reveal breakage"]],
+           ["When","ATest-first on brownfield: the closing is where the full suite can reveal breakage"]],
     spec:{
-      cap:"Same upstream pipeline as Advanced-Coding.py (3 gates including the impact review), scaffold, then THE batch loop: acceptance suite that MUST fail, intermediate steps that compile (build_cmd alone, no overlay), closing on the full suite. At closing only: green → LLM verifier → warn-only mutation → commit, loop to the next batch; red → triage (EVERY red goes through it) — PREVU (expected) deleted mechanically, the rest to the repairer, CONFLICT → human arbitration; every outcome re-verifies, green = back onto the green path, otherwise feedback to the coder (attempt consumed, ≤3).",
+      cap:"Same upstream pipeline as Coding.py (3 gates including the impact review), scaffold, then THE batch loop: acceptance suite that MUST fail, intermediate steps that compile (build_cmd alone, no overlay), closing on the full suite. At closing only: green → LLM verifier → warn-only mutation → commit, loop to the next batch; red → triage (EVERY red goes through it) — PREVU (expected) deleted mechanically, the rest to the repairer, CONFLICT → human arbitration; every outcome re-verifies, green = back onto the green path, otherwise feedback to the coder (attempt consumed, ≤3).",
       rows:[p.rows[0],[p.nodes.ar,p.nodes.plan,imp,impf,gi],[p.nodes.bb,p.nodes.bby,p.nodes.g2],
             [sc,at,vt],[ai,vb],[cl,vu,ver,mu],[tri,sup,repa,arb],[rf,vr5,rep]],
       edges:[E(p.nodes.need.id,p.nodes.po.id),E(p.nodes.po.id,p.nodes.spec.id),E(p.nodes.spec.id,p.nodes.g1.id),
@@ -938,7 +820,7 @@ const TABS = [];
   });
 })();
 
-/* audit-a11y */
+/* pre-audit-a11y */
 (function(){
   const rout = N("mech","Scope + pack routing","deterministic triggers — pass count"),
         g1 = N("gate","Gate: launch the audit","y/n — nothing is spent before this"),
@@ -949,19 +831,19 @@ const TABS = [];
         parse = N("mech","Verdict parser","C / NC / NA / AVM — exact excerpt located in the files (badge ✓ / ⚠️)"),
         agg = N("mech","Python aggregation","worst verdict per criterion, deduped findings, C→AVM on manual criteria"),
         syn = N("agent","LLM synthesis","fed the numbers — mechanical fallback"),
-        rep = N("file","accessibility_audit_report.md","rate as a range — PARTIAL if passes failed"),
-        dec = N("file","declaration_accessibilite.md","pre-filled skeleton");
+        rep = N("file","accessibility_pre_audit_report.md","rate as a range — PARTIAL if passes failed"),
+        dec = N("file","accessibility_pre_audit_summary.md","results summary");
   TABS.push({
-    key:"a11y", nav:"Audit-A11Y-RGAA.py", grp:"Audits & documentation",
-    eyebrow:"Audit · RGAA 4.1.2 · read-only", title:"Audit-A11Y-RGAA.py",
+    key:"a11y", nav:"Pre-Audit-A11Y-RGAA.py", grp:"Audits & documentation",
+    eyebrow:"Pre-audit · RGAA 4.1.2 · read-only", title:"Pre-Audit-A11Y-RGAA.py",
     role:"RGAA accessibility pre-audit (106 criteria, 13 themes) of an existing interface: theme packs are routed by deterministic triggers — no video, the Multimedia pack is never paid for.",
     facts:[["Human gates","2 — launch (scope + routing displayed), interface map"],
            ["Verdict","C/NC/NA/AVM verdicts checked by a parser, every finding PROVEN by a mechanically located excerpt, 100% Python aggregation (BEFORE the synthesis)"],
-           ["Deliverables","<code>a11y_map.yaml</code> <code>audit_a11y/</code> report + declaration"],
+           ["Deliverables","<code>a11y_map.yaml</code> <code>pre_audit_a11y/</code> report + summary"],
            ["Resume","File-based; after remediation, <code>--rejouer-modifiees &lt;ref&gt;</code> replays only the passes touched by the git diff"],
            ["When","Pricing the accessibility debt (RGAA/EAA), honest remediation quote"]],
     spec:{
-      cap:"Two gates: the deterministic pack routing is computed and displayed BEFORE anything is paid (gate 1), then the approved map (gate 2) sets the exact pass count — compartments over 25 files are split into slices so everything actually gets audited. Each pass restarts from a guaranteed-fresh context (hard harness reset) and must clear the parser: off-format or hallucinated excerpt = replayed (3 attempts max), and the orchestrator injects the detected trigger hits and NC probes as clues to confirm. The Python aggregation consolidates to the worst verdict BEFORE the LLM synthesis, which only receives the numbers; the rate is reported as a range.",
+      cap:"Two gates: the deterministic pack routing is computed and displayed BEFORE anything is paid (gate 1), then the approved map (gate 2) sets the exact pass count — compartments are split into slices (80 KB or 40 files) so everything actually gets audited; a slice with no pack trigger is declared NA mechanically (no agent paid); third-party assets (public/, dsfr/…) and pure logic without any UI signal are out of scope, traced in the appendix. Each pass restarts from a guaranteed-fresh context (hard harness reset) and must clear the parser: off-format or hallucinated excerpt = replayed (3 attempts max), and the orchestrator injects the detected trigger hits and NC probes as clues to confirm. The Python aggregation consolidates to the worst verdict BEFORE the LLM synthesis, which only receives the numbers; the rate is reported as a range.",
       rows:[[rout,g1,carto,map],[g,pas,parse],[agg,syn,rep,dec]],
       edges:[E(rout.id,g1.id),E(g1.id,carto.id,{label:"y",kind:"amb"}),E(carto.id,map.id),
         E(map.id,g.id),E(g.id,pas.id,{label:"y",kind:"amb"}),
@@ -996,7 +878,7 @@ const TABS = [];
            ["Deliverables","<code>doc_map.yaml</code> <code>doc_zones/</code> <code>documentation.md</code>"],
            ["When","Documenting an existing project (features + Covered/Proposed acceptance tests) before evolving it"]],
     spec:{
-      cap:"Two gates: the scope before paying, then the approved map. Each zone is documented by an independent pass checked by mechanical content guards (cited paths verified on disk, “Covered” requiring a real test file, counters recounted); the overview is written only AFTER the zones, from their summaries; the final assembly is Python, not an agent.",
+      cap:"Two gates: the scope before paying, then the approved map (the cartographer gets a representative sample of every directory and may assign whole directories; "Miscellaneous" is optional, and a map that leaves most of the project in it is replayed). Each zone is documented by an independent pass checked by mechanical content guards (cited paths verified on disk, “Covered” requiring a real test file, counters recounted); the overview is written only AFTER the zones, from their summaries; the final assembly is Python, not an agent.",
       rows:[[disc,g1,carto,map],[g,z,zf],[vue,asm,doc]],
       edges:[E(disc.id,g1.id),E(g1.id,carto.id,{label:"y",kind:"amb"}),E(carto.id,map.id),
         E(map.id,g.id),E(g.id,z.id,{label:"y",kind:"amb"}),
@@ -1023,7 +905,7 @@ const TABS = [];
     facts:[["Human gates","r/e triage per behavior (o = show details), y/n/q confirmation + approval of the updated spec"],
            ["Verdict","Execution of <code>verify_cmd</code> — green marks the phase <code>FIXED</code>"],
            ["Deliverables","<code>fix_report-&lt;uid&gt;.md</code> + <code>FIXED</code> marker"],
-           ["When","REJECTED phase, killed run, post-refactor regression — the after-the-fact equivalent of Yolo arbitration"]],
+           ["When","REJECTED phase, killed run, post-refactor regression — the after-the-fact equivalent of impact arbitration"]],
     spec:{
       cap:"Each broken behavior is arbitrated separately: both paths git-freeze what is authoritative (tests for a regression, production for an evolution) and converge on the same mechanical verdict. On residual red, the loop goes back to the fixer (3 rounds max, 3 agent attempts each); green marks FIXED — a claim the relaunched factory will revalidate by execution.",
       rows:[[diag,g],[corr,evo],[vc,fixed,rep,rel]],
@@ -1085,7 +967,7 @@ function legendSvg(kind){
 /* ── DOM construction ────────────────────────────────────────── */
 const rail = document.getElementById("rail");
 const main = document.getElementById("panels");
-const GROUPS = ["Map","Full factories","Yolo overlay","Partial pipelines","Audits & documentation","Tools"];
+const GROUPS = ["Map","Full factories","Partial pipelines","Audits & documentation","Tools"];
 const btns = {};
 const FIGS = [];
 

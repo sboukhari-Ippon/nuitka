@@ -71,7 +71,7 @@ Vérifie avant d'écrire ta sentinelle : les compteurs du Bilan doivent correspo
 ## Vérifications MÉCANIQUES de l'orchestrateur (rejet automatique, écart exact renvoyé)
 
 L'orchestrateur vérifie ton fichier par PROGRAMME avant de l'accepter — aucun jugement, des faits :
-- tout chemin cité entre backticks doit EXISTER dans le projet (une source inventée = rejet) ;
+- tout chemin de FICHIER cité entre backticks doit EXISTER dans le projet, recopié en entier depuis la racine (`scripts/x/y.sh`, jamais `y.sh` seul) — une source inventée = rejet. Les backticks sont réservés aux fichiers du projet : branches git, globs, motifs à placeholder et chemins créés à l'exécution s'écrivent entre guillemets « … » ;
 - tout « Couvert par `…` » doit citer un fichier de TEST existant du projet (sinon l'AT est « Proposé ») ;
 - les compteurs du Bilan doivent égaler le comptage réel de tes sections (`### F<n>`, `**AT<n>`).
 En cas d'écart, ta passe est rejouée avec l'écart exact en retour : autant écrire juste du premier coup.

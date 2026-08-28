@@ -98,6 +98,8 @@ The generated YAML document must respect the following hierarchical structure:
 | phases[].covers | Array | The user story ids from the phase's "Covers" field, copied as they are (e.g. ["US-1"]). Omit the field if the phase has no "Covers" |
 | phases[].context | String | Copy of the phase's "Context for the executor" field (the executor's place in the plan). Omit the field if the plan does not declare it |
 | phases[].files_to_read | Array | Copy of the phase's "Required input" list (the files the executor must read first). Omit the field if the plan does not declare it |
+| phases[].tests_to_remove | Array | Copy of the phase's "Tests to remove" field (existing test files declared obsolete: the orchestrator removes them itself at phase start). Omit the field if the plan declares "(none)" or nothing |
+| phases[].tests_to_update | Array | Copy of the phase's "Tests to modify" field (existing test files the executor is allowed to modify). Omit the field if the plan declares "(none)" or nothing |
 | phases[].tasks | Array | The phase's "Micro Instructions", copied as unit, verifiable micro-tasks |
 | phases[].verdict | String | Mandatorily initialized to "PENDING" |
 | phases[].critic_feedback | String | Mandatorily initialized to an empty string "" |

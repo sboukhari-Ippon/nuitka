@@ -31,10 +31,10 @@ from pathlib import Path
 
 BUILTINS = set(dir(builtins))
 ROOT = Path(__file__).resolve().parent.parent
-ORCHESTRATORS = ["Safe-Coding", "Coding-Without-Tests", "Safe-TDD", "Safe-ATDD",
-                 "Design-Prototype", "Advanced-Coding", "Advanced-TDD", "Advanced-ATDD",
+ORCHESTRATORS = ["Coding", "Coding-Without-Tests", "Test-First", "Acceptance-First",
+                 "Design-Prototype",
                  "Spec", "Challenge-Need", "Technical-Plan", "Documentation",
-                 "Audit-Design", "Audit-A11Y-RGAA", "Skills-Adaptation", "Guided-Fix"]
+                 "Audit-Design", "Pre-Audit-A11Y-RGAA", "Skills-Adaptation", "Guided-Fix"]
 KNOWN_MODULES = {"os", "re", "sys", "time", "signal", "subprocess", "shlex", "shutil",
                  "yaml", "json", "hashlib", "unicodedata", "mm_audit"}
 SKIP = {"main"}
@@ -156,7 +156,7 @@ def configure(**names):
 # mm_core. Les migrations ne recalculent JAMAIS les classes sur les sources courantes
 # (elles dérivent au fil des migrations : l'ensemble pourrait basculer vers une autre
 # variante que celle figée dans mm_core — corruption silencieuse, vue sur
-# apply_blackboard_defaults de Safe-Coding et réparée par l'audit d'intégrité).
+# apply_blackboard_defaults de Coding et réparée par l'audit d'intégrité).
 SOCLE_REF = "6e40327"
 MANIFEST_PATH = ROOT / "tools" / "mm_core_manifest.json"
 

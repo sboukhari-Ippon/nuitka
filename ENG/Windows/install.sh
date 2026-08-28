@@ -79,6 +79,24 @@ if [ -n "$MISSING" ]; then
 else
     say "✓ tmux, git, node présents."
 fi
+# Node : la PRÉSENCE ne suffit pas. L'outillage JS courant (vite 7+, vitest 3+) exige
+# Node ≥ 20.19 ; et le node vu par un shell de login interactif (celui de l'agent dans
+# tmux, nvm/fnm/volta chargés) doit être le même que celui vu ici — sinon les verdicts
+# des orchestrateurs tournent sous un autre Node que l'agent (incident du 23/08/2026).
+if command -v node >/dev/null 2>&1; then
+    NODE_HERE="$(command -v node)"
+    NODE_VERSION="$(node --version 2>/dev/null)"
+    NODE_MAJOR="$(printf '%s' "$NODE_VERSION" | sed -n 's/^v\{0,1\}\([0-9]*\).*/\1/p')"
+    say "✓ node $NODE_VERSION ($NODE_HERE)."
+    if [ -n "$NODE_MAJOR" ] && [ "$NODE_MAJOR" -lt 20 ] 2>/dev/null; then
+        say "⚠️  Node $NODE_VERSION est trop ancien pour l'outillage JS courant : installe Node 22 (nvm install 22 / NodeSource / brew node@22)."
+    fi
+    LOGIN_SHELL="${SHELL:-/bin/bash}"
+    NODE_LOGIN="$("$LOGIN_SHELL" -lic 'command -v node' </dev/null 2>/dev/null | tail -1)"
+    if [ -n "$NODE_LOGIN" ] && [ "$NODE_LOGIN" != "$NODE_HERE" ]; then
+        say "⚠️  Ton shell de login résout un autre node ($NODE_LOGIN) : l'app et ses orchestrateurs utiliseront celui-là (PATH du shell de login placé en tête au démarrage)."
+    fi
+fi
 # Harness d'agent : OpenCode ET/OU Codex CLI. UN SEUL suffit — c'est à
 # l'équipement du projet (dans l'app) que le harness se choisit. On ne réclame
 # donc que s'il n'y en a AUCUN.
@@ -122,7 +140,7 @@ elif [ "$IS_WSL" = "1" ]; then
         printf 'REM Genere par install.sh - lance MAIsterMind depuis son dossier d installation (WSL).\r\n'
         printf 'title MAIsterMind\r\n'
         printf 'where wsl.exe >nul 2>nul || (echo [MAIsterMind] WSL 2 est requis - PowerShell admin : wsl --install -d Ubuntu & pause & exit /b 1)\r\n'
-        printf 'wsl.exe -e bash -lc "cd '"'"'%s'"'"' && { chmod +x ./MAIsterMind_App ./MAIsterMind_App.py 2>/dev/null; if [ -x ./MAIsterMind_App ]; then exec ./MAIsterMind_App; elif [ -f ./MAIsterMind_App.py ]; then exec python3 ./MAIsterMind_App.py; fi; }; echo [MAIsterMind] App introuvable dans %s"\r\n' "$HERE" "$HERE"
+        printf 'wsl.exe -e bash -lic "cd '"'"'%s'"'"' && { chmod +x ./MAIsterMind_App ./MAIsterMind_App.py 2>/dev/null; if [ -x ./MAIsterMind_App ]; then exec ./MAIsterMind_App; elif [ -f ./MAIsterMind_App.py ]; then exec python3 ./MAIsterMind_App.py; fi; }; echo [MAIsterMind] App introuvable dans %s"\r\n' "$HERE" "$HERE"
         printf 'echo.\r\n'
         printf 'echo [MAIsterMind] App arretee. Les runs en cours continuent dans tmux (WSL).\r\n'
         printf 'pause\r\n'
@@ -134,16 +152,21 @@ elif [ "$IS_WSL" = "1" ]; then
 elif [ "$OS" = "Linux" ]; then
     # Entrée de menu (fiable partout) : le double-clic d'un .desktop posé dans un
     # dossier est bloqué par GNOME tant qu'il n'est pas « autorisé », le menu non.
-    # L'Exec passe par un wrapper généré (chemin en dur, bash -l : PATH de connexion,
-    # nvm/npm compris) plutôt que par une ligne Exec à quoting fragile.
+    # L'Exec passe par un wrapper généré (chemin en dur) plutôt que par une ligne Exec à
+    # quoting fragile. bash -lic et pas -lc : un shell de login NON interactif s'arrête
+    # à la garde « case $- in *i*) » du ~/.bashrc Ubuntu standard AVANT de charger nvm —
+    # l'app voyait alors le Node système (v18) et pas celui de l'utilisateur (v22). Le -i
+    # rend le shell interactif ; ses deux avertissements « pas de contrôle de tâche » sur
+    # stderr sont attendus sans terminal et sans effet.
     APPS_DIR="$HOME/.local/share/applications"
     BIN_DIR="$HOME/.local/bin"
     mkdir -p "$APPS_DIR" "$BIN_DIR"
     cat > "$BIN_DIR/maistermind-launch" <<WRAPPER
 #!/bin/sh
 # Généré par install.sh : cible Exec du .desktop MAIsterMind.
+# -lic (login + interactif) : sinon ~/.bashrc s'arrête avant de charger nvm/fnm/volta.
 cd "$HERE" || exit 1
-exec /bin/bash -lc 'if [ -x ./MAIsterMind_App ]; then exec ./MAIsterMind_App; else exec python3 ./MAIsterMind_App.py; fi'
+exec /bin/bash -lic 'if [ -x ./MAIsterMind_App ]; then exec ./MAIsterMind_App; else exec python3 ./MAIsterMind_App.py; fi'
 WRAPPER
     chmod +x "$BIN_DIR/maistermind-launch"
     cat > "$APPS_DIR/maistermind.desktop" <<DESKTOP

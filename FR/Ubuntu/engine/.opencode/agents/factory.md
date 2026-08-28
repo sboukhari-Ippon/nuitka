@@ -9,6 +9,7 @@ permission:
   grep: allow
   list: allow
   webfetch: allow
+  external_directory: allow
   question: deny
 ---
 

@@ -16,9 +16,9 @@ Why a dedicated entry point:
     today, launch production later (another time, another machine, another
     model — typically a small economical model).
   - SAME FILE CONTRACTS as the full variant: 'spec.md' + '.spec_approved',
-    'plan.md', 'blackboard.yaml'. Re-running Safe-Coding.py afterwards resumes these
+    'plan.md', 'blackboard.yaml'. Re-running Coding.py afterwards resumes these
     deliverables AS IS (steps 1 to 3 skipped) and starts directly at the production y/n.
-    This script targets the "universal verdict" variant (Safe-Coding.py): same pipeline
+    This script targets the "universal verdict" variant (Coding.py): same pipeline
     skills ('plan', 'plan-to-blackboard'), hence the same fields (nature, covers,
     verify_cmd…) in the produced blackboard.
 
@@ -93,7 +93,7 @@ PLAN_DONE_SENTINEL       = ".pipeline_plan.done"
 BLACKBOARD_DONE_SENTINEL = ".pipeline_blackboard.done"
 
 # HUMAN approval of the spec, materialized: the mere EXISTENCE of spec.md proves nothing.
-# This sentinel SURVIVES the end of this run: it is what Safe-Coding.py will read
+# This sentinel SURVIVES the end of this run: it is what Coding.py will read
 # to skip its step 1 when launching production.
 SPEC_APPROVED_SENTINEL   = ".spec_approved"
 
@@ -264,7 +264,7 @@ def check_need_file():
 
 
 # ─── BLACKBOARD SCHEMA VALIDATION (PRODUCED BY A FALLIBLE SMALL LLM) ───────────
-# Faithful copy of the Safe-Coding.py validation: the blackboard produced here is
+# Faithful copy of the Coding.py validation: the blackboard produced here is
 # INTENDED for its production — validating it now avoids discovering, when launching
 # production (later, elsewhere), that it is unusable.
 
@@ -760,7 +760,7 @@ def main():
     print(f"""
 🏁 Technical pipeline complete: from need to blackboard, without production.
    📦 Deliverables: '{SPEC_FILE}' (approved), '{PLAN_FILE}', '{BLACKBOARD_FILE}'
-   ➡️  To launch production: python3 Safe-Coding.py
+   ➡️  To launch production: python3 Coding.py
       Resume by files: spec, plan and blackboard are resumed AS IS, and
       production starts directly after your blackboard y/n. This is the right moment to
       switch to a more economical model (/model or '{AGENT_CONFIG_FILE}'):

@@ -15,7 +15,7 @@ Why a dedicated entry point:
     workshop with the business, large model reserved for the refinement…).
   - Same FILE CONTRACTS as the full variants ('spec.md' + approval sentinel
     '.spec_approved'): any orchestrator relaunched afterwards —
-    Technical-Plan.py (up to the blackboard), Safe-Coding.py, Coding-Without-Tests.py
+    Technical-Plan.py (up to the blackboard), Coding.py, Coding-Without-Tests.py
     or Design-Prototype.py — finds the approved spec and skips step 1 (resume by
     files, no configuration).
 
@@ -262,7 +262,7 @@ def print_handover():
 ➡️  Possible next steps (resume by files: the approved spec is reused
    as is, the PO step will NOT be replayed):
    - python3 Technical-Plan.py   → stop at the blackboard (technical plan only)
-   - python3 Safe-Coding.py             → run the whole pipeline down to the code
+   - python3 Coding.py             → run the whole pipeline down to the code
    Tip: this is the right moment to switch models (/model in the TUI or
    '{AGENT_CONFIG_FILE}') — large model to think, small model to produce.
 {'─'*50}""")

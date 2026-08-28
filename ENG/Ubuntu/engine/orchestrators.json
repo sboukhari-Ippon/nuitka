@@ -1,67 +1,8 @@
 {
   "contract_version": 1,
   "distro_version": "3.0.0",
-  "notes": "Manifeste de découverte lu par l'app MAIsterMind. Ajouter un orchestrateur = déposer son binaire à côté de ce fichier + ajouter une entrée ici. Les 'prompt_regex' des portes sont les libellés EXACTS affichés par les binaires (mode écran), FR et ENG en alternance : ce fichier est LE MÊME dans les 6 variantes (sync garantie par tools/check_variants_sync.py). Si un binaire reformule un prompt, mettre à jour sa regex ici, pas l'app. Une porte à fichier DYNAMIQUE (arbitrage mid-run des orchestrateurs Yolo) déclare 'file': null + 'file_glob' : l'app résout le nom réel le plus récent à la racine du projet (motif fermé, cf. DOC_DYNAMIC_RE côté app). Portes v1.1 : une porte porte un 'kind' optionnel — 'yn' (défaut historique, boutons Valider/Refuser), 'choice' (liste 'choices' [{key,label{fr,eng}}] : un bouton par choix, la key est envoyée telle quelle au pane — c'est ainsi que le triage r/e/o de Guided-Fix et les questionnaires 1/2/3 se pilotent depuis l'app), 'text' (saisie libre d'une ligne, 200 caractères max, 'placeholder' {fr,eng} optionnel). La regex d'une porte doit couvrir le libellé JUSQU'À son dernier caractère non blanc avant le ':' final, sinon la détection croit qu'une réponse est déjà tapée. Le harness d'agent (OpenCode ou Codex CLI) est choisi à l'équipement et inscrit dans '.mm-equip.json' du projet : le manifeste, lui, est neutre vis-à-vis du harness.",
+  "notes": "Manifeste de découverte lu par l'app MAIsterMind. Ajouter un orchestrateur = déposer son binaire à côté de ce fichier + ajouter une entrée ici. Les 'prompt_regex' des portes sont les libellés EXACTS affichés par les binaires (mode écran), FR et ENG en alternance : ce fichier est LE MÊME dans les 6 variantes (sync garantie par tools/check_variants_sync.py). Si un binaire reformule un prompt, mettre à jour sa regex ici, pas l'app. Une porte à fichier DYNAMIQUE (arbitrage mid-run des orchestrateurs Yolo) déclare 'file': null + 'file_glob' : l'app résout le nom réel le plus récent à la racine du projet (motif fermé, cf. DOC_DYNAMIC_RE côté app). Portes v1.1 : une porte porte un 'kind' optionnel — 'yn' (défaut historique, boutons Valider/Refuser), 'choice' (liste 'choices' [{key,label{fr,eng}}] : un bouton par choix, la key est envoyée telle quelle au pane — c'est ainsi que le triage r/e/o de Guided-Fix et les questionnaires 1/2/3 se pilotent depuis l'app), 'text' (saisie libre d'une ligne, 200 caractères max, 'placeholder' {fr,eng} optionnel). La regex d'une porte doit couvrir le libellé JUSQU'À son dernier caractère non blanc avant le ':' final, sinon la détection croit qu'une réponse est déjà tapée. Le harness d'agent (OpenCode ou Codex CLI) est choisi à l'équipement et inscrit dans '.mm-equip.json' du projet : le manifeste, lui, est neutre vis-à-vis du harness. Champ 'beta' (v1.3, optionnel) : orchestrateur affiché avec un badge « bêta » dans la Bibliothèque — fonctionnel mais moins éprouvé que les usines de code (Documentation, Audit-Design, Pre-Audit-A11Y-RGAA, Design-Prototype).",
   "orchestrators": [
-    {
-      "id": "universal",
-      "binary": "Safe-Coding",
-      "family": "production",
-      "title": {
-        "fr": "Safe-Coding",
-        "eng": "Safe-Coding"
-      },
-      "description": {
-        "fr": "Pipeline complet, verdict universel : l'orchestrateur exécute lui-même compilation + suite de tests à chaque phase (exit 0 = vert).",
-        "eng": "Full pipeline, universal verdict: the orchestrator itself runs compilation + the full test suite at every phase (exit 0 = green)."
-      },
-      "recommended": true,
-      "needs_need_md": true,
-      "gates": [
-        {
-          "id": "spec",
-          "title": {
-            "fr": "Porte 1 · Valider la spécification",
-            "eng": "Gate 1 · Validate the specification"
-          },
-          "file": "spec.md",
-          "prompt_regex": "Valider la spécification et lancer l'architecture \\? \\(y/n\\)|Validate the specification and start the architecture\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Relis en priorité « Hypothèses & Questions » et « Hors périmètre ». Tu peux éditer spec.md dans ton éditeur avant de valider : l'aperçu se recharge.",
-            "eng": "Review “Assumptions & Questions” and “Out of scope” first. You can edit spec.md in your editor before validating: the preview reloads."
-          },
-          "yes_label": {
-            "fr": "Valider et lancer l'architecture",
-            "eng": "Validate and start the architecture"
-          },
-          "no_label": {
-            "fr": "Refuser (arrêt propre)",
-            "eng": "Reject (clean stop)"
-          }
-        },
-        {
-          "id": "blackboard",
-          "title": {
-            "fr": "Porte 2 · Valider le blackboard",
-            "eng": "Gate 2 · Validate the blackboard"
-          },
-          "file": "blackboard.yaml",
-          "prompt_regex": "Valider le blackboard et lancer la production \\? \\(y/n\\)|Validate (?:the )?blackboard and start production\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Dernier arrêt avant la production. Tu peux ajuster les phases dans blackboard.yaml avant de valider : l'orchestrateur recharge le fichier s'il a changé pendant l'attente.",
-            "eng": "Last stop before production. You can adjust the phases in blackboard.yaml before validating: the orchestrator reloads the file if it changed while waiting."
-          },
-          "yes_label": {
-            "fr": "Valider et lancer la production",
-            "eng": "Validate and start production"
-          },
-          "no_label": {
-            "fr": "Refuser (arrêt propre)",
-            "eng": "Reject (clean stop)"
-          }
-        }
-      ]
-    },
     {
       "id": "code",
       "binary": "Coding-Without-Tests",
@@ -122,124 +63,6 @@
       ]
     },
     {
-      "id": "tdd",
-      "binary": "Safe-TDD",
-      "family": "production",
-      "title": {
-        "fr": "Safe-TDD",
-        "eng": "Safe-TDD"
-      },
-      "description": {
-        "fr": "Pipeline TDD : plan découpé en cycles red → green — la phase red doit faire ÉCHOUER la suite (verdict inversé), la phase green la remettre au vert.",
-        "eng": "TDD pipeline: plan split into red → green cycles — the red phase must make the suite FAIL (inverted verdict), the green phase brings it back to green."
-      },
-      "recommended": false,
-      "needs_need_md": true,
-      "gates": [
-        {
-          "id": "spec",
-          "title": {
-            "fr": "Porte 1 · Valider la spécification",
-            "eng": "Gate 1 · Validate the specification"
-          },
-          "file": "spec.md",
-          "prompt_regex": "Valider la spécification et lancer l'architecture \\? \\(y/n\\)|Validate the specification and start the architecture\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Relis en priorité « Hypothèses & Questions » et « Hors périmètre ». Tu peux éditer spec.md dans ton éditeur avant de valider : l'aperçu se recharge.",
-            "eng": "Review “Assumptions & Questions” and “Out of scope” first. You can edit spec.md in your editor before validating: the preview reloads."
-          },
-          "yes_label": {
-            "fr": "Valider et lancer l'architecture",
-            "eng": "Validate and start the architecture"
-          },
-          "no_label": {
-            "fr": "Refuser (arrêt propre)",
-            "eng": "Reject (clean stop)"
-          }
-        },
-        {
-          "id": "blackboard",
-          "title": {
-            "fr": "Porte 2 · Valider le blackboard (cycles red/green)",
-            "eng": "Gate 2 · Validate the blackboard (red/green cycles)"
-          },
-          "file": "blackboard.yaml",
-          "prompt_regex": "Valider le blackboard et lancer la production \\? \\(y/n\\)|Validate (?:the )?blackboard and start production\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Dernier arrêt avant la production. Vérifie l'alternance des cycles red/green dans blackboard.yaml : l'orchestrateur recharge le fichier s'il a changé pendant l'attente.",
-            "eng": "Last stop before production. Check the red/green cycle alternation in blackboard.yaml: the orchestrator reloads the file if it changed while waiting."
-          },
-          "yes_label": {
-            "fr": "Valider et lancer la production",
-            "eng": "Validate and start production"
-          },
-          "no_label": {
-            "fr": "Refuser (arrêt propre)",
-            "eng": "Reject (clean stop)"
-          }
-        }
-      ]
-    },
-    {
-      "id": "atdd",
-      "binary": "Safe-ATDD",
-      "family": "production",
-      "title": {
-        "fr": "Safe-ATDD",
-        "eng": "Safe-ATDD"
-      },
-      "description": {
-        "fr": "Pipeline ATDD : plan découpé en lots par user story — une phase de tests d'acceptance (la suite doit ÉCHOUER), puis une ou plusieurs phases d'implémentation dont les étapes intermédiaires doivent compiler ; la dernière phase du lot remet la suite complète au vert.",
-        "eng": "ATDD pipeline: plan split into per-user-story lots — one acceptance-test phase (the suite must FAIL), then one or more implementation phases whose intermediate steps must compile; the last phase of the lot brings the full suite back to green."
-      },
-      "recommended": false,
-      "needs_need_md": true,
-      "gates": [
-        {
-          "id": "spec",
-          "title": {
-            "fr": "Porte 1 · Valider la spécification",
-            "eng": "Gate 1 · Validate the specification"
-          },
-          "file": "spec.md",
-          "prompt_regex": "Valider la spécification et lancer l'architecture \\? \\(y/n\\)|Validate the specification and start the architecture\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Relis en priorité « Hypothèses & Questions » et « Hors périmètre ». En ATDD, chaque critère d'acceptation deviendra un test d'acceptance automatisé tel quel : vérifie qu'ils sont observables de l'extérieur. Tu peux éditer spec.md avant de valider : l'aperçu se recharge.",
-            "eng": "Review “Assumptions & Questions” and “Out of scope” first. In ATDD, each acceptance criterion becomes an automated acceptance test as-is: check they are externally observable. You can edit spec.md before validating: the preview reloads."
-          },
-          "yes_label": {
-            "fr": "Valider et lancer l'architecture",
-            "eng": "Validate and start the architecture"
-          },
-          "no_label": {
-            "fr": "Refuser (arrêt propre)",
-            "eng": "Reject (clean stop)"
-          }
-        },
-        {
-          "id": "blackboard",
-          "title": {
-            "fr": "Porte 2 · Valider le blackboard (lots ATDD)",
-            "eng": "Gate 2 · Validate the blackboard (ATDD lots)"
-          },
-          "file": "blackboard.yaml",
-          "prompt_regex": "Valider le blackboard et lancer la production \\? \\(y/n\\)|Validate (?:the )?blackboard and start production\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Dernier arrêt avant la production. Vérifie la structure des lots dans blackboard.yaml (chaque lot s'ouvre par sa phase atdd-test et se referme par sa dernière phase atdd-impl) et la build_cmd (compilation de la production SEULE, jamais des tests) : l'orchestrateur recharge le fichier s'il a changé pendant l'attente.",
-            "eng": "Last stop before production. Check the lot structure in blackboard.yaml (each lot opens with its atdd-test phase and closes with its last atdd-impl phase) and the build_cmd (compiles production ONLY, never the tests): the orchestrator reloads the file if it changed while waiting."
-          },
-          "yes_label": {
-            "fr": "Valider et lancer la production",
-            "eng": "Validate and start production"
-          },
-          "no_label": {
-            "fr": "Refuser (arrêt propre)",
-            "eng": "Reject (clean stop)"
-          }
-        }
-      ]
-    },
-    {
       "id": "proto",
       "binary": "Design-Prototype",
       "family": "production",
@@ -252,6 +75,7 @@
         "eng": "Clickable-prototype factory (vanilla HTML/CSS/JS) designed for designers: phased production, then a single global UX + compliance review at the end of the run."
       },
       "recommended": false,
+      "beta": true,
       "needs_need_md": true,
       "gates": [
         {
@@ -320,16 +144,16 @@
       ]
     },
     {
-      "id": "yolo",
-      "binary": "Advanced-Coding",
+      "id": "coding",
+      "binary": "Coding",
       "family": "production",
       "title": {
-        "fr": "Advanced-Coding",
-        "eng": "Advanced-Coding"
+        "fr": "Coding",
+        "eng": "Coding"
       },
       "description": {
-        "fr": "Pipeline verdict universel + surcouche Yolo : revue d'impact validée en amont (impact.md), vérificateur LLM indépendant sur chaque suite verte, triage des cassures sur chaque suite rouge (suppression entérinée / réparation / arbitrage humain).",
-        "eng": "Universal-verdict pipeline + Yolo overlay: upfront validated impact review (impact.md), independent LLM verifier on every green suite, breakage triage on every red suite (endorsed deletion / repair / human arbitration)."
+        "fr": "Pipeline de référence à verdict universel : l'orchestrateur exécute lui-même compilation + suite complète à chaque phase (exit 0 = vert). Revue d'impact validée en amont (impact.md), vérificateur LLM indépendant sur chaque suite verte, triage des cassures sur chaque suite rouge (suppression entérinée / réparation / arbitrage humain).",
+        "eng": "Reference universal-verdict pipeline: the orchestrator itself runs compilation + the full suite at every phase (exit 0 = green). Upfront validated impact review (impact.md), independent LLM verifier on every green suite, breakage triage on every red suite (endorsed deletion / repair / human arbitration)."
       },
       "recommended": false,
       "needs_need_md": true,
@@ -422,18 +246,18 @@
       ]
     },
     {
-      "id": "yolo-tdd",
-      "binary": "Advanced-TDD",
+      "id": "test-first",
+      "binary": "Test-First",
       "family": "production",
       "title": {
-        "fr": "Advanced-TDD",
-        "eng": "Advanced-TDD"
+        "fr": "Test-First",
+        "eng": "Test-First"
       },
       "description": {
-        "fr": "Pipeline TDD (cycles red → green) + surcouche Yolo sur les phases green uniquement : revue d'impact validée en amont, vérificateur LLM sur chaque green vert, triage des cassures sur chaque green rouge — les phases red gardent leur verdict inversé.",
-        "eng": "TDD pipeline (red → green cycles) + Yolo overlay on green phases only: upfront validated impact review, LLM verifier on every green pass, breakage triage on every red green — red phases keep their inverted verdict."
+        "fr": "Test-first par cycles red → green → refactor, inspiré du TDD (Beck) : la phase red doit faire ÉCHOUER la suite (verdict inversé), la phase green la remettre au vert, le refactor de cycle est re-vérifié (rollback au moindre écart). Revue d'impact en amont ; vérificateur LLM et triage des cassures sur les phases green uniquement.",
+        "eng": "Test-first by red → green → refactor cycles, inspired by TDD (Beck): the red phase must make the suite FAIL (inverted verdict), the green phase brings it back to green, the cycle refactor is re-verified (rollback on any drift). Upfront impact review; LLM verifier and breakage triage on green phases only."
       },
-      "recommended": false,
+      "recommended": true,
       "needs_need_md": true,
       "gates": [
         {
@@ -524,18 +348,18 @@
       ]
     },
     {
-      "id": "yolo-atdd",
-      "binary": "Advanced-ATDD",
+      "id": "acceptance-first",
+      "binary": "Acceptance-First",
       "family": "production",
       "title": {
-        "fr": "Advanced-ATDD",
-        "eng": "Advanced-ATDD"
+        "fr": "Acceptance-First",
+        "eng": "Acceptance-First"
       },
       "description": {
-        "fr": "Pipeline ATDD (lots par user story) + surcouche Yolo sur les phases de clôture de lot uniquement : revue d'impact validée en amont, vérificateur LLM sur chaque clôture verte, triage des cassures sur chaque clôture rouge — phases atdd-test (verdict inversé) et étapes intermédiaires (compilation seule) inchangées.",
-        "eng": "ATDD pipeline (per-user-story lots) + Yolo overlay on lot-closing phases only: upfront validated impact review, LLM verifier on every green closing, breakage triage on every red closing — atdd-test phases (inverted verdict) and intermediate steps (build only) unchanged."
+        "fr": "Acceptance-first par lots de user story, inspiré de l'ATDD (Adzic, Gärtner) : tests d'acceptance qui doivent ÉCHOUER (verdict inversé), étapes d'implémentation qui compilent, clôture du lot à la suite complète verte. Revue d'impact en amont ; vérificateur LLM et triage des cassures sur les clôtures de lot uniquement.",
+        "eng": "Acceptance-first by user-story batches, inspired by ATDD (Adzic, Gärtner): acceptance tests that must FAIL (inverted verdict), implementation steps that compile, batch closing on the full green suite. Upfront impact review; LLM verifier and breakage triage on batch closings only."
       },
-      "recommended": false,
+      "recommended": true,
       "needs_need_md": true,
       "gates": [
         {
@@ -661,6 +485,24 @@
             "eng": "Reject (clean stop)"
           }
         }
+      ],
+      "steps": [
+        {
+          "title": {
+            "fr": "Rédaction (PO)",
+            "eng": "Drafting (PO)"
+          },
+          "done": "spec.md"
+        },
+        {
+          "title": {
+            "fr": "Validation de la spec",
+            "eng": "Spec validation"
+          },
+          "gates": [
+            "spec"
+          ]
+        }
       ]
     },
     {
@@ -698,6 +540,24 @@
             "fr": "Refuser (arrêt propre)",
             "eng": "Reject (clean stop)"
           }
+        }
+      ],
+      "steps": [
+        {
+          "title": {
+            "fr": "Revue du besoin",
+            "eng": "Need review"
+          },
+          "done": "need_review.md"
+        },
+        {
+          "title": {
+            "fr": "Arbitrage",
+            "eng": "Arbitration"
+          },
+          "gates": [
+            "review"
+          ]
         }
       ]
     },
@@ -737,6 +597,32 @@
             "eng": "Reject (clean stop)"
           }
         }
+      ],
+      "steps": [
+        {
+          "title": {
+            "fr": "Spécification (PO)",
+            "eng": "Specification (PO)"
+          },
+          "gates": [
+            "spec"
+          ],
+          "done": "spec.md"
+        },
+        {
+          "title": {
+            "fr": "Plan (Architecte)",
+            "eng": "Plan (Architect)"
+          },
+          "done": "plan.md"
+        },
+        {
+          "title": {
+            "fr": "Blackboard",
+            "eng": "Blackboard"
+          },
+          "done": "blackboard.yaml"
+        }
       ]
     },
     {
@@ -752,6 +638,7 @@
         "eng": "Behavioral documentation of an EXISTING project, read-only: validated functional map, then one pass per zone (fresh context), mechanical assembly into documentation.md at the root."
       },
       "recommended": false,
+      "beta": true,
       "needs_need_md": false,
       "gates": [
         {
@@ -796,6 +683,35 @@
             "eng": "Reject (clean stop)"
           }
         }
+      ],
+      "steps": [
+        {
+          "title": {
+            "fr": "Périmètre",
+            "eng": "Scope"
+          },
+          "gates": [
+            "scope"
+          ],
+          "done": "doc_map.yaml"
+        },
+        {
+          "title": {
+            "fr": "Carte des zones",
+            "eng": "Zone map"
+          },
+          "gates": [
+            "map"
+          ],
+          "done": "doc_zones/"
+        },
+        {
+          "title": {
+            "fr": "Passes & assemblage",
+            "eng": "Passes & assembly"
+          },
+          "done": "documentation.md"
+        }
       ]
     },
     {
@@ -811,6 +727,7 @@
         "eng": "Design audit of an EXISTING project against Nielsen's 10 heuristics, read-only: one pass per heuristic, synthesis into design_audit_report.md."
       },
       "recommended": false,
+      "beta": true,
       "needs_need_md": false,
       "gates": [
         {
@@ -834,21 +751,41 @@
             "eng": "Reject (clean stop)"
           }
         }
+      ],
+      "steps": [
+        {
+          "title": {
+            "fr": "Périmètre",
+            "eng": "Scope"
+          },
+          "gates": [
+            "scope"
+          ],
+          "done": "audit_nielsen/"
+        },
+        {
+          "title": {
+            "fr": "Passes & rapport",
+            "eng": "Passes & report"
+          },
+          "done": "design_audit_report.md"
+        }
       ]
     },
     {
-      "id": "audit-a11y",
-      "binary": "Audit-A11Y-RGAA",
+      "id": "pre-audit-a11y",
+      "binary": "Pre-Audit-A11Y-RGAA",
       "family": "audit",
       "title": {
-        "fr": "Audit-A11Y-RGAA",
-        "eng": "Audit-A11Y-RGAA"
+        "fr": "Pre-Audit-A11Y-RGAA",
+        "eng": "Pre-Audit-A11Y-RGAA"
       },
       "description": {
-        "fr": "Audit d'accessibilité RGAA 4.1.2 d'un projet EXISTANT, en lecture seule : 13 packs de critères croisés avec les compartiments d'interface, rapport + squelette de déclaration d'accessibilité à la racine.",
-        "eng": "RGAA 4.1.2 accessibility audit of an EXISTING project, read-only: 13 criteria packs crossed with interface compartments, report + accessibility statement skeleton at the root."
+        "fr": "Pré-audit d'accessibilité RGAA 4.1.2 d'un projet EXISTANT, en lecture seule : 13 packs de critères croisés avec les compartiments d'interface, rapport détaillé + synthèse des résultats à la racine.",
+        "eng": "RGAA 4.1.2 accessibility pre-audit of an EXISTING project, read-only: 13 criteria packs crossed with interface compartments, detailed report + results summary at the root."
       },
       "recommended": false,
+      "beta": true,
       "needs_need_md": false,
       "gates": [
         {
@@ -858,7 +795,7 @@
             "eng": "Gate 1 · Validate the scope"
           },
           "file": null,
-          "prompt_regex": "Lancer l'audit d'accessibilité sur ce périmètre \\? \\(y/n\\)|Run the accessibility audit on this scope\\? \\(y/n\\)",
+          "prompt_regex": "Lancer le pré-audit d'accessibilité sur ce périmètre \\? \\(y/n\\)|Run the accessibility pre-audit on this scope\\? \\(y/n\\)",
           "hint": {
             "fr": "Le périmètre découvert (fichiers UI, routage des 13 packs, contrastes mesurés) est affiché dans l'écran du run : vérifie-le avant de payer les passes.",
             "eng": "The discovered scope (UI files, 13-pack routing, measured contrasts) is shown in the run screen: check it before paying for the passes."
@@ -879,19 +816,55 @@
             "eng": "Gate 2 · Validate the interface map"
           },
           "file": "a11y_map.yaml",
-          "prompt_regex": "Valider cette carte et lancer l'audit d'accessibilité \\? \\(y/n\\)|Validate this map and launch the accessibility audit\\? \\(y/n\\)",
+          "prompt_regex": "Valider cette carte et lancer le pré-audit d'accessibilité \\? \\(y/n\\)|Validate this map and launch the accessibility pre-audit\\? \\(y/n\\)",
           "hint": {
-            "fr": "La carte fixe les compartiments audités et le décompte exact des passes. Tu peux éditer a11y_map.yaml avant de valider : l'audit suit cette carte à la lettre.",
-            "eng": "The map sets the audited compartments and the exact pass count. You can edit a11y_map.yaml before validating: the audit follows this map to the letter."
+            "fr": "La carte fixe les compartiments audités et le décompte exact des passes. Tu peux éditer a11y_map.yaml avant de valider : le pré-audit suit cette carte à la lettre.",
+            "eng": "The map sets the audited compartments and the exact pass count. You can edit a11y_map.yaml before validating: the pre-audit follows this map to the letter."
           },
           "yes_label": {
-            "fr": "Valider la carte et auditer",
-            "eng": "Validate the map and audit"
+            "fr": "Valider la carte et lancer le pré-audit",
+            "eng": "Validate the map and run the pre-audit"
           },
           "no_label": {
             "fr": "Refuser (arrêt propre)",
             "eng": "Reject (clean stop)"
           }
+        }
+      ],
+      "steps": [
+        {
+          "title": {
+            "fr": "Périmètre",
+            "eng": "Scope"
+          },
+          "gates": [
+            "scope"
+          ],
+          "done": "a11y_map.yaml"
+        },
+        {
+          "title": {
+            "fr": "Carte d'interface",
+            "eng": "Interface map"
+          },
+          "gates": [
+            "map"
+          ],
+          "done": "pre_audit_a11y/"
+        },
+        {
+          "title": {
+            "fr": "Passes de pré-audit",
+            "eng": "Pre-audit passes"
+          },
+          "done": "accessibility_pre_audit_report.md"
+        },
+        {
+          "title": {
+            "fr": "Rapport & synthèse",
+            "eng": "Report & summary"
+          },
+          "done": "accessibility_pre_audit_summary.md"
         }
       ]
     },
@@ -1131,6 +1104,42 @@
             "eng": "Refuse (proposal kept)"
           }
         }
+      ],
+      "steps": [
+        {
+          "title": {
+            "fr": "Profil (questionnaire)",
+            "eng": "Profile (questionnaire)"
+          },
+          "gates": [
+            "reuse-profile",
+            "scope",
+            "testing",
+            "stack-back",
+            "stack-front",
+            "conventions",
+            "line-cap",
+            "model-target"
+          ],
+          "done": "skill_adapt_profile.yaml"
+        },
+        {
+          "title": {
+            "fr": "Propositions",
+            "eng": "Proposals"
+          },
+          "done": "skill_adapt-*.md"
+        },
+        {
+          "title": {
+            "fr": "Arbitrage & rapport",
+            "eng": "Arbitration & report"
+          },
+          "gates": [
+            "overwrite"
+          ],
+          "done": "skill_adapt_report.md"
+        }
       ]
     },
     {
@@ -1252,7 +1261,7 @@
           },
           "file": null,
           "file_glob": "fix_report-*.md",
-          "prompt_regex": "Marquer la phase .+ et te laisser relancer Safe-Coding\\.py \\? \\(y/n\\)|Mark phase .+ and let you relaunch Safe-Coding\\.py\\? \\(y/n\\)",
+          "prompt_regex": "Marquer la phase .+ et te laisser relancer Coding\\.py \\? \\(y/n\\)|Mark phase .+ and let you relaunch Coding\\.py\\? \\(y/n\\)",
           "hint": {
             "fr": "La suite passe au vert : la phase fautive peut être marquée FIXED — MAIsterMind la revalidera par exécution à la relance, sans re-payer de codeur.",
             "eng": "The suite passes green: the faulty phase can be marked FIXED — MAIsterMind will revalidate it by execution on relaunch, without re-paying a coder."
@@ -1265,6 +1274,36 @@
             "fr": "Ne pas marquer",
             "eng": "Do not mark"
           }
+        }
+      ],
+      "steps": [
+        {
+          "title": {
+            "fr": "Triage des échecs",
+            "eng": "Failure triage"
+          },
+          "gates": [
+            "fix-triage"
+          ]
+        },
+        {
+          "title": {
+            "fr": "Correction",
+            "eng": "Fix"
+          },
+          "gates": [
+            "fix-confirm",
+            "fix-spec-update"
+          ]
+        },
+        {
+          "title": {
+            "fr": "Clôture & rapport",
+            "eng": "Closure & report"
+          },
+          "gates": [
+            "fix-mark-fixed"
+          ]
         }
       ]
     }

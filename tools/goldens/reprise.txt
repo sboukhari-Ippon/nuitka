@@ -2,6 +2,7 @@
 🧪 [mock] harness de test démarré (session simulée '<SESSION>').
 🔄 'spec.md' existante trouvée (approuvée par l'humain). Étape PO passée.
 🔄 'plan.md' existant trouvé. Étape passée.
+🔄 'impact.md' existante trouvée (approuvée par l'humain). Étape passée.
 🔄 'blackboard.yaml' existant trouvé. Chargement...
 
 ℹ️  Champs non critiques absents (comblés automatiquement) :
@@ -49,6 +50,10 @@
    ⏳ En attente de la génération de '.phase_1.attempt1.done'...
   → Codeur terminé (2 fichier(s) déclaré(s)). Vérification par EXÉCUTION...
    🧪 Vérification par exécution : python3 verify.py
+🧐 Suite verte : routage vers le Vérificateur LLM de phase (agent indépendant)...
+🧪 [mock] vérificateur LLM phase 1 (verdict OK) → .phase_1.attempt1.verdict
+   ⏳ En attente de la génération de '.phase_1.attempt1.verdict'...
+🧐 Vérificateur LLM : la phase a livré toute sa checklist (conforme).
 ✅ [SUCCÈS] Phase 1 : la vérification passe (code de sortie 0).
 
 ==================================================
@@ -63,5 +68,5 @@
    🧪 Vérification par exécution : python3 verify.py
 ✓ Revérification post-refacto OK : le polish n'a pas introduit de régression détectable.
 
-🏁 [CONGRATULATIONS] L'usine de code Data Center a tout validé en un seul run !
-   📁 Journal du run : .mm-runs/<RUNID>-universal/
+🏁 [CONGRATULATIONS] L'usine Coding a tout validé (verdicts mécaniques + vérificateur LLM) en un seul run !
+   📁 Journal du run : .mm-runs/<RUNID>-coding/

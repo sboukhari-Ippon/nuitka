@@ -116,5 +116,77 @@ class MmAuditCase(unittest.TestCase):
         self.assertNotEqual(first, second)
 
 
+
+class MmAuditRobustesseCase(unittest.TestCase):
+    """Clôtures non nominales, copie de la sortie, distro_version depuis le marqueur."""
+
+    def setUp(self):
+        self.project = tempfile.mkdtemp(prefix="mm-audit-test-")
+        os.environ.pop("MM_AUDIT", None)
+
+    def tearDown(self):
+        mm_audit._reset()
+
+    def read_meta(self, run_path):
+        with open(os.path.join(run_path, "run.json"), "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    def test_end_interrupted(self):
+        mm_audit.start(self.project, "documentation", "mock")
+        run_path = mm_audit.run_dir()
+        mm_audit.end("interrupted")
+        self.assertEqual(self.read_meta(run_path)["status"], "interrupted")
+        self.assertFalse(mm_audit.enabled())
+
+    def test_atexit_clot_en_aborted_et_reste_no_op_apres_end(self):
+        mm_audit.start(self.project, "documentation", "mock")
+        run_path = mm_audit.run_dir()
+        mm_audit._at_exit()
+        self.assertEqual(self.read_meta(run_path)["status"], "aborted")
+        mm_audit._at_exit()   # déjà clos : aucun effet, aucune exception
+        self.assertEqual(self.read_meta(run_path)["status"], "aborted")
+
+    def test_distro_version_lue_dans_le_marqueur(self):
+        with open(os.path.join(self.project, ".mm-equip.json"), "w", encoding="utf-8") as f:
+            json.dump({"distro_version": "3.0.1", "harness": "mock"}, f)
+        mm_audit.start(self.project, "acceptance-first", "mock")
+        run_path = mm_audit.run_dir()
+        mm_audit.end("success")
+        self.assertEqual(self.read_meta(run_path)["distro_version"], "3.0.1")
+
+    def test_distro_version_explicite_prime(self):
+        with open(os.path.join(self.project, ".mm-equip.json"), "w", encoding="utf-8") as f:
+            json.dump({"distro_version": "3.0.1"}, f)
+        mm_audit.start(self.project, "acceptance-first", "mock", distro_version="9.9.9")
+        run_path = mm_audit.run_dir()
+        mm_audit.end("success")
+        self.assertEqual(self.read_meta(run_path)["distro_version"], "9.9.9")
+
+    def test_orchestrator_log_copie_la_sortie(self):
+        import io, sys
+        original = sys.stdout
+        buffer = io.StringIO()
+        sys.stdout = buffer
+        try:
+            mm_audit.start(self.project, "documentation", "mock")
+            run_path = mm_audit.run_dir()
+            print("ligne visible dans le pane")
+            mm_audit.end("success")
+        finally:
+            sys.stdout = original
+        self.assertIn("ligne visible dans le pane", buffer.getvalue(), "la sortie d'origine est intacte")
+        with open(os.path.join(run_path, "orchestrator.log"), "r", encoding="utf-8") as f:
+            self.assertIn("ligne visible dans le pane", f.read())
+        self.assertIs(sys.stdout, original)
+
+    def test_desactive_pas_de_tee(self):
+        import sys
+        os.environ["MM_AUDIT"] = "0"
+        before = sys.stdout
+        mm_audit.start(self.project, "documentation", "mock")
+        self.assertIs(sys.stdout, before)
+        os.environ.pop("MM_AUDIT", None)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

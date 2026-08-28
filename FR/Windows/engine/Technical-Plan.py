@@ -16,9 +16,9 @@ Pourquoi un point d'entrée dédié :
     aujourd'hui, lancer la production plus tard (autre moment, autre machine, autre
     modèle — typiquement un petit modèle économique).
   - Mêmes CONTRATS DE FICHIERS que la variante complète : 'spec.md' + '.spec_approved',
-    'plan.md', 'blackboard.yaml'. Relancer ensuite Safe-Coding.py reprend ces livrables
+    'plan.md', 'blackboard.yaml'. Relancer ensuite Coding.py reprend ces livrables
     TELS QUELS (étapes 1 à 3 sautées) et démarre directement au y/n de production.
-    Ce script vise la variante « verdict universel » (Safe-Coding.py) : mêmes skills de
+    Ce script vise la variante « verdict universel » (Coding.py) : mêmes skills de
     pipeline ('plan', 'plan-to-blackboard'), donc mêmes champs (nature, covers,
     verify_cmd…) dans le blackboard produit.
 
@@ -93,7 +93,7 @@ PLAN_DONE_SENTINEL       = ".pipeline_plan.done"
 BLACKBOARD_DONE_SENTINEL = ".pipeline_blackboard.done"
 
 # Approbation HUMAINE de la spec, matérialisée : la simple EXISTENCE de spec.md ne prouve
-# rien. Cette sentinelle SURVIT à la fin de ce run : c'est elle que Safe-Coding.py lira
+# rien. Cette sentinelle SURVIT à la fin de ce run : c'est elle que Coding.py lira
 # pour sauter son étape 1 lors du lancement de la production.
 SPEC_APPROVED_SENTINEL   = ".spec_approved"
 
@@ -264,7 +264,7 @@ def check_need_file():
 
 
 # ─── VALIDATION DU SCHÉMA DU BLACKBOARD (PRODUIT PAR UN PETIT LLM FAILLIBLE) ───
-# Copie conforme de la validation de Safe-Coding.py : le blackboard produit ici est
+# Copie conforme de la validation de Coding.py : le blackboard produit ici est
 # DESTINÉ à sa production — le valider maintenant, c'est éviter de découvrir au
 # lancement de la production (plus tard, ailleurs) qu'il est inutilisable.
 
@@ -760,7 +760,7 @@ def main():
     print(f"""
 🏁 Pipeline technique terminé : du besoin au blackboard, sans production.
    📦 Livrables : '{SPEC_FILE}' (approuvée), '{PLAN_FILE}', '{BLACKBOARD_FILE}'
-   ➡️  Pour lancer la production : python3 Safe-Coding.py
+   ➡️  Pour lancer la production : python3 Coding.py
       Reprise par fichiers : spec, plan et blackboard sont repris TELS QUELS, la
       production démarre directement après ton y/n blackboard. C'est le bon moment pour
       basculer sur un modèle plus économique (/model ou '{AGENT_CONFIG_FILE}') :

@@ -24,7 +24,9 @@ les deux côtés voient les mêmes mutations, comme avant l'extraction.
 import os
 import re
 import sys
+import json
 import time
+import signal
 import subprocess
 import shlex
 import shutil
@@ -40,6 +42,387 @@ MAX_PHASE_TIMEOUT = resolve_timeout("phase", 600)
 VERIFY_TIMEOUT = resolve_timeout("verify", 300)
 VERIFY_FEEDBACK_LIMIT = 4000
 MUTATION_TIMEOUT = 300
+
+# ─── ENVIRONNEMENT D'OUTILLAGE (PATH DU SHELL DE LOGIN) ──────────────────────
+# L'agent tourne dans un pane tmux ouvert SANS commande : tmux y démarre un shell de
+# login INTERACTIF, qui charge nvm/fnm/volta et le reste des fichiers rc. L'orchestrateur,
+# lui, hérite du PATH du processus qui a créé le serveur tmux — l'app, parfois lancée
+# sans terminal (PATH du bureau : Node système). Deux PATH, deux Node : un verdict rendu
+# sous Node 18 alors que l'agent voyait Node 22 (incident du 23/08/2026, « styleText »).
+# On sonde donc UNE fois le PATH du shell de login interactif de l'utilisateur et on le
+# place EN TÊTE de celui du processus : le verdict s'exécute avec la même toolchain que
+# l'agent. Désactivable (MM_TOOLCHAIN_PROBE=0) ; court-circuité sous harness mock.
+TOOLCHAIN_PROBE_ENV = "MM_TOOLCHAIN_PROBE"
+TOOLCHAIN_PROBE_TIMEOUT = 10
+_TOOLCHAIN = {"probed": False, "login_path": None, "preflight_done": False}
+_JS_TOOLCHAIN_RE = re.compile(r"\b(node|npx|npm|pnpm|yarn|bun|vitest|jest|tsc|vite|next|"
+                              r"mocha|playwright|cypress|eslint|ng|nx|turbo)\b")
+# Signatures d'une INCOMPATIBILITÉ DE RUNTIME dans la sortie d'un verdict (Node trop
+# ancien pour l'outil, moteur refusé…) : ce n'est pas un code rouge, c'est l'environnement
+# de l'orchestrateur qu'il faut corriger — un agent scaffold n'y changerait rien.
+_RUNTIME_MISMATCH_MARKERS = (
+    "does not provide an export named",      # API Node absente (util.styleText < 20.12…)
+    "EBADENGINE", "Unsupported engine", "engine \"node\" is incompatible",
+    "requires Node.js", "requires node version", "Node.js version",
+    "ERR_REQUIRE_ESM", "ERR_UNSUPPORTED_ESM_URL_SCHEME", "ERR_UNKNOWN_FILE_EXTENSION",
+)
+# Priorités des répertoires pour l'ÉCHANTILLON du prompt de cartographie (voir
+# select_carto_sample) : le code applicatif d'abord, les assets/migrations/outillage
+# en dernier — les N premiers fichiers par ordre alphabétique étaient, sur un monorepo,
+# 300 feuilles de style d'icônes et zéro fichier de src/.
+_HIGH_PRIORITY_DIR_RE = re.compile(r"(^|/)(src|app|apps|lib|libs|pages|components|modules|"
+                                   r"features|domain|core|server|client|api|routes|views|"
+                                   r"controllers|services|hooks|store|stores)(/|$)", re.I)
+_LOW_PRIORITY_DIR_RE = re.compile(r"(^|/)(public|static|assets?|migrations?|drizzle|prisma|"
+                                  r"docs?|scripts?|fixtures?|mocks?|__mocks__|storybook|"
+                                  r"stories|i18n|locales?|generated|gen|vendor|fonts?|"
+                                  r"icons?|images?|img)(/|$)", re.I)
+# Marqueurs d'une TUI figée sur une demande de permission : l'agent attend un clic humain
+# qui ne viendra jamais (usine sans surveillance) — inutile d'attendre le timeout.
+_PERMISSION_PROMPT_MARKERS = ("Permission required", "Allow once", "Allow always",
+                              "Do you trust", "Approve this")
+# Caractères d'animation (spinners braille, points de progression) retirés avant de
+# comparer deux écrans : une TUI qui « respire » sans travailler n'est pas active.
+_SCREEN_NOISE_RE = re.compile(r"[⠀-⣿⬝■-◿░-▓\s]+")
+
+
+def probe_login_path(timeout: int = TOOLCHAIN_PROBE_TIMEOUT):
+    """PATH du shell de login INTERACTIF de l'utilisateur ($SHELL -lic), ou None.
+
+    Exactement ce que tmux fait pour le pane de l'agent (default-command vide → shell de
+    login, interactif puisque attaché à un pty) : bash sur Ubuntu/WSL, zsh sur macOS. Les
+    marqueurs isolent le PATH des bannières/motd ; stdin fermé et TERM=dumb neutralisent
+    les rc bavards. Toute anomalie → None (l'appelant garde son PATH).
+    """
+    shell = os.environ.get("SHELL") or "/bin/bash"
+    if not (os.path.isfile(shell) and os.access(shell, os.X_OK)):
+        shell = "/bin/bash"
+    script = "printf '\\n__MM_PATH_B__\\n%s\\n__MM_PATH_E__\\n' \"$PATH\""
+    try:
+        proc = subprocess.run([shell, "-lic", script], capture_output=True, text=True,
+                              timeout=timeout, stdin=subprocess.DEVNULL,
+                              env=dict(os.environ, TERM="dumb"))
+    except Exception:
+        return None
+    match = re.search(r"__MM_PATH_B__\n(.*?)\n__MM_PATH_E__", proc.stdout or "", re.S)
+    if not match:
+        return None
+    return match.group(1).strip() or None
+
+
+def unify_toolchain_env():
+    """Place le PATH du shell de login EN TÊTE de os.environ['PATH'] (une fois par
+    processus, mémoïsé). Renvoie le PATH sondé, ou None si la sonde est désactivée,
+    court-circuitée (harness mock) ou en échec — le PATH courant est alors conservé."""
+    if _TOOLCHAIN["probed"]:
+        return _TOOLCHAIN["login_path"]
+    _TOOLCHAIN["probed"] = True
+    if os.environ.get(TOOLCHAIN_PROBE_ENV, "").strip() == "0" \
+            or os.environ.get("MM_AGENT_HARNESS", "").strip().lower() == "mock":
+        return None
+    login_path = probe_login_path()
+    if login_path:
+        current = [p for p in os.environ.get("PATH", "").split(os.pathsep) if p]
+        head = [p for p in login_path.split(os.pathsep) if p]
+        os.environ["PATH"] = os.pathsep.join(head + [p for p in current if p not in head])
+    _TOOLCHAIN["login_path"] = login_path
+    return login_path
+
+
+def verify_env() -> dict:
+    """Environnement des commandes de VERDICT : PATH unifié avec le shell de login, puis
+    node_modules/.bin en tête (les outils JS/TS sont souvent installés en local et
+    absents du PATH global : sous shell=True, /bin/sh ne les trouve pas — « tsc: not
+    found »). Inoffensif hors écosystème Node (le dossier est simplement absent)."""
+    unify_toolchain_env()
+    env = os.environ.copy()
+    local_bin = os.path.abspath(os.path.join("node_modules", ".bin"))
+    if os.path.isdir(local_bin):
+        env["PATH"] = local_bin + os.pathsep + env.get("PATH", "")
+    return env
+
+
+def node_expected_version() -> str:
+    """Version de Node attendue par le projet ('.nvmrc', '.node-version', puis
+    package.json engines.node), ou '' si rien n'est déclaré."""
+    for name in (".nvmrc", ".node-version"):
+        try:
+            with open(name, "r", encoding="utf-8") as f:
+                value = f.read().strip()
+        except OSError:
+            continue
+        if value:
+            return value
+    try:
+        with open("package.json", "r", encoding="utf-8") as f:
+            engines = (json.load(f) or {}).get("engines") or {}
+        return str(engines.get("node") or "").strip()
+    except Exception:
+        return ""
+
+
+def node_version_matches(version: str, expected: str) -> bool:
+    """La MAJEURE de Node vue satisfait-elle la contrainte attendue ? Sous-ensemble de
+    semver suffisant pour .nvmrc / engines.node : '22', 'v22.1.0', '>=20.19', '^20 ||
+    >=22.12', '20 - 22'. Une contrainte non comparable ('lts/*', 'node') → True (on ne
+    crie jamais au loup sur ce qu'on ne sait pas lire)."""
+    match = re.match(r"v?(\d+)", (version or "").strip())
+    if not match:
+        return True
+    major = int(match.group(1))
+    comparable, satisfied = False, False
+    for clause in (expected or "").split("||"):
+        clause_ok, found = True, False
+        for op, num in re.findall(r"(>=|<=|>|<|=|\^|~)?\s*v?(\d+)(?:\.\d+)*", clause):
+            found = True
+            n = int(num)
+            if op in (">=", ">"):
+                clause_ok = clause_ok and major >= n
+            elif op in ("<=",):
+                clause_ok = clause_ok and major <= n
+            elif op == "<":
+                clause_ok = clause_ok and major < n
+            else:
+                clause_ok = clause_ok and major == n
+        if found:
+            comparable = True
+            satisfied = satisfied or clause_ok
+    return satisfied if comparable else True
+
+
+def _node_seen(env: dict) -> tuple:
+    """(chemin du node résolu dans cet environnement ou '', version ou '')."""
+    node_path = shutil.which("node", path=env.get("PATH")) or ""
+    version = ""
+    if node_path:
+        try:
+            proc = subprocess.run([node_path, "--version"], capture_output=True, text=True,
+                                  timeout=10, env=env)
+            version = (proc.stdout or "").strip()
+        except Exception:
+            version = ""
+    return node_path, version
+
+
+def toolchain_preflight(cmd: str, env: dict):
+    """Une ligne, UNE fois par run, dès qu'une commande de verdict relève de l'écosystème
+    Node : quel Node l'orchestrateur exécute réellement (chemin + version), ce que le
+    projet attend, et l'écart s'il y en a. Journalisé dans .mm-runs. Muet pour les autres
+    écosystèmes (python, java, go…)."""
+    if _TOOLCHAIN["preflight_done"] or not _JS_TOOLCHAIN_RE.search(cmd or ""):
+        return
+    _TOOLCHAIN["preflight_done"] = True
+    node_path, version = _node_seen(env)
+    expected = node_expected_version()
+    mm_audit.event("toolchain", node_path=node_path, node_version=version, expected=expected,
+                   login_path_probed=bool(_TOOLCHAIN["login_path"]))
+    if not node_path:
+        print("   🧭 Toolchain : aucun 'node' dans le PATH de l'orchestrateur (commande JS/TS détectée).")
+        return
+    line = f"   🧭 Toolchain : Node {version or '?'} ({node_path})"
+    if expected:
+        line += f" · attendu par le projet : {expected}"
+        if not node_version_matches(version, expected):
+            line += " ⚠️  divergence"
+    print(line)
+
+
+def toolchain_failure_hint(output: str) -> str:
+    """Indice d'ENVIRONNEMENT si la sortie d'un verdict porte la signature d'une
+    incompatibilité de runtime plutôt que d'un code rouge ; '' sinon. Sert à distinguer
+    « la chaîne de vérification est cassée » (le code) de « l'orchestrateur exécute la
+    commande avec le mauvais Node » (l'environnement) — deux rapports d'échec différents."""
+    text = output or ""
+    if not any(marker in text for marker in _RUNTIME_MISMATCH_MARKERS):
+        return ""
+    node_path, version = _node_seen(verify_env())
+    expected = node_expected_version()
+    return (f"Signature d'une incompatibilité de RUNTIME (pas d'un code rouge) : la commande a "
+            f"tourné avec Node {version or '?'} ({node_path or 'absent du PATH'})"
+            + (f", le projet attend {expected}" if expected else "")
+            + ". Cause probable : PATH de l'orchestrateur différent de celui de ton terminal "
+              "(app lancée sans shell de login : nvm/fnm/volta non chargés). Vérifie "
+              "'node --version' dans le pane de l'orchestrateur, corrige, puis relance : "
+              "aucune phase n'a été consommée.")
+
+
+ENV_FAIL_ACTION = ("Corrige l'environnement de l'orchestrateur (Node/PATH), puis relance : "
+                   "aucune phase n'a été consommée.")
+
+
+def fail_if_toolchain_environment_broken(verify_cmd: str, output: str, blackboard: dict):
+    """Arrêt net + rapport d'échec « environnement » si le pré-contrôle du scaffold a échoué
+    sur une incompatibilité de RUNTIME : solliciter un agent scaffold serait inutile (il
+    tourne dans un AUTRE environnement — sa suite passe — et le squelette qu'il produirait
+    échouerait pareil sous l'orchestrateur). Ne fait rien si la sortie ne porte pas cette
+    signature : le flux scaffold habituel continue."""
+    env_hint = toolchain_failure_hint(output)
+    if not env_hint:
+        return
+    print(f"""
+{'='*60}
+❌ Environnement de vérification défaillant AVANT toute production.
+   La commande « {verify_cmd} » échoue dans l'environnement de l'ORCHESTRATEUR, et sa
+   sortie porte la signature d'une incompatibilité de runtime : un agent scaffold n'y
+   changerait rien.
+
+   {env_hint}
+
+   Sortie (tronquée) :
+{output}
+{'='*60}
+""")
+    write_fail_report(
+        "Environnement de vérification défaillant (orchestrateur)",
+        f"La commande « {verify_cmd} » échoue dans l'environnement de l'orchestrateur, avant "
+        f"toute production. {env_hint}",
+        blackboard, details=output, action=ENV_FAIL_ACTION)
+    RUNNER.kill()
+    sys.exit(1)
+
+
+# ─── CARTOGRAPHIE : ÉCHANTILLON, RÉPERTOIRES, LIVRABLES RÉSIDUELS ────────────
+
+def select_carto_sample(files: list, limit: int) -> list:
+    """Échantillon de `limit` fichiers REPRÉSENTATIF de toute l'arborescence pour le prompt
+    de cartographie (à la place des `limit` premiers par ordre alphabétique) : tourniquet
+    par répertoire, répertoires de code d'abord (src/, app/, lib/…), assets/migrations/
+    outillage en dernier. Ordre de sortie : celui du périmètre. Déterministe."""
+    if len(files) <= limit:
+        return list(files)
+    by_dir = {}
+    for f in files:
+        by_dir.setdefault(os.path.dirname(f) or ".", []).append(f)
+
+    def rank(directory: str) -> int:
+        if _LOW_PRIORITY_DIR_RE.search(directory):
+            return 2
+        if _HIGH_PRIORITY_DIR_RE.search(directory):
+            return 0
+        return 1
+
+    tiers = {0: [], 1: [], 2: []}
+    for directory in sorted(by_dir):
+        tiers[rank(directory)].append(list(by_dir[directory]))
+    chosen = set()
+    for tier in (0, 1, 2):
+        queues = tiers[tier]
+        while queues and len(chosen) < limit:
+            for queue in list(queues):
+                if len(chosen) >= limit:
+                    break
+                chosen.add(queue.pop(0))
+                if not queue:
+                    queues.remove(queue)
+    return [f for f in files if f in chosen]
+
+
+def expand_dir_entry(entry: str, candidates: list, taken) -> list:
+    """Fichiers du périmètre couverts par une entrée RÉPERTOIRE de la carte (chemin
+    terminé par '/'), récursivement, hors ceux déjà assignés. [] si l'entrée n'est pas
+    un répertoire ou ne couvre rien : l'appelant la traite alors comme un chemin inconnu.
+    C'est ce qui permet au cartographe d'assigner un monorepo entier sans recopier des
+    milliers de chemins (et sans que le surplus tombe mécaniquement en « Divers »)."""
+    if not entry.endswith("/"):
+        return []
+    prefix = entry.lstrip("/")
+    return [f for f in candidates if f.startswith(prefix) and f not in taken]
+
+
+def residual_deliverable_warning(path: str, orchestrator_id: str) -> str:
+    """Avertissement si `path` a été écrit APRÈS la dernière trace du dernier run de cet
+    orchestrateur resté SANS clôture (pas de run.json) : signature d'un agent orphelin
+    qui a fini d'écrire après l'arrêt de l'orchestrateur — un livrable à relire avant de
+    le reprendre comme valide. '' sinon. Best-effort : lit .mm-runs, n'échoue jamais."""
+    try:
+        runs_root = os.path.join(os.getcwd(), mm_audit.RUNS_DIR)
+        runs = sorted(d for d in os.listdir(runs_root)
+                      if d.split("-", 2)[-1].startswith(orchestrator_id)
+                      and os.path.isdir(os.path.join(runs_root, d)))
+        if not runs:
+            return ""
+        last = os.path.join(runs_root, runs[-1])
+        if os.path.exists(os.path.join(last, "run.json")):
+            return ""
+        events = os.path.join(last, "events.jsonl")
+        if not os.path.exists(events) or os.path.getmtime(path) <= os.path.getmtime(events):
+            return ""
+        return (f"'{path}' a été écrit APRÈS la dernière trace du run '{runs[-1]}', resté sans "
+                f"clôture : livrable d'un agent orphelin (run tué pendant sa passe) ? Relis-le "
+                f"avant de le valider, ou supprime-le pour rejouer la cartographie.")
+    except Exception:
+        return ""
+
+
+def agent_screen_fingerprint() -> str:
+    """Empreinte de l'écran de l'agent, animations retirées : deux captures identiques à
+    quelques secondes d'écart signifient un agent qui n'avance plus (bloqué, ou fini)."""
+    try:
+        screen = RUNNER.capture() or ""
+    except Exception:
+        return ""
+    return _SCREEN_NOISE_RE.sub("", screen)
+
+
+def agent_blocked_on_permission() -> bool:
+    """La TUI de l'agent affiche-t-elle une demande de permission (dialogue bloquant) ?"""
+    try:
+        screen = RUNNER.capture() or ""
+    except Exception:
+        return False
+    return any(marker in screen for marker in _PERMISSION_PROMPT_MARKERS)
+
+
+ACTIVITY_GRACE = 120             # s : prolongation tant que l'écran de l'agent change encore
+WAIT_EXTENSION_FACTOR = 3        # plafond dur de l'attente : 3 × le budget nominal
+PERMISSION_POLLS_BEFORE_STOP = 3  # dialogue de permission vu N fois de suite → arrêt
+
+
+def wait_should_continue(start: float, timeout: int, activity: dict) -> bool:
+    """Décide, à chaque tour de scrutation d'un livrable, si l'attente continue.
+
+    Budget nominal `timeout` ; au-delà, PROLONGATION tant que l'écran de l'agent change
+    encore (il travaille : une cartographie de 1 600 fichiers ne tient pas en 10 min),
+    par tranches de ACTIVITY_GRACE s, jusqu'à WAIT_EXTENSION_FACTOR × timeout. Un agent
+    figé sur une DEMANDE DE PERMISSION de sa TUI arrête l'attente tout de suite :
+    personne ne cliquera (usine sans surveillance), et 3 × 600 s d'attente pour rien
+    était le premier poste de lenteur observé sur un audit. `activity` porte l'état
+    entre deux appels ({fingerprint, last_change, permission_polls, extended_warned,
+    stop}) ; 'stop' ∈ {'permission', 'timeout'} une fois l'attente arrêtée.
+    """
+    now = time.time()
+    fingerprint = agent_screen_fingerprint()
+    if "fingerprint" not in activity:
+        # Première observation : point de référence, pas une activité (last_change reste
+        # absent tant qu'aucun CHANGEMENT d'écran n'a été observé).
+        activity["fingerprint"] = fingerprint
+    elif fingerprint != activity["fingerprint"]:
+        activity["fingerprint"] = fingerprint
+        activity["last_change"] = now
+    if agent_blocked_on_permission():
+        activity["permission_polls"] = activity.get("permission_polls", 0) + 1
+        if activity["permission_polls"] >= PERMISSION_POLLS_BEFORE_STOP:
+            print("   ⛔ L'agent est figé sur une DEMANDE DE PERMISSION de sa TUI (aucun humain ne "
+                  "cliquera) : attente interrompue. Vérifie le bloc 'permission' de l'agent "
+                  "d'usine (ex. 'external_directory: allow' pour un accès hors projet), puis "
+                  "relance.")
+            activity["stop"] = "permission"
+            return False
+    else:
+        activity["permission_polls"] = 0
+    elapsed = now - start
+    if elapsed < timeout:
+        return True
+    last_change = activity.get("last_change")
+    if elapsed < timeout * WAIT_EXTENSION_FACTOR \
+            and last_change is not None and now - last_change < ACTIVITY_GRACE:
+        if not activity.get("extended_warned"):
+            print(f"   ⏳ Budget nominal ({timeout}s) atteint mais l'agent travaille encore (écran "
+                  f"actif) : attente prolongée, au plus {timeout * WAIT_EXTENSION_FACTOR:g}s.")
+            activity["extended_warned"] = True
+        return True
+    activity["stop"] = "timeout"
+    return False
 
 # Noms injectés par configure() — placeholders écrasés par l'orchestrateur au chargement :
 AGENT_CONFIG_FILE = None
@@ -92,6 +475,18 @@ def configure(**names):
     orchestrateur, en fin de module). Volontairement brutal : l'extraction est une
     recopie à l'identique, les fonctions lisent les mêmes NOMS qu'avant."""
     globals().update(names)
+    # Arrêts EXTERNES (kill de la session tmux par l'app → SIGHUP, kill → SIGTERM) : même
+    # nettoyage que Ctrl-C — journal clos ('interrupted'), session d'agent tuée. Sans
+    # cela, l'agent survivait à l'orchestrateur et finissait d'écrire son livrable dans
+    # un projet que plus personne ne pilotait (carte résiduelle trompeuse au relancement).
+    for sig_name in ("SIGTERM", "SIGHUP"):
+        sig = getattr(signal, sig_name, None)
+        if sig is None:
+            continue
+        try:
+            signal.signal(sig, signal_handler)
+        except (ValueError, OSError):
+            pass
 
 
 def append_arbitration(phase_id, accepted: bool):
@@ -133,6 +528,106 @@ def apply_blackboard_defaults(blackboard: dict):
             phase.setdefault("cycle", "")
             phase.setdefault("context", "")
             phase.setdefault("files_to_read", [])
+            phase.setdefault("tests_to_remove", [])
+            phase.setdefault("tests_to_update", [])
+
+PLANNED_TEST_FIELDS = ("tests_to_remove", "tests_to_update")
+
+
+def planned_test_changes(phase: dict) -> tuple:
+    """(tests à SUPPRIMER, tests MODIFIABLES) déclarés par l'architecte sur la phase —
+    chemins normalisés (relatifs, séparateur '/', sans './'). Champs absents → ([], [])."""
+    def norm(values):
+        out = []
+        for raw in (values if isinstance(values, list) else []):
+            p = str(raw).strip().strip("'\"`").replace("\\", "/")
+            if p.startswith("./"):
+                p = p[2:]
+            if p:
+                out.append(p)
+        return out
+    return norm(phase.get("tests_to_remove")), norm(phase.get("tests_to_update"))
+
+
+def allowed_test_edits(phase: dict, blackboard: dict) -> set:
+    """Fichiers de test que les gardes de gel ne doivent PAS restaurer pendant cette phase :
+    ceux que le plan déclare modifiables, ceux qu'il déclare obsolètes, et ceux déjà
+    supprimés par l'orchestrateur (arbitrage humain ou plan). Tout le reste reste gelé."""
+    to_remove, to_update = planned_test_changes(phase)
+    return set(to_remove) | set(to_update) | set(blackboard.get("_yolo_deleted_tests") or [])
+
+
+def planned_test_changes_policy(phase: dict) -> str:
+    """Complément de la politique d'édition du prompt codeur quand le plan a déclaré des
+    tests à supprimer ou à modifier pour cette phase ; '' sinon (aucun changement de
+    consigne : le gel des tests reste la règle)."""
+    to_remove, to_update = planned_test_changes(phase)
+    if not to_remove and not to_update:
+        return ""
+    parts = [" EXCEPTION PLANIFIÉE par l'architecte pour cette phase :"]
+    if to_remove:
+        parts.append(f" les tests obsolètes suivants ont déjà été SUPPRIMÉS par l'orchestrateur "
+                     f"(comportement retiré ou remplacé par la spec) — ne les recrée pas et n'en "
+                     f"réécris pas l'équivalent : {', '.join(to_remove)}.")
+    if to_update:
+        parts.append(f" tu PEUX modifier ces fichiers de test existants, et eux seuls, parce que la "
+                     f"spec fait évoluer le comportement qu'ils décrivent : {', '.join(to_update)}.")
+    return "".join(parts)
+
+
+def remove_planned_obsolete_tests(phase: dict, blackboard: dict) -> list:
+    """Suppression MÉCANIQUE, au début de la phase, des tests que le PLAN déclare obsolètes
+    (champ 'tests_to_remove', transporté depuis le plan par le compilateur).
+
+    Le 23/08/2026, un plan déclarait noir sur blanc « exception à la règle de gel : l'US-1
+    exige la suppression des tests d'incrémentation » et la garde de gel restaurait le test
+    trois fois de suite. C'est l'ORCHESTRATEUR qui supprime, jamais un agent : chaque chemin
+    est validé (existe, est un fichier de test, pas un artefact d'orchestration), retiré
+    (git rm si suivi), committé aussitôt (les gardes en diff HEAD ne doivent pas prendre cet
+    acte pour le travail d'un agent), retiré des protections, mémorisé dans
+    _yolo_deleted_tests ; la garde de non-décroissance est re-baselinée."""
+    to_remove, _to_update = planned_test_changes(phase)
+    if not to_remove:
+        return []
+    print(f"🗂️  Tests déclarés obsolètes par le plan (phase {phase.get('id')}) : suppression "
+          f"par l'orchestrateur...")
+    deleted = []
+    for p in to_remove:
+        if not os.path.isfile(p):
+            print(f"   ℹ️  '{p}' : déjà absent, rien à supprimer.")
+            continue
+        if not is_test_file(p):
+            print(f"   ⚠️  '{p}' n'est pas un fichier de test : ignoré (le plan ne peut déclarer "
+                  f"obsolète qu'un test, jamais du code de production).")
+            continue
+        tracked = False
+        if _GIT["enabled"]:
+            ok_tracked, tracked_out = run_git(["ls-files", "--", p])
+            tracked = ok_tracked and bool(tracked_out.strip())
+        if tracked:
+            run_git(["rm", "-f", "--", p])
+        else:
+            try:
+                os.remove(p)
+            except OSError:
+                continue
+        deleted.append(p)
+        print(f"   🗑️  Test obsolète supprimé par l'orchestrateur (plan) : {p}")
+    if not deleted:
+        return deleted
+    if "last_test_count" in blackboard:
+        blackboard.pop("last_test_count", None)
+        print("   ℹ️  Garde de non-décroissance ré-initialisée (re-baseline au prochain vert).")
+    protected = set(blackboard.get("protected_test_files") or [])
+    if protected & set(deleted):
+        blackboard["protected_test_files"] = sorted(protected - set(deleted))
+    already = set(blackboard.get("_yolo_deleted_tests") or [])
+    blackboard["_yolo_deleted_tests"] = sorted(already | set(deleted))
+    save_blackboard(blackboard)
+    mm_audit.event("guard", name="tests_obsoletes_plan", action="suppression", files=len(deleted))
+    commit_phase(f"phase {phase.get('id')}: tests obsolètes retirés (déclarés par le plan)")
+    return deleted
+
 
 def build_coder_prompt(phase: dict, blackboard: dict, user_need: str,
                        skills_context: str, critic_feedback: str, attempt: int) -> str:
@@ -165,7 +660,7 @@ def build_coder_prompt(phase: dict, blackboard: dict, user_need: str,
     else:
         prod_edit_policy = ("Tu PEUX modifier le code de production existant si c'est nécessaire pour "
                             "faire passer la vérification (la suite peut révéler un bug d'une feature "
-                            "antérieure à corriger).")
+                            "antérieure à corriger).") + planned_test_changes_policy(phase)
 
     # Contexte de l'architecte et liste de lecture, transportés depuis le plan : un GUIDAGE
     # qui épargne au codeur une ré-exploration libre du projet. Rien ne sandboxe ses
@@ -585,6 +1080,7 @@ def ensure_executable_scaffold(blackboard: dict, user_need: str):
         print("✓ La chaîne de vérification passe déjà : squelette présent, étape sautée.")
         record_test_count(output, blackboard)
         return
+    fail_if_toolchain_environment_broken(verify_cmd, output, blackboard)
 
     print("   Chaîne non opérationnelle : génération du squelette par un agent dédié...")
     scaffold_done = done_sentinel(0, 1)
@@ -1526,10 +2022,7 @@ def run_mutation(cmd: str, timeout: int = MUTATION_TIMEOUT) -> tuple:
     warn) d'un vrai « la suite ne mord pas assez ».
     """
     print(f"   🧬 Mutation testing : {cmd}")
-    env = os.environ.copy()
-    local_bin = os.path.abspath(os.path.join("node_modules", ".bin"))
-    if os.path.isdir(local_bin):
-        env["PATH"] = local_bin + os.pathsep + env.get("PATH", "")
+    env = verify_env()
     try:
         proc = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=timeout, env=env)
     except subprocess.TimeoutExpired as exc:
@@ -1551,15 +2044,11 @@ def run_verify(cmd: str, timeout: int = VERIFY_TIMEOUT) -> tuple:
     du résultat à un LLM. La commande provient du blackboard validé par l'humain (y/n).
     """
     print(f"   🧪 Vérification par exécution : {cmd}")
-    # Les outils JS/TS (tsc, vitest, vite…) sont souvent installés en LOCAL dans
-    # node_modules/.bin et absents du PATH global : sous shell=True, /bin/sh ne les
-    # trouve pas (« tsc: not found »). On préfixe donc le PATH avec node_modules/.bin
-    # quand il existe, pour que les binaires nus comme les invocations npx fonctionnent.
-    # Inoffensif hors écosystème Node (le dossier est simplement absent).
-    env = os.environ.copy()
-    local_bin = os.path.abspath(os.path.join("node_modules", ".bin"))
-    if os.path.isdir(local_bin):
-        env["PATH"] = local_bin + os.pathsep + env.get("PATH", "")
+    # PATH unifié avec le shell de login de l'utilisateur (même Node que l'agent) puis
+    # node_modules/.bin en tête : voir verify_env(). Au premier verdict JS/TS du run, une
+    # ligne dit quel Node exécute réellement la commande (et ce que le projet attend).
+    env = verify_env()
+    toolchain_preflight(cmd, env)
     try:
         proc = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=timeout, env=env)
     except subprocess.TimeoutExpired as exc:
@@ -1624,6 +2113,9 @@ def save_blackboard(data: dict):
 
 def signal_handler(sig, frame):
     print("\n⚠️  Interruption détectée. Nettoyage...")
+    # Journal clos AVANT de tuer l'agent : un run interrompu laisse un run.json et un
+    # run_end ('interrupted'), jamais un events.jsonl tronqué indistinguable d'un crash.
+    mm_audit.end("interrupted")
     RUNNER.kill()
     sys.exit(1)
 
@@ -1759,6 +2251,18 @@ def validate_blackboard_schema(blackboard: dict) -> tuple:
                 fatal.append(f"phases[{idx}].name manquant.")
             if not isinstance(phase.get("tasks"), list) or not phase.get("tasks"):
                 fatal.append(f"phases[{idx}].tasks manquant ou vide : checklist sans contenu.")
+            for field in PLANNED_TEST_FIELDS:
+                if field not in phase:
+                    continue
+                entries = phase.get(field)
+                if not isinstance(entries, list) or not all(isinstance(e, str) for e in entries):
+                    fatal.append(f"phases[{idx}].{field} doit être une liste de chemins (chaînes).")
+                    continue
+                not_tests = [e for e in entries if e.strip() and not is_test_file(e.strip())]
+                if not_tests:
+                    fatal.append(f"phases[{idx}].{field} : {', '.join(not_tests)} — le plan ne peut "
+                                 f"déclarer obsolète ou modifiable qu'un FICHIER DE TEST, jamais du "
+                                 f"code de production.")
         ids = [str(phase.get("id")) for phase in phases if isinstance(phase, dict) and "id" in phase]
         duplicated = sorted({i for i in ids if ids.count(i) > 1})
         if duplicated:

@@ -169,7 +169,7 @@ STATE_FILES = ["need.md", "spec.md", "plan.md", "impact.md", "blackboard.yaml",
                "refactoring_report.md", "review_report.md", "failReport.md",
                "documentation.md", "doc_map.yaml", "a11y_map.yaml",
                "design_audit_report.md",
-               "accessibility_audit_report.md", "declaration_accessibilite.md",
+               "accessibility_pre_audit_report.md", "accessibility_pre_audit_summary.md",
                "skill_adapt_profile.yaml", "skill_adapt_report.md"]
 # Fichiers à NOM DYNAMIQUE autorisés en lecture par /api/doc : les rapports d'arbitrage
 # mid-run des orchestrateurs Yolo ('impact-phase-<id>.md'), les rapports d'audit de
@@ -220,9 +220,9 @@ CLEAN_COMPANION_GLOBS = {
 # DOSSIERS de constats intermédiaires des orchestrateurs lecture seule (une passe = un
 # fichier). Ils sont AUSSI de l'état de reprise, et c'est le piège que le seul nettoyage
 # des rapports laissait entier : « un fichier de constats conservé fait sauter sa passe »
-# (Audit-Design), les passes déjà exploitables d'audit_a11y/ « seront sautées ».
+# (Audit-Design), les passes déjà exploitables de pre_audit_a11y/ « seront sautées ».
 # Refaire un audit ou une doc COMPLETS exige donc de les retirer — récursivement.
-CLEANABLE_DIRS = ["doc_zones", "audit_nielsen", "audit_a11y"]
+CLEANABLE_DIRS = ["doc_zones", "audit_nielsen", "pre_audit_a11y"]
 
 # Marqueur d'équipement écrit à la racine du projet : permet de proposer une mise à jour
 # des prompts quand la distro évolue (comparé au 'distro_version' du manifeste).
@@ -758,8 +758,9 @@ def tmux_pane_binary(session: str) -> str | None:
         tokens = [t for t in shlex.split(command) if t]
     except ValueError:  # quoting exotique : découpage naïf, c'est un nom d'affichage
         tokens = command.split()
-    while tokens and tokens[0] in ("env", "-u", "TMUX"):
-        tokens.pop(0)
+    while tokens and (tokens[0] in ("env", "-u", "TMUX")
+                      or ("=" in tokens[0] and not tokens[0].startswith("/"))):
+        tokens.pop(0)   # wrappers et affectations VAR=… (PATH explicite) retirés
     return os.path.basename(tokens[0]) if tokens else None
 
 
@@ -833,6 +834,7 @@ def tmux_start_run(project: str, binary_path: str) -> str:
             raise RuntimeError(L(f"Un run est déjà actif pour ce projet (session {session}).",
                                  f"A run is already active for this project (session {session})."))
         tmux("kill-session", "-t", session)  # run terminé : on recycle la session
+    archive_run_exit(project)   # le code de sortie du run précédent rejoint son run.json
     try:
         os.remove(os.path.join(project, RUN_EXIT_SENTINEL))  # sentinelle d'un run précédent
     except OSError:
@@ -840,7 +842,12 @@ def tmux_start_run(project: str, binary_path: str) -> str:
     # Le wrapper relaie le code de sortie dans la sentinelle (cwd = projet) PUIS le rend
     # au pane : pane_dead_status reste la source primaire, la sentinelle couvre les cas
     # où tmux 3.4 le perd (kill-session de la session d'agent depuis le pane, cf. config).
-    command = (f"env -u TMUX {shlex.quote(os.path.abspath(binary_path))}; __mm=$?; "
+    # PATH passé EXPLICITEMENT : la commande d'une session tmux hérite sinon du PATH du
+    # SERVEUR tmux, c'est-à-dire du processus qui l'a créé (une app headless d'il y a
+    # trois jours, par exemple) — l'orchestrateur doit voir le PATH de l'app d'aujourd'hui,
+    # enrichi du shell de login (enrich_path), comme l'agent dans son propre pane.
+    command = (f"env -u TMUX PATH={shlex.quote(os.environ.get('PATH', ''))} "
+               f"{shlex.quote(os.path.abspath(binary_path))}; __mm=$?; "
                f"echo $__mm > {RUN_EXIT_SENTINEL}; exit $__mm")
     proc = tmux("new-session", "-d", "-s", session, "-x", "220", "-y", "50",
                 "-c", project, command,
@@ -864,6 +871,60 @@ def tmux_interrupt(session: str):
 
 def tmux_kill(session: str):
     tmux("kill-session", "-t", session)
+
+
+def kill_run(project: str):
+    """Arrêt d'un run depuis l'app : Ctrl-C d'abord (l'orchestrateur clôt son journal
+    'interrupted' et tue sa session d'agent), puis kill de la session de run si elle
+    survit, ET de la session d'agent quel que soit son état — un agent orphelin finissait
+    d'écrire son livrable dans un projet que plus personne ne pilotait (carte résiduelle
+    trompeuse au relancement, 22/08/2026)."""
+    session = run_session_name(project)
+    if tmux_has_session(session):
+        dead, _ = tmux_dead_status(session, project)
+        if not dead:
+            tmux_interrupt(session)
+            deadline = time.time() + 3
+            while time.time() < deadline:
+                if not tmux_has_session(session):
+                    break
+                dead, _ = tmux_dead_status(session, project)
+                if dead:
+                    break
+                time.sleep(0.2)
+        if tmux_has_session(session):
+            tmux_kill(session)
+    agent = agent_session_name(project, harness_of(project))
+    if tmux_has_session(agent):
+        tmux_kill(agent)
+
+
+def archive_run_exit(project: str):
+    """Avant d'effacer la sentinelle de code de sortie du run précédent, la recopie dans le
+    run.json du dernier dossier .mm-runs/ : le code de sortie survivait au pane, pas au run
+    suivant. Best-effort, jamais bloquant."""
+    try:
+        with open(os.path.join(project, RUN_EXIT_SENTINEL), "r", encoding="utf-8") as f:
+            code = int(f.read().strip())
+    except (OSError, ValueError):
+        return
+    runs_root = os.path.join(project, ".mm-runs")
+    try:
+        runs = sorted(d for d in os.listdir(runs_root)
+                      if os.path.isdir(os.path.join(runs_root, d)))
+    except OSError:
+        return
+    if not runs:
+        return
+    run_json = os.path.join(runs_root, runs[-1], "run.json")
+    data = read_json(run_json, None)
+    if not isinstance(data, dict) or "exit_code" in data:
+        return
+    data["exit_code"] = code
+    try:
+        write_json_atomic(run_json, data)
+    except OSError:
+        pass
 
 
 # ─── CONVERSION ANSI → HTML (affichage des écrans tmux) ──────────────────────
@@ -1212,6 +1273,68 @@ def detect_gate(orch: dict, screen: str | None, project: str | None = None) -> d
     return None
 
 
+def manifest_orchestrator_by_binary(manifest: dict, binary: str | None) -> dict | None:
+    """Entrée du manifeste correspondant au binaire d'un run : 'Pre-Audit-A11Y-RGAA.py'
+    en dev (source), sans extension en release (binaire compilé)."""
+    if not binary:
+        return None
+    stem = binary[:-3] if binary.endswith(".py") else binary
+    for entry in manifest["orchestrators"]:
+        if entry.get("binary") == stem:
+            return entry
+    return None
+
+
+def declared_steps(entry: dict | None) -> list | None:
+    """La timeline déclarée au manifeste ('steps'), ou None → repli sur le modèle usine
+    à 5 étapes (infer_step) : les pipelines de production ne déclarent rien."""
+    steps = entry.get("steps") if isinstance(entry, dict) else None
+    return steps if isinstance(steps, list) and steps else None
+
+
+def _step_done(project: str, marker: str | None) -> bool:
+    """Preuve DURABLE qu'une étape déclarée est franchie : un fichier livré, un dossier
+    apparu ('doc_zones/'), ou un motif à la racine ('skill_adapt-*.md') — jamais une
+    sentinelle (éphémère, même principe qu'infer_step)."""
+    if not marker:
+        return False
+    if "*" in marker:
+        try:
+            return any(fnmatch.fnmatch(name, marker) for name in os.listdir(project))
+        except OSError:
+            return False
+    path = os.path.join(project, marker)
+    return os.path.isdir(path) if marker.endswith("/") else os.path.exists(path)
+
+
+def infer_declared_step(project: str, steps: list, gate_id: str | None,
+                        run_alive: bool, run_finished_ok: bool) -> dict:
+    """Position dans une timeline DÉCLARÉE au manifeste (audits, documentation, spec,
+    outillage) : l'étape courante est la première sans preuve livrée, une porte ouverte
+    force son étape comme courante, et un run mort code 0 marque tout terminé. Le payload
+    porte les libellés ('labels') : l'UI ne retombe sur I18N.steps qu'en leur absence."""
+    labels = [L(str((s.get("title") or {}).get("fr", "")),
+                str((s.get("title") or {}).get("eng", ""))) for s in steps]
+    total = len(steps)
+    if run_finished_ok:
+        return {"index": total, "labels": labels, "completed": True,
+                "detail": L(f"Run terminé — {labels[-1]}", f"Run finished — {labels[-1]}")}
+    if gate_id:
+        for i, s in enumerate(steps):
+            if gate_id in (s.get("gates") or []):
+                return {"index": i + 1, "labels": labels, "completed": False,
+                        "detail": L("Porte ouverte : à toi de répondre",
+                                    "Gate open — over to you")}
+    index = total
+    for i, s in enumerate(steps):
+        if not _step_done(project, s.get("done")):
+            index = i + 1
+            break
+    return {"index": index, "labels": labels, "completed": False,
+            "detail": L(f"{labels[index - 1]} — en cours",
+                        f"{labels[index - 1]} — in progress") if run_alive else labels[index - 1]}
+
+
 def infer_step(files: dict, phases: list[dict], gate_id: str | None,
                run_alive: bool, binary: str | None = None) -> dict:
     """Où en est le pipeline (étapes 1 à 5 du README) ? Inféré de la porte détectée,
@@ -1392,8 +1515,13 @@ def project_summary(path: str, manifest: dict) -> dict:
         phases = normalize_phases(blackboard)
         run["gate"] = gate
         run["orchestrator"] = orch_id
-        run["step"] = infer_step(files, phases, gate["id"] if gate else None, not dead,
-                                 binary=tmux_pane_binary(session))
+        run_binary = tmux_pane_binary(session)
+        steps_decl = declared_steps(manifest_orchestrator_by_binary(manifest, run_binary))
+        run["step"] = (infer_declared_step(path, steps_decl, gate["id"] if gate else None,
+                                           not dead, dead and exit_code == 0)
+                       if steps_decl else
+                       infer_step(files, phases, gate["id"] if gate else None, not dead,
+                                  binary=run_binary))
         summary["run"] = run
     return summary
 
@@ -1408,9 +1536,12 @@ def check_prereqs() -> list[dict]:
     for name, version_args in [("tmux", ["-V"]), ("git", ["--version"]),
                                ("node", ["--version"])]:
         found = shutil.which(name) is not None
-        checks.append({"name": name, "found": found,
-                       "version": _tool_version(name, version_args) if found else None,
-                       "harness": False})
+        check = {"name": name, "found": found,
+                 "version": _tool_version(name, version_args) if found else None,
+                 "harness": False, "warn": None}
+        if name == "node" and found:
+            check.update(node_check(check["version"]))
+        checks.append(check)
     # Les harness sont des prérequis ALTERNATIFS : l'absence de l'un n'est pas une
     # erreur tant que l'autre est là. Ils portent 'harness': True — l'UI ne les compte
     # donc pas dans les prérequis manquants et signale seulement le cas « aucun des deux ».
@@ -1428,6 +1559,34 @@ def check_prereqs() -> list[dict]:
         checks.append(check)
     _prereq_cache.update(at=now, data=checks)
     return checks
+
+
+NODE_MIN_MAJOR = 20   # en-deçà, l'outillage JS courant (vite 7+, vitest 3+, rolldown) refuse de tourner
+
+
+def node_check(version: str | None) -> dict:
+    """Compléments du préflight Node : chemin résolu, majeure, et un avertissement si la
+    version est trop ancienne ou si un shell de login (donc l'agent dans son pane tmux)
+    n'aurait PAS le même node que l'app — la présence seule ne dit rien : le 23/08/2026,
+    « node ✓ » masquait un v18 système sous un v22 nvm."""
+    path = shutil.which("node") or ""
+    match = re.match(r"v?(\d+)", version or "")
+    major = int(match.group(1)) if match else None
+    warnings = []
+    if major is not None and major < NODE_MIN_MAJOR:
+        warnings.append(L(f"Node {version} < {NODE_MIN_MAJOR} : trop ancien pour l'outillage JS "
+                          f"courant (vite, vitest…) ; les verdicts des orchestrateurs échoueront.",
+                          f"Node {version} < {NODE_MIN_MAJOR}: too old for current JS tooling "
+                          f"(vite, vitest…); orchestrator verdicts will fail."))
+    login_path = probe_login_path()
+    login_node = shutil.which("node", path=login_path) if login_path else None
+    if login_path and login_node and os.path.realpath(login_node) != os.path.realpath(path):
+        warnings.append(L(f"L'app résout {path}, un shell de login résoudrait {login_node} : "
+                          f"lance l'app depuis un terminal ou via l'icône posée par install.sh.",
+                          f"The app resolves {path}, a login shell would resolve {login_node}: "
+                          f"launch the app from a terminal or via the icon set up by install.sh."))
+    return {"path": path, "major": major, "login_node": login_node,
+            "warn": " ".join(warnings) or None}
 
 
 def _tool_version(name: str, args: list) -> str | None:
@@ -2119,7 +2278,7 @@ class AppHandler(BaseHTTPRequestHandler):
                 return self._send_json({"ok": True})
             if url.path == "/api/run/kill":
                 project = self._registered_project(body.get("path"))
-                tmux_kill(run_session_name(project))
+                kill_run(project)
                 return self._send_json({"ok": True})
             if url.path == "/api/fs/pick":
                 return self._send_json(native_pick_directory())
@@ -2298,6 +2457,7 @@ class AppHandler(BaseHTTPRequestHandler):
         phases = normalize_phases(blackboard)
         sentinels = [s for s in KNOWN_SENTINELS if os.path.exists(os.path.join(project, s))]
         run_binary = tmux_pane_binary(session) if exists else None
+        steps_decl = declared_steps(manifest_orchestrator_by_binary(manifest, run_binary))
         return {
             "project": {"path": project, "name": os.path.basename(project.rstrip("/")),
                         "hash": project_hash(project)},
@@ -2315,8 +2475,12 @@ class AppHandler(BaseHTTPRequestHandler):
                         "model": configured_model(project, harness)},
             "gate": gate,
             "gate_orchestrator": orch_id,
-            "step": infer_step(files, phases, gate["id"] if gate else None, exists and not dead,
-                               binary=run_binary),
+            "step": (infer_declared_step(project, steps_decl, gate["id"] if gate else None,
+                                         exists and not dead,
+                                         exists and dead and exit_code == 0)
+                     if steps_decl else
+                     infer_step(files, phases, gate["id"] if gate else None,
+                                exists and not dead, binary=run_binary)),
             "phases": phases,
             "blackboard": {
                 "project": (blackboard or {}).get("project"),
@@ -2601,7 +2765,7 @@ HTML_PAGE = r"""<!doctype html>
            color:var(--ink-faint); font-weight:600; margin-bottom:8px; }
   .check { display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink-soft); padding:2px 0; }
   .dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
-  .dot.ok { background:var(--ok); } .dot.ko { background:var(--err); }
+  .dot.ok { background:var(--ok); } .dot.ko { background:var(--err); } .dot.warn { background:var(--warn); }
 
   select, input[type=text] { width:100%; background:var(--panel-2); color:var(--ink);
     border:1px solid var(--line); border-radius:9px; padding:7px 10px; font:inherit; }
@@ -2649,6 +2813,7 @@ HTML_PAGE = r"""<!doctype html>
   .btn.ghost { background:var(--panel-2); border:1px solid var(--line); color:var(--ink-soft);
                font-weight:500; box-shadow:none; }
   .btn.danger { background:var(--err-soft); color:var(--err); box-shadow:none; }
+  .btn.small { padding:3px 10px; font-size:11.5px; border-radius:8px; }
   .hintline { font-size:11px; color:var(--ink-faint); }
 
   .toast { position:fixed; bottom:18px; left:50%; transform:translateX(-50%);
@@ -2736,7 +2901,15 @@ HTML_PAGE = r"""<!doctype html>
   .gate-doc h1 { font-size:17px; } .gate-doc h2 { font-size:15px; } .gate-doc h3 { font-size:13.5px; }
   .gate-doc table { border-collapse:collapse; margin:8px 0; }
   .gate-doc th, .gate-doc td { border:1px solid var(--line); padding:4px 9px; font-size:12px; text-align:left; }
-  .gate-doc pre { background:var(--term-bg); color:var(--term-ink); padding:10px; border-radius:8px; overflow:auto; }
+  /* Blocs de code des DOCUMENTS (spec, plan, blackboard, rapports) : couleurs du thème,
+     pas celles du terminal — en thème clair, --term-bg/--term-ink donnaient un bloc noir
+     à texte clair, et la règle globale `code {}` (fond --panel-2, bordure) s'appliquait
+     dedans : « surlignage » clair sous du texte clair, illisible. */
+  .gate-doc pre { background:var(--panel); color:var(--ink); border:1px solid var(--line);
+                  padding:10px 12px; border-radius:8px; overflow:auto; font-size:12px; line-height:1.5; }
+  .gate-doc pre code { background:none; border:none; padding:0; font-size:inherit; color:inherit; }
+  .gate-doc blockquote { margin:8px 0; padding:4px 12px; border-left:3px solid var(--line-strong);
+                         color:var(--ink-soft); }
   .gate-bar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
 
   .banner { border-radius:10px; padding:11px 16px; font-size:13px; margin-bottom:14px; }
@@ -2973,10 +3146,11 @@ const I18N_FR = {
   update_prompts: "mise à jour de l'équipement disponible",
   equipped_v: (v) => "équipé" + (v ? " v" + v : " · version inconnue"),
   recommended: "⭐ recommandé",
+  beta: "🧪 bêta",
   phase_states: { DONE: "terminée", PENDING: "en cours", REJECTED: "rejetée", TODO: "à faire" },
   tasks_word: (n) => n + " tâche(s)",
   covers_word: " · couvre ",
-  step_word: (i) => "étape " + i + "/5",
+  step_word: (i, t) => "étape " + i + "/" + (t || 5),
   no_blackboard: "blackboard.yaml pas encore généré — les phases apparaîtront ici.",
   no_subdirs: "(aucun sous-dossier)",
   binary_label: "binaire", project_label: "projet",
@@ -3095,10 +3269,11 @@ const I18N_ENG = {
   update_prompts: "equipment update available",
   equipped_v: (v) => "equipped" + (v ? " v" + v : " · unknown version"),
   recommended: "⭐ recommended",
+  beta: "🧪 beta",
   phase_states: { DONE: "done", PENDING: "in progress", REJECTED: "rejected", TODO: "to do" },
   tasks_word: (n) => n + " task(s)",
   covers_word: " · covers ",
-  step_word: (i) => "step " + i + "/5",
+  step_word: (i, t) => "step " + i + "/" + (t || 5),
   no_blackboard: "blackboard.yaml not generated yet — the phases will appear here.",
   no_subdirs: "(no subfolder)",
   binary_label: "binary", project_label: "project",
@@ -3664,8 +3839,13 @@ function syncTopbar() {
    conseil actionnable : « présent » ne suffit pas à faire tourner un run. Un harness
    absent est affiché en info (pastille neutre), pas en erreur — l'autre peut suffire. */
 function prereqRow(c) {
-  if (!c.harness)
-    return `<div class="check"><span class="dot ${c.found?"ok":"ko"}"></span>${esc(c.name)}${c.version?` <span class="hintline">${esc(c.version)}</span>`:""}</div>`;
+  if (!c.harness) {
+    const dot = !c.found ? "ko" : (c.warn ? "warn" : "ok");
+    const bits = [];
+    if (c.version) bits.push(c.version + (c.path ? " · " + c.path : ""));
+    if (c.warn) bits.push("⚠ " + c.warn);
+    return `<div class="check"><span class="dot ${dot}"></span>${esc(c.name)}${bits.length?` <span class="hintline">${esc(bits.join(" · "))}</span>`:""}</div>`;
+  }
   const bits = [];
   if (c.version) bits.push(c.version);
   if (c.found) bits.push(c.authed ? (c.auth_detail || "ok") : I18N.harness_unauth + (c.auth_detail ? " (" + c.auth_detail + ")" : ""));
@@ -3758,7 +3938,7 @@ function projectChips(p) {
     p.update_available ? `<span class="badge warn">${I18N.update_prompts}</span>` : "",
     p.need.ready ? "" : `<span class="badge warn">${esc(p.need.why || I18N.need_missing)}</span>`,
     p.run ? (p.run.alive
-        ? `<span class="badge">${I18N.running}${p.run.step ? " · " + esc(I18N.step_word(p.run.step.index)) : ""}</span>`
+        ? `<span class="badge">${I18N.running}${p.run.step ? " · " + esc(I18N.step_word(p.run.step.index, (p.run.step.labels || I18N.steps).length)) : ""}</span>`
         : `<span class="badge ${p.run.exit_code === 0 ? "ok" : "err"}">${I18N.finished} (code ${esc(p.run.exit_code ?? "?")})</span>`) : "",
     !p.exists ? `<span class="badge err">${I18N.missing_dir}</span>` : "",
   ].join("");
@@ -3781,7 +3961,7 @@ function projectStepHtml(project) {
        <div class="path">${esc(project.path)}</div>
        <div class="chips" style="margin:6px 0 2px">${projectChips(project)}</div>
        <div class="actions">${equipBtns(project, project.equipped && !project.update_available ? "ghost" : "", "equip-step")}
-         ${project.equipped ? `<button class="btn ghost" data-fkey="tmo-step" data-action="timeouts" data-arg="${project.hash}" title="${esc(I18N.tmo_hint)}">⏱ ${I18N.tmo_btn}</button>` : ""}
+         ${project.equipped ? `<button class="btn" data-fkey="tmo-step" data-action="timeouts" data-arg="${project.hash}" title="${esc(I18N.tmo_hint)}">⏱ ${I18N.tmo_btn}${project.timeouts ? " · " + esc(I18N.tmo_badge(project.timeouts).replace("⏱ ", "")) : ""}</button>` : ""}
          ${cleanBtn(project, cleanableOf(project, runFor(project)),
                     !!(project.run && project.run.alive), "clean-step", "ghost")}</div>`
     : `<div class="hintline">${I18N.project_step_hint}</div>`;
@@ -3827,7 +4007,7 @@ function libraryHtml() {
     }
     const disabled = reasons.length ? "disabled" : "";
     return `<div class="ocard">
-      <span style="display:flex;gap:6px"><span class="badge ${o.family === "production" ? "" : "steel"}">${esc(o.family || "")}</span>${o.recommended ? `<span class="badge ok">${I18N.recommended}</span>` : ""}</span>
+      <span style="display:flex;gap:6px"><span class="badge ${o.family === "production" ? "" : "steel"}">${esc(o.family || "")}</span>${o.recommended ? `<span class="badge ok">${I18N.recommended}</span>` : ""}${o.beta ? `<span class="badge warn">${I18N.beta}</span>` : ""}</span>
       <span class="oname">${esc(tr(o.title) || o.id)}</span>
       <span class="odesc">${esc(tr(o.description))}</span>
       ${reasons.length ? `<span class="hintline">⛔ ${esc(reasons[0])}</span>` : ""}
@@ -3836,13 +4016,14 @@ function libraryHtml() {
       </div>
     </div>`;
   };
+  const grid = (list) => `<div class="grid">${list.map(card).join("")}</div>`;
   // Groupes par moteur seulement s'il y en a plusieurs : à un seul moteur, rien ne change.
   const body = d.engines.length > 1
     ? d.engines.map(e => {
         const own = kept.filter(o => o.engine === e.label);
-        return own.length ? `<div class="label" style="margin:12px 0 6px">${esc(I18N.engine_name(e.label))}${e.distro_version ? ` <span class="hintline">distro ${esc(e.distro_version)}</span>` : ""}</div><div class="grid">${own.map(card).join("")}</div>` : "";
+        return own.length ? `<div class="label" style="margin:12px 0 6px">${esc(I18N.engine_name(e.label))}${e.distro_version ? ` <span class="hintline">distro ${esc(e.distro_version)}</span>` : ""}</div>${grid(own)}` : "";
       }).join("")
-    : (kept.length ? `<div class="grid">${kept.map(card).join("")}</div>` : "");
+    : (kept.length ? grid(kept) : "");
   const empty = d.orchestrators.length ? I18N.no_binaries : I18N.no_manifest;
   // Les harness ne comptent pas comme « manquants » un par un : ils s'excluent. Seul
   // le cas « aucun des deux » est bloquant, et il a son propre message.
@@ -3862,14 +4043,18 @@ function libraryHtml() {
 /* Ligne d'étapes signature : piste + fil en dégradé de lever + points done/now/todo.
    Positions en % (8 → 92) comme les maquettes ; le fil s'arrête au point courant. */
 function pipeHtml(step) {
-  const total = I18N.steps.length;
-  const pos = (n) => 8 + (n - 1) * (84 / (total - 1));
-  const items = I18N.steps.map((name, i) => {
+  /* Libellés du payload (timeline déclarée au manifeste) ; I18N.steps = repli usine. */
+  const labels = step.labels || I18N.steps;
+  const total = labels.length;
+  const pos = (n) => total > 1 ? 8 + (n - 1) * (84 / (total - 1)) : 50;
+  const items = labels.map((name, i) => {
     const n = i + 1;
-    const cls = n < step.index ? "done" : (n === step.index ? "now" : "");
-    return `<div class="st ${cls}" ${n === step.index ? 'aria-current="step"' : ""} style="left:${pos(n)}%"><span class="d" aria-hidden="true"></span><span class="l">${esc(name)}</span></div>`;
+    const done = step.completed || n < step.index;
+    const cls = done ? "done" : (n === step.index ? "now" : "");
+    return `<div class="st ${cls}" ${n === step.index && !step.completed ? 'aria-current="step"' : ""} style="left:${pos(n)}%"><span class="d" aria-hidden="true"></span><span class="l">${esc(name)}</span></div>`;
   }).join("");
-  return `<div class="steps"><span class="trk" aria-hidden="true"></span><span class="fil" aria-hidden="true" style="right:${100 - pos(step.index)}%"></span>${items}</div>`;
+  const fill = step.completed ? pos(total) : pos(step.index);
+  return `<div class="steps"><span class="trk" aria-hidden="true"></span><span class="fil" aria-hidden="true" style="right:${100 - fill}%"></span>${items}</div>`;
 }
 
 function phaseRow(p) {
@@ -3918,7 +4103,7 @@ function runMount() {
   // (périmètre d'audit, carte…) : pas d'aperçu de livrable ni de boutons d'édition.
   const editable = gate && gate.file && EDITABLE.has(gate.file);
   const gateBlock = gate ? `<div class="gate">
-      <p class="gate-k">${I18N.gate_kicker(r.step.index, I18N.steps.length)}</p>
+      <p class="gate-k">${I18N.gate_kicker(r.step.index, (r.step.labels || I18N.steps).length)}</p>
       <h2>${esc(tr(gate.title) || gate.id)}</h2>
       <div class="hint">${esc(tr(gate.hint))}</div>
       ${gate.file ? `<div class="gate-doc" id="gatedoc">${ui.gateDocHtml || "…"}</div>`
@@ -3937,6 +4122,7 @@ function runMount() {
       ${r.blackboard.last_test_count != null ? `<span>${I18N.last_green} : <b>${esc(r.blackboard.last_test_count)}</b></span>` : ""}
       <span>${I18N.sessions} : <b>${esc(r.session.name)}${r.agent_session.alive ? " · " + esc(r.agent_session.name) : ""}</b></span>
       <span>${I18N.harness_word} : <b>${esc(r.harness.label)}${r.harness.model ? " · " + esc(r.harness.model) : ""}</b></span>
+      <span><button class="btn small" data-fkey="tmo-run" data-action="timeouts" data-arg="${h}" title="${esc(I18N.tmo_hint)}">⏱ ${I18N.tmo_btn}${project.timeouts ? " · " + esc(I18N.tmo_badge(project.timeouts).replace("⏱ ", "")) : ""}</button></span>
     </div>`;
 
   const phases = r.phases.length ? r.phases.map(phaseRow).join("")
@@ -4342,6 +4528,43 @@ def enrich_path():
     added = [c for c in candidates if os.path.isdir(c) and c not in current]
     if added:
         os.environ["PATH"] = os.pathsep.join(current + added)
+    # PATH du shell de login INTERACTIF en TÊTE : c'est celui que tmux donne à l'agent dans
+    # son pane (nvm/fnm/volta chargés par les rc). Sans lui, l'app lancée sans terminal — et
+    # les orchestrateurs, qui héritent de son PATH via le serveur tmux — exécutaient les
+    # verdicts avec le Node SYSTÈME (v18) pendant que l'agent voyait Node 22 (incident du
+    # 23/08/2026 : « styleText », suite verte côté agent, rouge côté orchestrateur).
+    login_path = probe_login_path()
+    if login_path:
+        head = [p for p in login_path.split(os.pathsep) if p]
+        rest = [p for p in os.environ.get("PATH", "").split(os.pathsep) if p and p not in head]
+        os.environ["PATH"] = os.pathsep.join(head + rest)
+
+
+_LOGIN_PATH = {"probed": False, "path": None}
+
+
+def probe_login_path(timeout: int = 10) -> str | None:
+    """PATH du shell de login interactif de l'utilisateur ($SHELL -lic), mémoïsé ; None si
+    la sonde échoue ou si MM_TOOLCHAIN_PROBE=0. Même sonde que mm_core côté moteur (l'app
+    reste mono-fichier : elle n'importe pas le moteur)."""
+    if _LOGIN_PATH["probed"]:
+        return _LOGIN_PATH["path"]
+    _LOGIN_PATH["probed"] = True
+    if os.environ.get("MM_TOOLCHAIN_PROBE", "").strip() == "0":
+        return None
+    shell = os.environ.get("SHELL") or "/bin/bash"
+    if not (os.path.isfile(shell) and os.access(shell, os.X_OK)):
+        shell = "/bin/bash"
+    script = "printf '\\n__MM_PATH_B__\\n%s\\n__MM_PATH_E__\\n' \"$PATH\""
+    try:
+        proc = subprocess.run([shell, "-lic", script], capture_output=True, text=True,
+                              timeout=timeout, stdin=subprocess.DEVNULL,
+                              env=dict(os.environ, TERM="dumb"))
+        match = re.search(r"__MM_PATH_B__\n(.*?)\n__MM_PATH_E__", proc.stdout or "", re.S)
+        _LOGIN_PATH["path"] = (match.group(1).strip() or None) if match else None
+    except Exception:
+        _LOGIN_PATH["path"] = None
+    return _LOGIN_PATH["path"]
 
 
 def main():

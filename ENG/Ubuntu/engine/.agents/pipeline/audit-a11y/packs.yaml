@@ -1,6 +1,6 @@
 # Manifest of the thematic packs for the accessibility audit (RGAA 4.1.2).
 #
-# Read by Audit-A11Y-RGAA.py at startup: editing THIS file is enough to
+# Read by Pre-Audit-A11Y-RGAA.py at startup: editing THIS file is enough to
 # adjust the routing of the passes (the scripts are distributed as binaries — all the
 # variable content lives in external files such as this one).
 #

@@ -36,12 +36,9 @@ ROOT = Path(__file__).resolve().parent.parent
 LANGS = ["FR", "ENG"]
 OSES = ["Ubuntu", "MacOS", "Windows"]
 SCRIPTS = [
-    "engine/Safe-Coding.py",
     "engine/Coding-Without-Tests.py",
-    "engine/Safe-TDD.py",
-    "engine/Safe-ATDD.py",
     "engine/Audit-Design.py",
-    "engine/Audit-A11Y-RGAA.py",
+    "engine/Pre-Audit-A11Y-RGAA.py",
     "engine/Documentation.py",
     "engine/Guided-Fix.py",
     "engine/Design-Prototype.py",
@@ -52,9 +49,9 @@ SCRIPTS = [
     # Orchestrateurs Yolo (base + surcouche : revue d'impact, vérificateur LLM, triage des
     # cassures). Mêmes règles que leurs bases : c'est justement la famille de scripts la
     # plus exposée à la divergence, puisque chacun est une COPIE greffée d'un autre.
-    "engine/Advanced-Coding.py",
-    "engine/Advanced-TDD.py",
-    "engine/Advanced-ATDD.py",
+    "engine/Coding.py",
+    "engine/Test-First.py",
+    "engine/Acceptance-First.py",
     # Le harness vit ici : mêmes règles que les orchestrateurs
     # (identité octet intra-langue, AST identique FR/ENG modulo les chaînes).
     "engine/mm_runner.py",

@@ -32,6 +32,8 @@ PATHS (RULE #1: COPY, NEVER INVENT):
 
 - Every path in files: and tests: is COPIED VERBATIM from the "FILES TO ASSIGN" lists provided by the orchestrator. A path absent from those lists is FORBIDDEN (it will be rejected mechanically).
 - Each file is assigned to A SINGLE zone.
+- An entry of files: or tests: may be a DIRECTORY: its path, as it appears in the lists or in their per-directory summary, ending with "/" (e.g. "src/cart/"). It assigns to the zone every file of the scope it contains (recursively) that is not already assigned elsewhere. This is the normal way to cover a large repository: never hundreds of paths copied one by one.
+- The "Miscellaneous" zone is OPTIONAL: you may omit it or declare it with files: [] — the orchestrator mechanically puts there whatever you did not assign. It must remain a residue: if it collects most of the project, your map will be rejected.
 - Files from the CODE list go into files: ; files from the TESTS list go into tests:, placed in the zone whose behavior they verify. A zone with no existing test declares tests: [].
 - You NEVER provide a slug or an output file path for the zones: the orchestrator computes them itself.
 

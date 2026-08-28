@@ -32,6 +32,8 @@ CHEMINS (RÈGLE N°1 : RECOPIE, N'INVENTE JAMAIS) :
 
 - Chaque chemin de files: est RECOPIÉ À L'IDENTIQUE depuis la liste « FICHIERS UI À ASSIGNER » fournie par l'orchestrateur. Un chemin absent de cette liste est INTERDIT (il sera rejeté mécaniquement).
 - Chaque fichier est assigné à UN SEUL compartiment (socle, composants, OU une zone).
+- Une entrée de files: peut être un RÉPERTOIRE : son chemin, tel qu'il apparaît dans la liste ou son résumé par répertoire, terminé par « / » (ex. "src/pages/checkout/"). Elle assigne au compartiment tous les fichiers du périmètre qu'il contient (récursivement) et qui ne sont pas déjà assignés ailleurs. C'est la façon normale de couvrir un gros dépôt : jamais des centaines de chemins recopiés un à un.
+- La zone « Divers » est FACULTATIVE : tu peux l'omettre ou la déclarer avec files: [] — l'orchestrateur y range mécaniquement ce que tu n'auras pas assigné. Elle doit rester un résiduel : si elle recueille l'essentiel du projet, ta carte sera rejetée.
 - Tu ne fournis JAMAIS de slug ni de chemin de fichier de sortie : l'orchestrateur les calcule lui-même.
 
 LES TROIS COMPARTIMENTS (CRITÈRE D'ASSIGNATION)

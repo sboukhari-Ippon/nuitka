@@ -27,18 +27,18 @@ everything from the browser.
 
 | Need | Script | need.md |
 |---|---|---|
-| Develop with tests — the most robust mode | `Safe-Coding` | required |
+| Develop with tests — the most robust mode | `Coding` | required |
 | Develop without tests (POC, throwaway script, glue) | `Coding-Without-Tests` | required |
-| Develop in TDD (red → green → refactor cycles) | `Safe-TDD` | required |
-| Develop in ATDD (batches per user story) | `Safe-ATDD` | required |
-| Clickable HTML/CSS/JS prototype (designers) | `Design-Prototype` | required |
-| Brownfield/legacy: arbitrate "regression or evolution?" during the run | `Advanced-Coding` / `Advanced-TDD` / `Advanced-ATDD` | required |
+| Develop test-first by red → green → refactor cycles (inspired by TDD) | `Test-First` | required |
+| Develop acceptance-first by user-story batches (inspired by ATDD) | `Acceptance-First` | required |
+| Clickable HTML/CSS/JS prototype (designers) | `Design-Prototype` (beta) | required |
+| Brownfield/legacy: the "regression or evolution?" arbitration is built into all three (impact review, triage) | `Coding` / `Test-First` / `Acceptance-First` | required |
 | Challenge the need BEFORE paying for a spec | `Challenge-Need` | required |
 | Frame: the spec alone, validated with the business | `Spec` | required |
 | Think with a big model, then produce with a small one | `Technical-Plan`, then a factory | required |
-| Document an existing project (read-only) | `Documentation` | no |
-| UX audit — Nielsen's 10 heuristics (read-only) | `Audit-Design` | no |
-| RGAA 4.1.2 accessibility pre-audit (read-only) | `Audit-A11Y-RGAA` | no |
+| Document an existing project (read-only) | `Documentation` (beta) | no |
+| UX audit — Nielsen's 10 heuristics (read-only) | `Audit-Design` (beta) | no |
+| RGAA 4.1.2 accessibility pre-audit (read-only) | `Pre-Audit-A11Y-RGAA` (beta) | no |
 | Repair a run stopped on a red suite | `Guided-Fix` | no |
 | Adapt the shipped skills to YOUR stack | `Skills-Adaptation` | no |
 
@@ -57,13 +57,13 @@ equipped project:
 
 ```bash
 cd /path/to/your/project
-/path/to/MAIsterMind/engine/Safe-Coding
+/path/to/MAIsterMind/engine/Coding
 ```
 
 `MM_AGENT_HARNESS=opencode|codex` forces the harness for one launch; otherwise it is
 inferred from the equipment. Follow a run live: `tmux attach -t <session>` (name shown at
 launch; `Ctrl+B` then `D` to leave without stopping the AI). In dev, from the source
-repository: `python3 engine/Safe-Coding.py`.
+repository: `python3 engine/Coding.py`.
 
 Quick troubleshooting:
 - **Force-stop a run**: `tmux kill-session -t <session>`.

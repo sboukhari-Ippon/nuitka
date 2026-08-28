@@ -71,7 +71,7 @@ Check before writing your sentinel: the Summary counters must match exactly what
 ## MECHANICAL checks by the orchestrator (automatic rejection, exact discrepancy returned)
 
 The orchestrator checks your file by PROGRAM before accepting it — no judgment, only facts:
-- every path cited between backticks must EXIST in the project (an invented source = rejection);
+- every FILE path cited between backticks must EXIST in the project, copied in full from the root (`scripts/x/y.sh`, never `y.sh` alone) — an invented source = rejection. Backticks are reserved for project files: git branches, globs, placeholder patterns and paths created at runtime go between quotes “…”;
 - every "Covered by `…`" must cite an EXISTING test file of the project (otherwise the AT is "Proposed");
 - the Summary counters must equal the real count of your sections (`### F<n>`, `**AT<n>`).
 On any discrepancy, your pass is replayed with the exact discrepancy fed back: you might as well write it right the first time.
