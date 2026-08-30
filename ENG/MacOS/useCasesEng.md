@@ -104,7 +104,7 @@ Steps 1 to 3 (spec, plan, blackboard) are high-leverage one-shots; production is
 1. Configure a **big model** (`/model` in the TUI, or the harness config file), launch, validate the spec… and answer `n` at the blackboard y/n to stop cleanly there.
 2. Switch to the **small model**, relaunch: spec, plan and blackboard are reused as is, production starts after your `y`.
 
-Variant with no `n` to type: `Technical-Plan.py` runs steps 1 to 3 then stops on its own at the validated blackboard (and `Spec.py` stops as soon as the spec is approved) — same files, same resume.
+To pay only for the spec with the big model: `Spec.py` stops as soon as the spec is approved — same files, same resume.
 
 ## UC7 — The scaffold (step 0) never completes: suspect the model, not the code
 
@@ -122,7 +122,7 @@ You are picking up a project (legacy, a validated prototype, code inherited from
 2. A mapper proposes a breakdown into functional zones (`doc_map.yaml`) — checked by the script (full coverage, a "Miscellaneous" zone for the remainder), then validated by you (the YAML is editable before the `y`: rename, re-split, reorder — the order of the zones becomes the reading order).
 3. One documentation pass per zone (context reset between each), then a 100% Python assembly produce **`documentation.md`** at the root: features sourced as `file:line`, acceptance tests in Given/When/Then form with a **Covered** status (an existing test verifies them, cited) or **Proposed** (to be written — the coverage appendix gives the count: that is your test backlog).
 
-Natural chaining: with the documentation in hand, describe the evolution in `need.md` and chain with `Technical-Plan.py` (big model) then `Coding.py` (small model) — see UC6. After the evolution, delete the files of the touched zones in `doc_zones/` and relaunch: only those zones are re-documented, and the assembly is redone.
+Natural chaining: with the documentation in hand, describe the evolution in `need.md` and chain with `Coding.py`: big model up to the blackboard (`n` at its gate), small model to produce — see UC6. After the evolution, delete the files of the touched zones in `doc_zones/` and relaunch: only those zones are re-documented, and the assembly is redone.
 
 ---
 

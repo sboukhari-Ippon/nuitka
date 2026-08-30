@@ -1,6 +1,6 @@
 name: Build release bundles (Nuitka)
 
-# Compile l'app + les 13 orchestrateurs en binaires et assemble des ARCHIVES DE
+# Compile l'app + les 12 orchestrateurs en binaires et assemble des ARCHIVES DE
 # DISTRIBUTION completes (app + lanceur double-clic + engine/ + docs), une par
 # variante langue x plateforme. L'archive extraite se lance au double-clic :
 # l'app remet elle-meme son moteur en etat (chmod/quarantaine), personne ne
@@ -63,13 +63,12 @@ jobs:
       - name: Install Nuitka and deps
         run: pip install "nuitka[onefile]==4.1.2" pyyaml
 
-      # Verrou : on ne compile JAMAIS des binaires depuis des variantes desynchronisees.
-      - name: Check variants synchronization
-        run: python tools/check_variants_sync.py
-
-      # Verrou : on ne compile jamais un moteur dont les pipelines mock sont rouges.
-      - name: Run mock scenarios
-        run: python tools/run_mock_scenarios.py
+      # Pas de checkers ni de scenarios mock ici : ils tournent dans le depot SOURCE
+      # (MAIsterMind_App-Harness-agnostic, tools/ + checks.yml) avant toute recopie
+      # vers ce depot de build. Ce depot ne porte que ce qui est necessaire a la
+      # compilation ; les seuls verrous conserves sont ceux qui ne dependent que du
+      # contenu compile : coherence manifeste <-> scripts (ci-dessous) et smoke test
+      # des modules embarques.
 
       # L'app une fois par job (identique dans les 6 variantes, cf. check ci-dessus).
       - name: Build the app (once per job)
@@ -98,7 +97,7 @@ jobs:
             #    de 8 Mo dans la distro).
             #    mm_runner.py, mm_core.py et mm_audit.py sont des MODULES, pas des
             #    points d'entree : ils ne donnent pas de binaire. Nuitka les suit tout
-            #    seul (imports du meme dossier) et les embarque dans chacun des 13
+            #    seul (imports du meme dossier) et les embarque dans chacun des 12
             #    onefile.
             #    (Pas de tableau bash ni de mapfile : /bin/bash des runners macOS est
             #    en 3.2 ; les noms de binaires n'ont pas d'espace, une liste a un nom
@@ -131,7 +130,7 @@ jobs:
             #    distingue les deux.
             EMPTY="$(mktemp -d)"
             set +e
-            # (Spec est le plus court des 13 ; s'il etait renomme, le verrou du
+            # (Spec est le plus court des 12 ; s'il etait renomme, le verrou du
             #  manifeste ci-dessus le dirait avant d'arriver ici.)
             OUT="$(cd "$EMPTY" && MM_AGENT_HARNESS=opencode "$OLDPWD/$DST/engine/Spec" 2>&1)"
             RC=$?
@@ -185,7 +184,7 @@ jobs:
             tar -czf "MAIsterMind-$lang_lc-${{ matrix.suffix }}.tar.gz" -C "dist/$LANG" MAIsterMind
           done
 
-      # retention courte : ~7-10 MB par binaire onefile x 27 par job (13 x 2 langues
+      # retention courte : ~7-10 MB par binaire onefile x 25 par job (12 x 2 langues
       # + l'app) — le stockage
       # artifacts d'un depot prive Free est limite a 500 MB. archive: false (v7) :
       # le tar.gz est uploade tel quel (pas re-zippe, bits preserves au telechargement).

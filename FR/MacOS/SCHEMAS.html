@@ -103,6 +103,8 @@
   nav .grp{font-size:11px; letter-spacing:.09em; text-transform:uppercase;
            color:var(--ink-faint); font-weight:600; margin:16px 12px 6px}
   nav .grp:first-child{margin-top:2px}
+  nav .grp small{display:block; font-size:10px; letter-spacing:.02em; text-transform:none;
+                 font-weight:500; color:var(--ink-faint); margin-top:2px}
   nav button{
     display:block; width:100%; text-align:left; border:0; background:none;
     color:var(--ink-soft); cursor:pointer; border-radius:9px; padding:6px 12px;
@@ -140,6 +142,18 @@
           padding:11px 15px; margin:0 0 18px; font-size:13.5px; color:var(--ink-faint)}
   .legend .it{display:flex; align-items:center; gap:7px}
   .legend svg{flex:0 0 auto}
+  /* Bloc commun sous l'onglet actif : règles partagées par tous les scripts + glossaire. */
+  .common{margin:34px 0 0; padding:22px 26px; border:1px solid var(--line); border-radius:14px;
+          background:linear-gradient(180deg,var(--panel),var(--panel-warm))}
+  .common h3{font:600 12px/1.3 "Inter",system-ui,sans-serif; letter-spacing:.09em; text-transform:uppercase;
+             color:var(--ink-faint); margin:0 0 10px}
+  .common h3 + *{margin-top:0}
+  .common ol{margin:0 0 20px; padding-left:22px; color:var(--ink-soft); font-size:13.5px; line-height:1.55}
+  .common ol li{margin:0 0 8px}
+  .common dl{display:grid; grid-template-columns:max-content 1fr; gap:6px 16px; margin:0; font-size:13px; line-height:1.5}
+  .common dt{font-family:ui-monospace,Menlo,Consolas,monospace; color:var(--ink); font-weight:600}
+  .common dd{margin:0; color:var(--ink-soft)}
+  @media (max-width:760px){ .common dl{grid-template-columns:1fr} .common dd{margin:0 0 6px} }
   /* ── Classes SVG des schémas ── */
   .nd-agent{fill:var(--panel); stroke:var(--ink); stroke-width:1.3}
   .nd-mech{fill:var(--panel); stroke:var(--ink); stroke-width:1.2}
@@ -181,7 +195,7 @@
   <div class="mark" aria-hidden="true"></div>
   <h1>MAIsterMind <small>schémas des orchestrateurs</small></h1>
   <button class="themebtn" id="themebtn" aria-label="Basculer entre thème clair et sombre" title="Basculer le thème"></button>
-  <p>Les 13 orchestrateurs de l'usine, variante FR (moteur identique sur les 3 OS) : pipeline, portes humaines, verdicts et livrables — un onglet par script.</p>
+  <p>Les 12 orchestrateurs de l'usine, variante FR (moteur identique sur les 3 OS) : pipeline, portes humaines, verdicts et livrables — un onglet par script.</p>
 </header>
 
 <div class="wrap">
@@ -191,7 +205,7 @@
 
 <footer>
   Schémas dérivés du code de <span class="mono">engine/</span> (variante FR, identique sur les 3 OS). La couche harness
-  <span class="mono">mm_runner.py</span> (tmux, OpenCode/Codex, sentinelles) est partagée par tous les scripts et n'est pas un orchestrateur.
+  <span class="mono">mm_runner.py</span> (tmux, OpenCode/Codex, envoi des consignes) est partagée par tous les scripts et n'est pas un orchestrateur ; les sentinelles de fin de tâche, elles, sont attendues par chaque orchestrateur.
 </footer>
 
 <script>
@@ -433,290 +447,347 @@ function pipeline13(archi, planFile){
   };
 }
 
-/* ── Spécifications des 17 onglets ───────────────────────────── */
+/* ── Spécifications des onglets (vue d'ensemble + un par script) ── */
 const TABS = [];
 
 /* Vue d'ensemble */
 (function(){
   const need = N("file","need.md"), cn = N("agent","Challenge-Need.py","étape 0, opt-in"),
         spec = N("agent","Spec.py","étape 1 seule"),
-        tp = N("agent","Technical-Plan.py","étapes 1 à 3"),
-        art = N("file","spec.md · plan.md · blackboard.yaml","repris tels quels (reprise par fichiers)"),
+        art = N("file","spec.md · plan.md · blackboard.yaml","repris tels quels d'un run précédent — avec les marqueurs .spec_approved / .impact_approved, sans quoi les portes sont rejouées"),
         us = N("agent","Usines complètes ×5","Coding · Coding-Without-Tests · Test-First · Acceptance-First · Design-Prototype"),
         yo = N("agent","Surcouche intégrée","impact + vérificateur + triage, dans Coding · Test-First · Acceptance-First"),
         code = N("file","code + tests + rapports"),
         fix = N("agent","Guided-Fix.py","arbitrage r/e après coup"),
-        sk = N("agent","Skills-Adaptation.py","réécrit .agents/skills/"),
+        sk = N("agent","Skills-Adaptation.py","réécrit les skills du MOTEUR (engine/.agents/skills), miroir dans le projet"),
         aud = N("agent","Audits & doc ×3","lecture seule sur l'existant");
   TABS.push({
     key:"vue", nav:"vue d'ensemble", grp:"Carte",
-    eyebrow:"Vue d'ensemble", title:"Comment les 16 scripts s'emboîtent",
+    eyebrow:"Vue d'ensemble", title:"Comment les 12 scripts s'emboîtent",
     role:"Tout circule par fichiers : les pipelines partiels produisent exactement les livrables que les usines reprennent, les trois usines de code embarquent l'arbitrage d'impact pendant le run, et la réparation comme les audits travaillent sur le projet existant. Chaque run laisse un journal local <code>.mm-runs/&lt;id&gt;/</code> (chronologie, artefacts figés, résumé — <code>MM_AUDIT=0</code> pour désactiver).",
     facts:[["Usines complètes","5 scripts — du besoin au code vérifié"],
            ["Surcouche intégrée","revue d'impact, vérificateur LLM, triage — dans Coding, Test-First et Acceptance-First"],
-           ["Pipelines partiels","3 scripts — challenge du besoin, spec seule, ou spec + plan + blackboard"],
+           ["Pipelines partiels","2 scripts — challenge du besoin, spec seule ; plan et blackboard restent ceux de l'usine (réponds n à sa porte blackboard pour t'arrêter là)"],
            ["Audits, doc & outils","5 scripts — lecture seule ou réécriture outillée"]],
     spec:{
-      cap:"Les handoffs entre scripts : le challenge du besoin (opt-in) précède tout ; les pipelines partiels alimentent les usines par fichiers ; fix répare un run arrêté ; skill-adapt prépare les skills que les phases de production chargent.",
-      rows:[[need, cn, spec, tp, art],[us, yo, code],[sk, aud, fix]],
+      cap:"Les handoffs entre scripts : le challenge du besoin (opt-in) précède tout ; les pipelines partiels alimentent les usines par fichiers ; Guided-Fix répare un run arrêté ; Skills-Adaptation adapte, dans le moteur, les skills que les phases de production chargent.",
+      rows:[[need, cn, spec, art],[us, yo, code],[sk, aud, fix]],
       edges:[E(need.id,cn.id,{label:"opt-in",dash:true}),E(cn.id,need.id,{label:"revue entérinée → tu précises need.md",dash:true,ch:1}),
-             E(need.id,spec.id),E(spec.id,tp.id,{label:"ou directement"}),E(tp.id,art.id,{label:"produit"}),
-             E(art.id,us.id,{label:"repris tels quels"}),E(us.id,yo.id,{label:"base → copie enrichie"}),
-             E(yo.id,code.id,{label:"produit"}),
-             E(sk.id,us.id,{label:"adapte les skills chargés en phase",kind:"amb"}),
+             E(need.id,spec.id),E(spec.id,art.id,{label:"produit spec.md"}),
+             E(art.id,us.id,{label:"repris tels quels"}),E(us.id,code.id,{label:"produit"}),
+             E(us.id,yo.id,{label:"dans 3 usines sur 5",dash:true}),E(yo.id,code.id,{dash:true}),
+             E(sk.id,us.id,{label:"adapte les skills du moteur, que toute usine chargera ensuite",kind:"amb"}),
              E(code.id,fix.id,{label:"run arrêté suite rouge",kind:"ko"}),
              E(fix.id,us.id,{label:"FIXED → relance",kind:"ok",ch:1}),
-             E(aud.id,code.id,{label:"lit, ne modifie jamais",dash:true,ch:2})]
+             E(aud.id,code.id,{label:"lit ; garde git (best-effort) contre toute écriture",dash:true,ch:2})]
     },
-    note:"La surcouche fait partie des usines : sur un projet neuf la revue d'impact conclut « aucun impact » et ne coûte qu'une porte ; sur un brownfield l'arbitrage se joue pendant le run (fix.py reste le filet après-coup)."
+    note:"La surcouche fait partie des usines : sur un projet neuf la revue d'impact conclut « aucun impact » et coûte un appel d'agent plus une porte ; sur un brownfield l'arbitrage se joue pendant le run (Guided-Fix reste le filet après-coup)."
   });
 })();
 
 /* Coding-Without-Tests.py */
 (function(){
   const p = pipeline13("Agent Architecte","plan.md (sans tests)");
-  const cod = N("agent","Codeur — phase N","contexte neuf"),
+  p.nodes.g2.sub = "y/n — YAML lisible et numéros de phases uniques";
+  const cod = N("agent","Codeur — phase N","contexte neuf — ne reçoit que les US de sa phase"),
         ver = N("agent","Vérificateur LLM","relit le code vs checklist"),
-        rf = N("agent","Étape 5 : refacto & polish"),
-        rep = N("file","refactoring_report.md");
+        rf = N("agent","Refacto & polish final","sur le diff du run seulement, jamais sur le legacy"),
+        rep = N("file","refactoring_report.md"),
+        stop = N("mech","Arrêt du run","3 tentatives épuisées — message console, session fermée, exit 1 (pas de rapport)");
   TABS.push({
-    key:"code", nav:"Coding-Without-Tests.py", grp:"Usines complètes",
+    key:"code", nav:"Coding-Without-Tests.py", grp:"Coding",
     eyebrow:"Usine complète · sans tests", title:"Coding-Without-Tests.py",
-    role:"Le choix assumé quand une suite de tests n'a pas de sens : script jetable, POC, glue. Sans exécution possible, le verdict passe à un Agent Vérificateur LLM indépendant qui relit le code réellement produit.",
+    role:"Le choix assumé quand une suite de tests n'a pas de sens : script jetable, POC, glue. Le plan déclare bien une commande de compilation, mais cette usine ne l'exécute jamais : le verdict est confié à un Agent Vérificateur LLM qui relit le code produit.",
     facts:[["Portes humaines","2 — spec, blackboard"],
-           ["Verdict","LLM : <code>OK</code>/<code>REJECTED</code> parsé par Python, contexte neuf par vérification"],
+           ["Verdict","LLM : <code>OK</code>/<code>REJECTED</code> parsé par Python ; un silence (timeout) du codeur ou du vérificateur consomme aussi une tentative"],
            ["Livrables","<code>spec.md</code> <code>plan.md</code> <code>blackboard.yaml</code> code <code>refactoring_report.md</code>"],
+           ["Reprise","spec.md (+ <code>.spec_approved</code>), plan.md, blackboard.yaml et les phases déjà validées sont réutilisés tels quels à la relance"],
            ["Quand","Quand la suite n'a pas de sens — sinon préférer une usine testée"]],
     spec:{
-      cap:"Même pipeline amont ; en production, pas d'exécution : chaque phase est jugée par un Vérificateur LLM à contexte neuf qui confronte les fichiers produits à la checklist du blackboard.",
-      rows:[p.rows[0],p.rows[1],[cod,ver],[rf,rep]],
+      cap:"Même pipeline amont ; en production, pas d'exécution : chaque phase est jugée par un Vérificateur LLM à contexte neuf qui confronte les fichiers produits à la checklist du blackboard. À la relance, seules les étapes sans livrable sont rejouées.",
+      rows:[p.rows[0],p.rows[1],[cod,ver,stop],[rf,rep]],
       edges:[...p.edges,
         E(p.nodes.g2.id,cod.id,{label:"y",kind:"amb"}),
-        E(cod.id,ver.id,{label:"sentinelle .done"}),
-        E(ver.id,cod.id,{label:"REJECTED : feedback, ≤3 tentatives",kind:"ko",dash:true}),
+        E(cod.id,ver.id,{label:"fichier de fin .done + liste des fichiers touchés"}),
+        E(ver.id,cod.id,{label:"REJECTED ou silence (timeout) : feedback, ≤3 tentatives",kind:"ko",dash:true}),
+        E(ver.id,stop.id,{label:"3e échec",kind:"ko"}),
         E(ver.id,cod.id,{label:"OK : commit → boucle sur la phase N+1",kind:"ok",ch:1}),
         E(ver.id,rf.id,{label:"dernière phase",kind:"ok"}),
-        E(rf.id,rep.id,{label:"sans re-vérification (aucun verdict mécanique)"})]
+        E(rf.id,rep.id,{label:"aucune vérification mécanique dans cette variante"})]
     },
-    note:"Le vérificateur ne peut pas être court-circuité par le codeur : c'est une instance séparée, au contexte neuf, dont le verdict est parsé mécaniquement."
+    note:"Le codeur et le vérificateur sont deux passes successives dans la même session, séparées par une remise à zéro du contexte (<code>/new</code>) contrôlée en simple avertissement. La garantie tient au prompt et au parsing strict du verdict par Python, pas à un isolement technique."
   });
 })();
 
 /* Design-Prototype.py */
 (function(){
-  const gds = N("gate","Porte design system","1re étape, avant tout agent — tokens par défaut ? y/n"),
-        need = N("file","need.md"), po = N("agent","Agent PO/UX","écrans & parcours"),
-        spec = N("file","spec.md"), g1 = N("gate","Porte : valider la spec","y/n"),
-        ar = N("agent","Architecte proto"), bby = N("file","blackboard.yaml"),
+  const need = N("file","need.md","lu d'abord : un design system y est-il déclaré ?"),
+        gds = N("gate","Porte design system","1re étape, avant tout agent — DS repéré par mot-clé, sinon tokens par défaut ? y/n (mémorisé)"),
+        po = N("agent","Agent PO/UX","écrans & parcours"),
+        spec = N("file","spec.md"), g1 = N("gate","Porte : valider la spec","y/n — éditable avant le y"),
+        ar = N("agent","Architecte proto"), plan = N("file","plan.md"),
+        bb = N("agent","Compilateur blackboard","recopie mécanique"), bby = N("file","blackboard.yaml"),
         g2 = N("gate","Porte : blackboard","y/n"),
-        cod = N("agent","Codeur proto","HTML/CSS/JS vanilla"),
-        gd = N("mech","Gardes design system","token halluciné rejeté — zéro LLM"),
+        cod = N("agent","Codeur proto","HTML/CSS/JS vanilla — ne reçoit que les US de sa phase"),
+        gf = N("mech","Garde designer fantôme","fichier de fin déclaré, aucun fichier touché : rejet"),
+        gd = N("mech","Garde tokens définis","tout var(--x) utilisé doit exister quelque part — zéro LLM ; .css/.html/.js seulement"),
         ver = N("agent","Vérificateur LLM","muet 2 fois = phase acceptée sur les gardes"),
-        rev = N("agent","Étape 5 : review UX + conformité"),
+        stop = N("mech","Arrêt du run","3 tentatives épuisées (gardes, vérificateur, silences) — exit 1"),
+        rev = N("agent","Review UX + blackboard + design system","les trois volets pèsent autant"),
         fx = N("agent","Correction ciblée","puis re-review"),
-        rep = N("file","review_report.md");
+        rep = N("file","review_report.md","réécrit à chaque passe ; absent si le reviewer reste muet");
   TABS.push({
-    key:"proto", nav:"Design-Prototype.py", grp:"Usines complètes",
-    eyebrow:"Usine complète · prototypes", title:"Design-Prototype.py",
-    role:"L'usine à prototypes cliquables pensée pour les designers : aucun test, un design system déclaré dans le besoin (ou une porte dédiée), des gardes mécaniques qui vérifient le transport des tokens à chaque phase.",
+    key:"proto", nav:"Design-Prototype.py", grp:"Design",
+    eyebrow:"Usine complète · prototypes · bêta", title:"Design-Prototype.py",
+    role:"L'usine à prototypes cliquables pensée pour les designers : aucun test, un design system déclaré dans le besoin (ou une porte dédiée), des gardes mécaniques à chaque phase et un vérificateur LLM.",
     facts:[["Portes humaines","3 — design system (en tout premier), spec, blackboard"],
-           ["Verdict","Vérificateur LLM par phase + gardes mécaniques de transport du design system"],
-           ["Livrables","prototype HTML/CSS/JS + <code>review_report.md</code>"],
+           ["Verdict","Deux gardes mécaniques par phase (designer fantôme, tokens définis) puis vérificateur LLM ; ≤3 tentatives par phase, partagées entre les gardes, le vérificateur et les silences"],
+           ["Livrables","<code>spec.md</code> <code>plan.md</code> <code>blackboard.yaml</code> prototype HTML/CSS/JS + <code>review_report.md</code>"],
+           ["Reprise","Porte DS déjà confirmée, spec.md, plan.md, blackboard.yaml et phases validées sont repris à la relance"],
            ["Quand","Maquette cliquable à montrer vite ; un livrable jetable ne se refactore pas"]],
     spec:{
-      cap:"La porte design system est la toute première étape du run (refuser est gratuit : aucun agent payé avant) ; un DS déclaré dans need.md la fait passer d'office. Chaque phase franchit d'abord les gardes mécaniques de tokens, puis le Vérificateur LLM ; OK = commit et phase suivante. L'étape 5 boucle review → correction → re-review (3 passes max), sans rollback : le prototype reste livré, les écarts persistants sont consignés.",
-      rows:[[gds,need,po,spec,g1],[ar,bby,g2],[cod,gd,ver],[rev,fx,rep]],
-      edges:[E(gds.id,need.id,{label:"y — ou DS déclaré dans need.md",kind:"amb"}),
-        E(need.id,po.id),E(po.id,spec.id),E(spec.id,g1.id),
+      cap:"La porte design system est la toute première étape du run (refuser est gratuit : aucun agent payé avant) ; un DS déclaré dans need.md la fait passer d'office. Chaque phase franchit d'abord deux gardes mécaniques, puis le Vérificateur LLM ; OK = commit et phase suivante. L'étape finale boucle review → correction → re-review (3 reviews, 2 corrections au plus), sans rollback : le prototype reste livré, les écarts persistants sont consignés.",
+      rows:[[need,gds,po,spec,g1],[ar,plan,bb,bby,g2],[cod,gf,gd,ver,stop],[rev,fx,rep]],
+      edges:[E(need.id,gds.id,{label:"lu pour savoir si un DS est déclaré"}),
+        E(gds.id,po.id,{label:"y — ou DS déclaré",kind:"amb"}),E(po.id,spec.id),E(spec.id,g1.id),
         E(g1.id,ar.id,{label:"y",kind:"amb"}),
-        E(ar.id,bby.id),E(bby.id,g2.id),
+        E(ar.id,plan.id,{label:"écrit"}),E(plan.id,bb.id),E(bb.id,bby.id,{label:"compile"}),E(bby.id,g2.id),
         E(g2.id,cod.id,{label:"y",kind:"amb"}),
-        E(cod.id,gd.id),E(gd.id,cod.id,{label:"token hors DS : rejet",kind:"ko",dash:true}),
-        E(gd.id,ver.id,{label:"tokens conformes",kind:"ok"}),
-        E(ver.id,cod.id,{label:"REJECTED : feedback (≤3)",kind:"ko",dash:true,ch:1}),
-        E(ver.id,cod.id,{label:"OK · commit → boucle sur la phase N+1",kind:"ok",ch:2}),
+        E(cod.id,gf.id),E(gf.id,cod.id,{label:"aucun fichier réellement modifié : rejet",kind:"ko",dash:true}),
+        E(gf.id,gd.id),E(gd.id,cod.id,{label:"token défini nulle part : rejet",kind:"ko",dash:true,ch:1}),
+        E(gd.id,ver.id,{label:"tous les tokens ont une définition",kind:"ok"}),
+        E(ver.id,cod.id,{label:"REJECTED : feedback (≤3)",kind:"ko",dash:true,ch:2}),
+        E(ver.id,stop.id,{label:"3e échec",kind:"ko"}),
+        E(ver.id,cod.id,{label:"OK · commit → boucle sur la phase N+1",kind:"ok",ch:3}),
         E(ver.id,rev.id,{label:"dernière phase OK",kind:"ok"}),
         E(rev.id,fx.id,{label:"écarts",kind:"ko"}),
-        E(fx.id,rev.id,{label:"re-review (3 passes max)",dash:true}),
+        E(fx.id,rev.id,{label:"re-review — 3 reviews, 2 corrections au plus",dash:true}),
         E(rev.id,rep.id,{label:"OK — ou écarts persistants consignés",kind:"ok",ch:1})]
-    }
+    },
+    note:"Les gardes mécaniques prouvent qu'un token utilisé existe quelque part dans le projet, pas qu'il vient du design system ; ce jugement-là reste celui du vérificateur et du volet « design system » de la review."
   });
 })();
 
 /* Coding.py */
 (function(){
   const p = pipeline13("Agent Architecte");
-  const imp = N("agent","Revue d'impact (2bis)","croise plan.md et code existant"),
+  const imp = N("agent","Revue d'impact (2bis)","croise plan.md, spec.md et le code existant"),
         impf = N("file","impact.md"),
         gi = N("gate","Porte : valider l'impact","y/n — cassures entérinées AVANT"),
-        sc = N("agent","Scaffold","essai à blanc vert exigé"),
-        cod = N("agent","Codeur — phase N"),
+        sc = N("agent","Scaffold","essai à blanc vert — sauté si la chaîne passe déjà"),
+        cod = N("agent","Codeur — phase N","les tests obsolètes du plan ont été retirés juste avant, par l'orchestrateur"),
+        gm = N("mech","Gardes mécaniques","fichier déclaré non touché, ou tests protégés modifiés → rejet et restauration"),
         vc = N("mech","verify_cmd"),
         ver = N("agent","Vérificateur LLM","checklist livrée ? OK / REJECTED"),
-        tri = N("agent","Agent de Triage","classe CHAQUE test rouge : PREVU / IMPREVU"),
-        sup = N("mech","Suppression ORCHESTRATEUR","cassures PRÉVUES — git rm + journal impact.md"),
+        mu = N("mech","mutation (brique B)","warn-only — phases de tests seulement"),
+        tri = N("agent","Agent de Triage","classe CHAQUE FICHIER de test rouge : PRÉVU / IMPRÉVU (doute = IMPRÉVU)"),
+        sup = N("mech","Suppression par l'orchestrateur","fichiers de test PRÉVUS cassés — git rm + journal impact.md"),
         repa = N("agent","Réparateur","reste de rouge — tests GELÉS"),
-        arb = N("gate","Porte d'arbitrage mid-run","CONFLICT déclaré par le réparateur — y/n"),
-        rf = N("agent","Refacto global"), vr5 = N("mech","verify_cmd","re-vérifie le polish final"),
-        rep = N("file","refactoring_report.md");
+        arb = N("gate","Porte d'arbitrage mid-run","CONFLICT : l'humain relit impact-phase-<id>.md — y/n"),
+        corA = N("agent","Correcteur d'arbitrage","n : préserve l'ancien comportement — une seule passe"),
+        rf = N("agent","Refacto global","sur le diff du run"),
+        rep = N("file","refactoring_report.md","écrit AVANT la re-vérification, conservé même en cas d'annulation"),
+        vr5 = N("mech","verify_cmd","re-vérifie le polish final"),
+        cor5 = N("agent","Correcteur de régression","≤3 passes"),
+        fin = N("note","vert : commit du polish — fin du run"),
+        stop = N("mech","Arrêt du run","failReport.md, session tuée, code 1");
   TABS.push({
-    key:"coding", nav:"Coding.py", grp:"Usines complètes",
+    key:"coding", nav:"Coding.py", grp:"Coding",
     eyebrow:"Usine complète · verdict universel · surcouche sur toutes les phases", title:"Coding.py",
     role:"Verdict universel + l'arbitrage d'impact pendant le run : une revue d'impact validée en amont, un vérificateur LLM sur chemin vert, et sur chemin rouge un triage qui distingue cassure entérinée, effet de bord et vrai conflit.",
     facts:[["Portes humaines","3 fixes (spec, impact, blackboard) + arbitrage mid-run si CONFLICT"],
-           ["Chemin rouge","TOUT rouge part au triage : PREVU → suppression mécanique journalisée ; le reste → réparateur ; CONFLICT (déclaré par le réparateur) → arbitrage humain"],
-           ["Verdict","Mécanique d'abord ; le vérificateur LLM ne tamponne jamais DONE (un rejet consomme une tentative)"],
-           ["Quand","Brownfield/legacy où le plan va casser de l'existant, avec un modèle solide"]],
+           ["Chemin rouge","TOUT rouge part au triage : PRÉVU → suppression mécanique journalisée ; le reste → réparateur ; CONFLICT (déclaré par le réparateur) → arbitrage humain"],
+           ["Verdict","Mécanique d'abord (suite verte ET compte de tests non décroissant) ; le vérificateur LLM ne tamponne jamais DONE (un rejet consomme une tentative) ; un délai d'infrastructure dépassé n'en consomme pas"],
+           ["Quand","Le pipeline de code par défaut ; sur un projet neuf la revue d'impact conclut « aucun impact », sur un brownfield elle arbitre la casse pendant le run"]],
     spec:{
-      cap:"Étape 2bis : la revue d'impact liste les comportements que le plan va casser, l'humain les entérine avant de payer une phase. En production : suite verte → vérificateur LLM (OK = commit, boucle sur la phase suivante). Suite rouge : le triage classe chaque test cassé ; les PRÉVUS sont supprimés par l'orchestrateur (journal + commit), le rouge restant va au réparateur, qui peut déclarer CONFLICT → arbitrage humain (y entérine la cassure, n déclenche une correction). Chaque issue re-vérifie la suite : vert = retour au chemin vert (vérificateur compris) ; encore rouge = feedback au codeur, tentative consommée (≤3).",
+      cap:"Étape 2bis : la revue d'impact liste les comportements que le plan va casser, l'humain les entérine avant de payer une phase. En production : gardes mécaniques, puis suite verte → vérificateur LLM → mutation warn-only sur les phases de tests → commit, boucle sur la phase suivante. Suite rouge : le triage classe chaque FICHIER de test en échec ; les PRÉVUS sont supprimés par l'orchestrateur (journal + commit), le rouge restant va au réparateur, qui peut déclarer CONFLICT → arbitrage humain (y entérine la cassure et supprime les tests concernés, n lance un correcteur). Chaque issue re-vérifie la suite : vert = retour au chemin vert (vérificateur compris) ; encore rouge = feedback au codeur, tentative consommée (≤3, puis arrêt).",
       rows:[p.rows[0],[p.nodes.ar,p.nodes.plan,imp,impf,gi],[p.nodes.bb,p.nodes.bby,p.nodes.g2],
-            [sc,cod,vc,ver],[tri,sup,repa,arb],[rf,vr5,rep]],
+            [sc,cod,gm,vc,ver,mu],[tri,sup,repa,arb,corA],[rf,rep,vr5,cor5,fin,stop]],
       edges:[E(p.nodes.need.id,p.nodes.po.id),E(p.nodes.po.id,p.nodes.spec.id),E(p.nodes.spec.id,p.nodes.g1.id),
         E(p.nodes.g1.id,p.nodes.ar.id,{label:"y",kind:"amb"}),E(p.nodes.ar.id,p.nodes.plan.id),
         E(p.nodes.plan.id,imp.id),E(imp.id,impf.id),E(impf.id,gi.id),
         E(gi.id,p.nodes.bb.id,{label:"y",kind:"amb"}),E(p.nodes.bb.id,p.nodes.bby.id),E(p.nodes.bby.id,p.nodes.g2.id),
         E(p.nodes.g2.id,sc.id,{label:"y",kind:"amb"}),
         E(sc.id,cod.id,{label:"essai à blanc vert",kind:"ok"}),
-        E(cod.id,vc.id),E(vc.id,ver.id,{label:"vert",kind:"ok"}),
-        E(ver.id,cod.id,{label:"REJECTED : feedback, tentative consommée",kind:"ko",dash:true}),
-        E(ver.id,cod.id,{label:"OK · commit → boucle sur la phase N+1",kind:"ok",ch:1}),
-        E(ver.id,rf.id,{label:"dernière phase OK",kind:"ok",ch:2}),
+        E(cod.id,gm.id),E(gm.id,cod.id,{label:"garde en échec : rejet, tentative consommée",kind:"ko",dash:true}),
+        E(gm.id,vc.id),E(vc.id,ver.id,{label:"vert ET compte de tests non décroissant",kind:"ok"}),
+        E(vc.id,cod.id,{label:"délai dépassé : incident machine, tentative NON décomptée",dash:true,ch:1}),
+        E(ver.id,cod.id,{label:"REJECTED : feedback, tentative consommée",kind:"ko",dash:true,ch:2}),
+        E(ver.id,mu.id,{label:"OK",kind:"ok"}),
+        E(mu.id,cod.id,{label:"commit → boucle sur la phase N+1",kind:"ok",ch:3}),
+        E(mu.id,rf.id,{label:"dernière phase OK",kind:"ok"}),
+        E(ver.id,stop.id,{label:"3 tentatives épuisées",kind:"ko",ch:1}),
         E(vc.id,tri.id,{label:"rouge — TOUT rouge est trié",kind:"ko"}),
-        E(tri.id,sup.id,{label:"tests PRÉVUS"}),E(tri.id,repa.id,{label:"IMPRÉVU seul",ch:1}),
-        E(sup.id,repa.id,{label:"re-vérifie : toujours rouge",kind:"ko"}),
+        E(tri.id,sup.id,{label:"fichiers PRÉVUS"}),E(tri.id,repa.id,{label:"rouge restant",ch:1}),
+        E(sup.id,repa.id,{label:"rien de supprimable, ou toujours rouge",kind:"ko"}),
         E(repa.id,arb.id,{label:"CONFLICT",kind:"amb"}),
-        E(sup.id,vc.id,{label:"re-vérifie : vert",kind:"ok",ch:2}),
+        E(arb.id,sup.id,{label:"y : les tests concernés sont supprimés",kind:"amb",dash:true}),
+        E(arb.id,corA.id,{label:"n",kind:"amb"}),
+        E(sup.id,vc.id,{label:"supprimé : re-vérifie",kind:"ok",ch:2}),
         E(repa.id,vc.id,{label:"réparé : re-vérifie",kind:"ok",ch:3}),
-        E(arb.id,vc.id,{label:"y entérine · n corrige — puis re-vérifie",kind:"amb",ch:4}),
-        E(rf.id,vr5.id),E(vr5.id,rf.id,{label:"rouge : correction ≤3, sinon ROLLBACK",kind:"ko",dash:true}),
-        E(vr5.id,rep.id,{label:"vert : commit",kind:"ok"})]
+        E(corA.id,vc.id,{label:"corrigé : re-vérifie",kind:"ok",ch:4}),
+        E(tri.id,cod.id,{label:"résolution ratée : feedback au codeur, tentative consommée",kind:"ko",dash:true,ch:5}),
+        E(rf.id,rep.id,{label:"rapport rendu"}),E(rep.id,vr5.id,{label:"puis re-vérification"}),
+        E(vr5.id,cor5.id,{label:"rouge : correction (≤3)",kind:"ko"}),E(cor5.id,vr5.id,{label:"re-vérifie",dash:true}),
+        E(vr5.id,fin.id,{label:"vert",kind:"ok"}),
+        E(vr5.id,stop.id,{label:"rouge après 3 corrections : ROLLBACK du polish → arrêt en échec (un délai d'infra n'annule rien)",kind:"ko",ch:1})]
     },
-    note:"Coût de la surcouche : environ +50 à +100 % de sollicitations d'agent par run. Sur greenfield, le chemin rouge ne se déclenche jamais : préférer la base. Toute résolution ratée du chemin rouge retombe en feedback au codeur — jamais de DONE automatique, jamais de saut de phase."
+    note:"Surcouche mesurée le 28/08/2026 : ≈ +15 % du coût d'un run. Sur un projet neuf, la revue d'impact conclut « aucun impact » : c'est la branche PRÉVU qui ne sert jamais, mais tout rouge passe quand même par le triage puis le réparateur. Toute résolution ratée du chemin rouge retombe en feedback au codeur — jamais de DONE automatique, jamais de saut de phase."
   });
 })();
 
 /* Test-First.py */
 (function(){
   const p = pipeline13("Agent Architecte TDD","plan.md (cycles)");
-  const imp = N("agent","Revue d'impact (2bis)","croise plan.md et code existant"),
+  p.nodes.g2.sub = "y/n — contrôle bloquant : chaque red doit précéder immédiatement son green, sinon le run refuse de démarrer";
+  const imp = N("agent","Revue d'impact (2bis)","croise plan.md, spec.md et le code existant"),
         impf = N("file","impact.md"),
         gi = N("gate","Porte : valider l'impact","y/n — cassures entérinées AVANT"),
-        sc = N("agent","Scaffold","essai à blanc vert — sauté en reprise de cycle"),
-        red = N("agent","Codeur red","tests seuls — prod GELÉE · ni triage ni vérificateur"),
+        sc = N("agent","Scaffold","essai à blanc vert — sauté si la chaîne passe déjà ou si une phase est validée (reprise)"),
+        red = N("agent","Codeur red","tests seuls — prod existante restaurée si touchée (un fichier de prod neuf échappe à la garde)"),
         vr = N("mech","verify_cmd","DOIT échouer"),
-        gre = N("agent","Codeur green","prod minimale — tests GELÉS (sauf tests_to_remove / tests_to_update du plan)"),
+        gre = N("agent","Codeur green","prod minimale — tests GELÉS, sauf ceux que le plan déclare modifiables (les obsolètes sont déjà supprimés)"),
+        gm = N("mech","Gardes mécaniques","fichier déclaré non touché, ou tests protégés modifiés → rejet et restauration"),
         vg = N("mech","verify_cmd","DOIT passer"),
         ver = N("agent","Vérificateur LLM","checklist du green — OK / REJECTED"),
-        rfc = N("agent","Refactor du cycle","3e temps de Beck — tests gelés"),
+        mu = N("mech","mutation (brique B)","warn-only — phases green"),
+        rfc = N("agent","Refactor du cycle","3e temps (Beck) — tests gelés ; sauté sans git"),
         vrf = N("mech","verify_cmd","doit RESTER verte"),
-        tri = N("agent","Triage impact","classe CHAQUE test rouge : PREVU / IMPREVU"),
-        sup = N("mech","Suppression orchestrateur","cassures PRÉVUES — journalisées"),
+        tri = N("agent","Triage impact","classe CHAQUE FICHIER de test rouge : PRÉVU / IMPRÉVU (doute = IMPRÉVU)"),
+        sup = N("mech","Suppression par l'orchestrateur","fichiers de test PRÉVUS — journalisés"),
         repa = N("agent","Réparateur","reste de rouge — tests GELÉS"),
-        arb = N("gate","Arbitrage mid-run","CONFLICT déclaré par le réparateur — y/n"),
-        rf5 = N("agent","Refactor global final","duplication inter-cycles"),
+        arb = N("gate","Arbitrage mid-run","CONFLICT : l'humain relit impact-phase-<id>.md — y/n"),
+        corA = N("agent","Correcteur d'arbitrage","n : préserve l'ancien comportement — une seule passe"),
+        rf5 = N("agent","Refactor global final","duplication inter-cycles — sur le diff du run"),
+        rep = N("file","refactoring_report.md","écrit AVANT la re-vérification, conservé même en cas d'annulation"),
         vr5 = N("mech","verify_cmd","re-vérifie le polish final"),
-        rep = N("file","refactoring_report.md");
+        cor5 = N("agent","Correcteur de régression","≤3 passes"),
+        fin = N("note","vert : commit du polish — fin du run"),
+        stop = N("mech","Arrêt du run","failReport.md, session tuée, code 1");
   TABS.push({
-    key:"tdd", nav:"Test-First.py", grp:"Usines complètes",
+    key:"tdd", nav:"Test-First.py", grp:"Coding",
     eyebrow:"Usine complète · test-first par cycles red → green → refactor (inspiré du TDD) · surcouche sur les phases green", title:"Test-First.py",
     role:"Le pipeline test-first complet (pipeline amont avec revue d'impact, scaffold, cycles red → green → refactor, refactor global) + la surcouche bornée aux phases green : les red gardent leur verdict inversé intact (un rouge y est un succès — le triage n'y aurait aucun sens), et le refactor de cycle est joué après le vérificateur.",
     facts:[["Périmètre de la surcouche","Phases <code>tdd-green</code> UNIQUEMENT — red et verdict inversé inchangés"],
            ["Portes humaines","3 fixes (spec, impact, blackboard) + arbitrage mid-run si CONFLICT"],
-           ["Refactor de cycle","Présent comme dans la base : 3e temps de Beck, rollback mécanique au commit green"],
+           ["Refactor de cycle","Après chaque green committé, quand git est disponible : polish re-vérifié ; s'il casse ou n'a rien changé, le commit green fait foi (annulation mécanique, pas de rejeu)"],
            ["Quand","Test-first sur brownfield : l'existant peut casser au green, jamais au red"]],
     spec:{
-      cap:"Même pipeline amont que Coding.py (3 portes dont la revue d'impact), scaffold, puis LA boucle des cycles. Red : mécanique TDD pure, la suite DOIT échouer. Green : suite verte → vérificateur LLM → refactor de cycle re-vérifié (rollback au commit green s'il casse) → boucle sur le cycle suivant. Suite rouge au green : triage (TOUT rouge y passe) — PRÉVU supprimé mécaniquement, le reste au réparateur, CONFLICT → arbitrage humain ; chaque issue re-vérifie, vert = retour au chemin vert, sinon feedback au codeur green (tentative consommée, ≤3).",
+      cap:"Même pipeline amont que Coding.py (3 portes dont la revue d'impact), scaffold, puis LA boucle des cycles. Red : mécanique TDD pure, la suite DOIT échouer ; les tests du cycle deviennent protégés au commit red. Green : gardes mécaniques, suite verte → vérificateur LLM → mutation warn-only → commit green → refactor de cycle re-vérifié (annulé au commit green s'il casse, sans rejeu) → cycle suivant. Suite rouge au green : triage (TOUT rouge y passe, par fichier de test) — PRÉVU supprimé mécaniquement, le reste au réparateur, CONFLICT → arbitrage humain ; chaque issue re-vérifie, vert = retour au chemin vert, sinon feedback au codeur green (tentative consommée, ≤3, puis arrêt).",
       rows:[p.rows[0],[p.nodes.ar,p.nodes.plan,imp,impf,gi],[p.nodes.bb,p.nodes.bby,p.nodes.g2],
-            [sc,red,vr],[gre,vg,ver],[rfc,vrf],[tri,sup,repa,arb],[rf5,vr5,rep]],
+            [sc,red,vr],[gre,gm,vg,ver,mu],[rfc,vrf],[tri,sup,repa,arb,corA],[rf5,rep,vr5,cor5,fin,stop]],
       edges:[E(p.nodes.need.id,p.nodes.po.id),E(p.nodes.po.id,p.nodes.spec.id),E(p.nodes.spec.id,p.nodes.g1.id),
         E(p.nodes.g1.id,p.nodes.ar.id,{label:"y",kind:"amb"}),E(p.nodes.ar.id,p.nodes.plan.id),
         E(p.nodes.plan.id,imp.id),E(imp.id,impf.id),E(impf.id,gi.id),
         E(gi.id,p.nodes.bb.id,{label:"y",kind:"amb"}),E(p.nodes.bb.id,p.nodes.bby.id),E(p.nodes.bby.id,p.nodes.g2.id),
         E(p.nodes.g2.id,sc.id,{label:"y",kind:"amb"}),
         E(sc.id,red.id,{label:"essai à blanc vert",kind:"ok"}),
-        E(red.id,vr.id),E(vr.id,red.id,{label:"verte, ou tests existants cassés = rejet",kind:"ko",dash:true}),
-        E(vr.id,gre.id,{label:"rouge atteint · commit",kind:"ok"}),
-        E(gre.id,vg.id),E(vg.id,ver.id,{label:"vert",kind:"ok"}),
-        E(ver.id,gre.id,{label:"REJECTED : feedback, tentative consommée",kind:"ko",dash:true}),
-        E(ver.id,rfc.id,{label:"OK · commit green",kind:"ok"}),
+        E(red.id,vr.id),E(vr.id,red.id,{label:"suite verte = rejet ; tests existants cassés = rejet quand le compte de tests est lisible",kind:"ko",dash:true}),
+        E(vr.id,gre.id,{label:"rouge atteint · commit · les tests du cycle deviennent protégés",kind:"ok"}),
+        E(gre.id,gm.id),E(gm.id,gre.id,{label:"garde en échec : rejet",kind:"ko",dash:true}),
+        E(gm.id,vg.id),E(vg.id,ver.id,{label:"vert ET compte de tests non décroissant (quand lisible)",kind:"ok"}),
+        E(ver.id,gre.id,{label:"REJECTED : feedback, tentative consommée",kind:"ko",dash:true,ch:1}),
+        E(ver.id,stop.id,{label:"3 tentatives épuisées",kind:"ko",ch:2}),
+        E(ver.id,mu.id,{label:"OK",kind:"ok"}),
+        E(mu.id,rfc.id,{label:"commit green",kind:"ok"}),
         E(rfc.id,vrf.id),
-        E(vrf.id,rfc.id,{label:"rouge, compte en baisse ou timeout : ROLLBACK au commit green",kind:"ko",dash:true}),
+        E(vrf.id,red.id,{label:"rouge, compte en baisse (si lisible) ou délai dépassé : polish ANNULÉ, retour au commit green — cycle suivant, sans rejeu",kind:"ko",ch:2}),
         E(vrf.id,red.id,{label:"vert · commit → boucle : cycle suivant",kind:"ok",ch:1}),
         E(vrf.id,rf5.id,{label:"dernier cycle",kind:"ok"}),
         E(vg.id,tri.id,{label:"rouge — TOUT rouge du green est trié",kind:"ko",ch:1}),
-        E(tri.id,sup.id,{label:"tests PRÉVUS"}),E(tri.id,repa.id,{label:"IMPRÉVU seul",ch:1}),
-        E(sup.id,repa.id,{label:"re-vérifie : toujours rouge",kind:"ko"}),
+        E(tri.id,sup.id,{label:"fichiers PRÉVUS"}),E(tri.id,repa.id,{label:"rouge restant",ch:1}),
+        E(sup.id,repa.id,{label:"rien de supprimable, ou toujours rouge",kind:"ko"}),
         E(repa.id,arb.id,{label:"CONFLICT",kind:"amb"}),
-        E(sup.id,vg.id,{label:"re-vérifie : vert",kind:"ok",ch:2}),
+        E(arb.id,sup.id,{label:"y : les tests concernés sont supprimés",kind:"amb",dash:true}),
+        E(arb.id,corA.id,{label:"n",kind:"amb"}),
+        E(sup.id,vg.id,{label:"supprimé : re-vérifie",kind:"ok",ch:2}),
         E(repa.id,vg.id,{label:"réparé : re-vérifie",kind:"ok",ch:3}),
-        E(arb.id,vg.id,{label:"y entérine · n corrige — puis re-vérifie",kind:"amb",ch:4}),
-        E(rf5.id,vr5.id),E(vr5.id,rf5.id,{label:"rouge : correction ≤3, sinon ROLLBACK",kind:"ko",dash:true}),
-        E(vr5.id,rep.id,{label:"vert : commit",kind:"ok"})]
+        E(corA.id,vg.id,{label:"corrigé : re-vérifie",kind:"ok",ch:4}),
+        E(tri.id,gre.id,{label:"résolution ratée : feedback au codeur green, tentative consommée",kind:"ko",dash:true,ch:5}),
+        E(rf5.id,rep.id,{label:"rapport rendu"}),E(rep.id,vr5.id,{label:"puis re-vérification"}),
+        E(vr5.id,cor5.id,{label:"rouge : correction (≤3)",kind:"ko"}),E(cor5.id,vr5.id,{label:"re-vérifie",dash:true}),
+        E(vr5.id,fin.id,{label:"vert",kind:"ok"}),
+        E(vr5.id,stop.id,{label:"rouge après 3 corrections : ROLLBACK du polish → arrêt en échec (un délai d'infra n'annule rien)",kind:"ko",ch:1})]
     },
-    note:"La brique B (mutation) est warn-only ici : le seul agent relançable serait le green, qui n'a pas le droit de toucher aux tests."
+    note:"La brique B (mutation) tourne sur les phases green en warn-only : le seul agent relançable serait le green, qui n'a pas le droit de toucher aux tests. Les gardes fondées sur le compte de tests (non-décroissance, casse d'existant au red) ne s'appliquent que si ce compte est lisible dans la sortie du runner — sinon elles sont inactives, avec un avertissement."
   });
 })();
 
 /* Acceptance-First.py */
 (function(){
   const p = pipeline13("Agent Architecte ATDD","plan.md (lots par US)");
-  const imp = N("agent","Revue d'impact (2bis)","croise plan.md et code existant"),
+  const imp = N("agent","Revue d'impact (2bis)","croise plan.md, spec.md et le code existant"),
         impf = N("file","impact.md"),
         gi = N("gate","Porte : valider l'impact","y/n — cassures entérinées AVANT"),
-        sc = N("agent","Scaffold","essai à blanc vert — sauté en reprise de lot"),
+        sc = N("agent","Scaffold","essai à blanc vert — sauté si la chaîne passe déjà ou en reprise de lot"),
         at = N("agent","Codeur atdd-test","verdict inversé intact — prod GELÉE"),
         vt = N("mech","verify_cmd","DOIT échouer"),
-        ai = N("agent","Codeur atdd-impl ×N","étapes intactes — tests GELÉS (sauf tests_to_remove / tests_to_update du plan)"),
+        ai = N("agent","Codeur atdd-impl ×N","étapes intermédiaires — tests GELÉS, sauf ceux que le plan déclare modifiables"),
         vb = N("mech","build_cmd","compile la prod SEULE"),
-        cl = N("agent","Codeur clôture du lot"),
+        cl = N("agent","Codeur atdd-impl — dernière étape (clôture)","même codeur que ×N, seul le verdict change : suite complète"),
+        gm = N("mech","Gardes mécaniques","fichier déclaré non touché, ou tests protégés modifiés → rejet et restauration"),
         vu = N("mech","verify_cmd","suite complète verte"),
-        ver = N("agent","Vérificateur LLM","le lot a-t-il tout livré ? OK / REJECTED"),
-        mu = N("mech","mutation (brique B)","warn-only — cible le lot entier"),
-        tri = N("agent","Triage impact","classe CHAQUE test rouge : PREVU / IMPREVU"),
-        sup = N("mech","Suppression orchestrateur","cassures PRÉVUES — journalisées"),
+        ver = N("agent","Vérificateur LLM","la phase de clôture a-t-elle livré sa checklist ? OK / REJECTED"),
+        mu = N("mech","mutation (brique B)","warn-only, cible le lot entier — inactive si le plan ne déclare pas de commande de mutation"),
+        tri = N("agent","Triage impact","classe CHAQUE FICHIER de test rouge : PRÉVU / IMPRÉVU (doute = IMPRÉVU)"),
+        sup = N("mech","Suppression par l'orchestrateur","fichiers de test PRÉVUS — journalisés"),
         repa = N("agent","Réparateur","reste de rouge — tests GELÉS"),
-        arb = N("gate","Arbitrage mid-run","CONFLICT déclaré par le réparateur — y/n"),
-        rf = N("agent","Refacto global final","3e temps mutualisé"),
+        arb = N("gate","Arbitrage mid-run","CONFLICT : l'humain relit impact-phase-<id>.md — y/n"),
+        corA = N("agent","Correcteur d'arbitrage","n : préserve l'ancien comportement — une seule passe"),
+        rf = N("agent","Refacto global final","3e temps mutualisé — sur le diff du run"),
+        rep = N("file","refactoring_report.md","écrit AVANT la re-vérification, conservé même en cas d'annulation"),
         vr5 = N("mech","verify_cmd","re-vérifie le polish final"),
-        rep = N("file","refactoring_report.md");
+        cor5 = N("agent","Correcteur de régression","≤3 passes"),
+        fin = N("note","vert : commit du polish — fin du run"),
+        stop = N("mech","Arrêt du run","failReport.md, session tuée, code 1");
   TABS.push({
-    key:"atdd", nav:"Acceptance-First.py", grp:"Usines complètes",
+    key:"atdd", nav:"Acceptance-First.py", grp:"Coding",
     eyebrow:"Usine complète · acceptance-first par lots de user story (inspiré de l'ATDD) · surcouche sur les clôtures de lot", title:"Acceptance-First.py",
     role:"Le pipeline acceptance-first complet (pipeline amont avec revue d'impact, scaffold, lots par user story, refacto global) + la surcouche, bornée aux phases qui referment un lot : les phases test (verdict inversé) et les étapes intermédiaires (compilation seule) restent strictement inchangées.",
     facts:[["Périmètre de la surcouche","Phases de CLÔTURE de lot uniquement — test et étapes build_cmd inchangées"],
            ["Portes humaines","3 fixes (spec, impact, blackboard) + arbitrage mid-run si CONFLICT"],
            ["Refactor","Aucun refactor de lot : le 3e temps est mutualisé dans le refacto global final, re-vérifié"],
-           ["Quand","ATest-first sur brownfield : c'est à la clôture que la suite complète peut révéler la casse"]],
+           ["Quand","Acceptance-first sur brownfield : c'est à la clôture que la suite complète peut révéler la casse"]],
     spec:{
-      cap:"Même pipeline amont que Coding.py (3 portes dont la revue d'impact), scaffold, puis LA boucle des lots : suite d'acceptance qui DOIT échouer, étapes intermédiaires qui compilent (build_cmd seul, aucune surcouche), clôture à la suite complète. À la clôture seulement : vert → vérificateur LLM → mutation warn-only → commit, boucle sur le lot suivant ; rouge → triage (TOUT rouge y passe) — PRÉVU supprimé mécaniquement, le reste au réparateur, CONFLICT → arbitrage humain ; chaque issue re-vérifie, vert = retour au chemin vert, sinon feedback au codeur (tentative consommée, ≤3).",
+      cap:"Même pipeline amont que Coding.py (3 portes dont la revue d'impact), scaffold, puis LA boucle des lots : suite d'acceptance qui DOIT échouer, étapes intermédiaires qui compilent (build_cmd seul, committées, aucune surcouche — une compilation qui échoue est un rejet, tentative consommée), clôture à la suite complète. À la clôture seulement : gardes mécaniques, vert → vérificateur LLM → mutation warn-only → commit, boucle sur le lot suivant ; rouge → triage (TOUT rouge y passe, par fichier de test) — PRÉVU supprimé mécaniquement, le reste au réparateur, CONFLICT → arbitrage humain ; chaque issue re-vérifie, vert = retour au chemin vert, sinon feedback au codeur (tentative consommée, ≤3, puis arrêt).",
       rows:[p.rows[0],[p.nodes.ar,p.nodes.plan,imp,impf,gi],[p.nodes.bb,p.nodes.bby,p.nodes.g2],
-            [sc,at,vt],[ai,vb],[cl,vu,ver,mu],[tri,sup,repa,arb],[rf,vr5,rep]],
+            [sc,at,vt],[ai,vb],[cl,gm,vu,ver,mu],[tri,sup,repa,arb,corA],[rf,rep,vr5,cor5,fin,stop]],
       edges:[E(p.nodes.need.id,p.nodes.po.id),E(p.nodes.po.id,p.nodes.spec.id),E(p.nodes.spec.id,p.nodes.g1.id),
         E(p.nodes.g1.id,p.nodes.ar.id,{label:"y",kind:"amb"}),E(p.nodes.ar.id,p.nodes.plan.id),
         E(p.nodes.plan.id,imp.id),E(imp.id,impf.id),E(impf.id,gi.id),
         E(gi.id,p.nodes.bb.id,{label:"y",kind:"amb"}),E(p.nodes.bb.id,p.nodes.bby.id),E(p.nodes.bby.id,p.nodes.g2.id),
         E(p.nodes.g2.id,sc.id,{label:"y",kind:"amb"}),
         E(sc.id,at.id,{label:"essai à blanc vert",kind:"ok"}),
-        E(at.id,vt.id),E(vt.id,at.id,{label:"suite verte, ou tests existants cassés = rejet",kind:"ko",dash:true}),
+        E(at.id,vt.id),E(vt.id,at.id,{label:"suite verte = rejet ; tests existants cassés = rejet quand le compte est lisible",kind:"ko",dash:true}),
         E(vt.id,ai.id,{label:"rouge atteint · commit · jalon du lot",kind:"ok"}),
-        E(ai.id,vb.id),E(vb.id,ai.id,{label:"vert : étape suivante (suite encore rouge : normal)",kind:"ok",dash:true}),
+        E(vt.id,cl.id,{label:"lot à une seule étape : pas d'étape intermédiaire",dash:true,ch:1}),
+        E(ai.id,vb.id),E(vb.id,ai.id,{label:"vert · commit : étape suivante (suite encore rouge : normal)",kind:"ok",dash:true}),
+        E(vb.id,ai.id,{label:"rouge : la compilation échoue — feedback, tentative consommée (≤3)",kind:"ko",dash:true,ch:1}),
+        E(vb.id,stop.id,{label:"3 échecs de compilation : arrêt (piste : build_cmd compile-t-elle aussi les tests ?)",kind:"ko",ch:2}),
         E(vb.id,cl.id,{label:"dernière étape du lot"}),
-        E(cl.id,vu.id),E(vu.id,ver.id,{label:"vert",kind:"ok"}),
-        E(ver.id,cl.id,{label:"REJECTED : feedback, tentative consommée",kind:"ko",dash:true}),
+        E(cl.id,gm.id),E(gm.id,cl.id,{label:"garde en échec : rejet",kind:"ko",dash:true}),
+        E(gm.id,vu.id),E(vu.id,ver.id,{label:"vert ET compte de tests non décroissant",kind:"ok"}),
+        E(ver.id,cl.id,{label:"REJECTED : feedback, tentative consommée",kind:"ko",dash:true,ch:1}),
+        E(ver.id,stop.id,{label:"3 tentatives épuisées",kind:"ko",ch:3}),
         E(ver.id,mu.id,{label:"OK",kind:"ok"}),
         E(mu.id,at.id,{label:"commit → boucle : lot suivant",kind:"ok",ch:1}),
         E(mu.id,rf.id,{label:"dernier lot",kind:"ok"}),
         E(vu.id,tri.id,{label:"rouge — TOUT rouge de clôture est trié",kind:"ko",ch:2}),
-        E(tri.id,sup.id,{label:"tests PRÉVUS"}),E(tri.id,repa.id,{label:"IMPRÉVU seul",ch:1}),
-        E(sup.id,repa.id,{label:"re-vérifie : toujours rouge",kind:"ko"}),
+        E(tri.id,sup.id,{label:"fichiers PRÉVUS"}),E(tri.id,repa.id,{label:"rouge restant (même non classé)",ch:1}),
+        E(sup.id,repa.id,{label:"rien de supprimable, ou toujours rouge",kind:"ko"}),
         E(repa.id,arb.id,{label:"CONFLICT",kind:"amb"}),
-        E(sup.id,vu.id,{label:"re-vérifie : vert",kind:"ok",ch:2}),
+        E(arb.id,sup.id,{label:"y : les tests concernés sont supprimés",kind:"amb",dash:true}),
+        E(arb.id,corA.id,{label:"n",kind:"amb"}),
+        E(sup.id,vu.id,{label:"supprimé : re-vérifie",kind:"ok",ch:2}),
         E(repa.id,vu.id,{label:"réparé : re-vérifie",kind:"ok",ch:3}),
-        E(arb.id,vu.id,{label:"y entérine · n corrige — puis re-vérifie",kind:"amb",ch:4}),
-        E(rf.id,vr5.id),E(vr5.id,rf.id,{label:"rouge : correction ≤3, sinon ROLLBACK",kind:"ko",dash:true}),
-        E(vr5.id,rep.id,{label:"vert : commit",kind:"ok"})]
+        E(corA.id,vu.id,{label:"corrigé : re-vérifie",kind:"ok",ch:4}),
+        E(tri.id,cl.id,{label:"résolution ratée : feedback au codeur, tentative consommée",kind:"ko",dash:true,ch:5}),
+        E(rf.id,rep.id,{label:"rapport rendu"}),E(rep.id,vr5.id,{label:"puis re-vérification"}),
+        E(vr5.id,cor5.id,{label:"rouge : correction (≤3)",kind:"ko"}),E(cor5.id,vr5.id,{label:"re-vérifie",dash:true}),
+        E(vr5.id,fin.id,{label:"vert",kind:"ok"}),
+        E(vr5.id,stop.id,{label:"rouge après 3 corrections : ROLLBACK du polish → arrêt en échec (un délai d'infra n'annule rien)",kind:"ko",ch:1})]
     },
-    note:"La commande de compilation exclut les fichiers de test (piège n°1 du mode) : sinon aucune étape intermédiaire ne peut converger tant que l'API attendue par les tests n'existe pas entièrement."
+    note:"La commande de compilation DOIT exclure les fichiers de test (piège n°1 du mode) : sinon aucune étape intermédiaire ne peut converger tant que l'API attendue par les tests n'existe pas entièrement. C'est un contrat porté par le plan et validé par toi à la porte blackboard — l'orchestrateur ne le vérifie jamais."
   });
 })();
 
@@ -724,25 +795,31 @@ const TABS = [];
 (function(){
   const need = N("file","need.md"),
         ch = N("agent","Agent challenge","contexte neuf — ambiguïtés, contradictions, zones d'ombre, présupposés"),
-        rev = N("file","need_review.md","5 sections, points [BLOQUANT] / [MINEUR]"),
-        ctrl = N("mech","Contrôles Python","sections non vides · toute citation du besoin vérifiée MOT POUR MOT"),
+        rev = N("file","need_review.md","5 sections · points [BLOQUANT] / [MINEUR] posés par l'agent · fichier de fin, ou stable 30 s"),
+        ctrl = N("mech","Contrôles Python","sections non vides · citations (≥ 12 caractères) retrouvées dans need.md, casse ignorée"),
         g = N("gate","Porte : entériner la revue","y/n — unique"),
-        sent = N("file",".need_reviewed","revue matérialisée"),
+        sent = N("file",".need_reviewed","trace de ton accord — supprimée d'office si la revue disparaît"),
+        stop = N("file","failReport.md","3 tentatives ratées : le run s'arrête"),
+        non = N("note","n : arrêt propre — revue conservée, porte re-proposée à la relance, aucun agent re-payé"),
         toi = N("note","tu tranches les [BLOQUANT], mets à jour need.md TOI-MÊME, puis lances le pipeline de ton choix");
   TABS.push({
-    key:"cn", nav:"Challenge-Need.py", grp:"Pipelines partiels",
+    key:"cn", nav:"Challenge-Need.py", grp:"Produit",
     eyebrow:"Pipeline partiel · étape 0, opt-in", title:"Challenge-Need.py",
     role:"Challenger le besoin AVANT de payer une spec : la porte la plus en amont est la moins chère de toutes — un besoin flou coûte une spec, un plan et des phases ; une question tranchée ici ne coûte rien.",
     facts:[["Portes humaines","1 — entériner la revue"],
-           ["Verdict","Contrôles 100 % Python : sections non vides, garde anti-citation-inventée (toute citation doit exister mot pour mot dans <code>need.md</code>)"],
+           ["Verdict","Contrôles 100 % Python : sections obligatoires non vides + toute citation longue doit se retrouver dans <code>need.md</code>. Les étiquettes [BLOQUANT]/[MINEUR] sont exigées de l'agent, pas vérifiées"],
            ["Livrables","<code>need_review.md</code> + <code>.need_reviewed</code>"],
+           ["Relance","Revue existante non entérinée : la porte est re-présentée telle quelle, aucun agent re-payé"],
            ["Quand","Opt-in, aucun couplage aval : aucun pipeline ne lit la revue — elle t'éclaire, elle ne modifie rien"]],
     spec:{
-      cap:"Un agent au contexte neuf confronte need.md à ses ambiguïtés ; le format est verrouillé et contrôlé mécaniquement (une citation inventée rejette la tentative). La revue entérinée ne modifie rien : c'est toi qui tranches et précises need.md avant de relancer Spec.py ou une usine.",
-      rows:[[need,ch,rev],[ctrl,g,sent,toi]],
+      cap:"Un agent au contexte neuf confronte need.md à ses ambiguïtés ; Python contrôle la forme (sections, citations) avant de te présenter la revue — pas les étiquettes de sévérité. Une seule porte ; la revue ne modifie rien.",
+      rows:[[need,ch,rev],[ctrl,g,sent,toi],[stop,non]],
       edges:[E(need.id,ch.id),E(ch.id,rev.id,{label:"écrit"}),E(rev.id,ctrl.id),
-        E(ctrl.id,ch.id,{label:"citation inventée / section vide : rejouée (≤3)",kind:"ko",dash:true}),
+        E(ctrl.id,ch.id,{label:"section manquante ou vide, citation inventée, ou rien reçu en 10 min : nouvelle tentative (3 au total)",kind:"ko",dash:true}),
+        E(ctrl.id,stop.id,{label:"3 échecs : run arrêté",kind:"ko"}),
         E(ctrl.id,g.id,{label:"conforme",kind:"ok"}),E(g.id,sent.id,{label:"y",kind:"amb"}),
+        E(g.id,non.id,{label:"n",kind:"ko"}),
+        E(rev.id,g.id,{label:"relance : revue déjà là, porte re-présentée",dash:true,ch:1}),
         E(sent.id,toi.id)]
     }
   });
@@ -750,72 +827,65 @@ const TABS = [];
 
 /* Spec.py */
 (function(){
-  const need = N("file","need.md"), po = N("agent","Agent PO","hypothèses explicites, hors-périmètre"),
-        spec = N("file","spec.md"), g = N("gate","Porte : valider la spec","y/n"),
-        ap = N("file",".spec_approved","approbation matérialisée");
+  const need = N("file","need.md"), po = N("agent","Agent PO","hypothèses explicites, hors-périmètre — une seule passe, 10 min max"),
+        spec = N("file","spec.md","signalée par un fichier de fin ; à défaut, acceptée si stable 30 s"),
+        g = N("gate","Porte : valider la spec","y/n — éditable avant le y"),
+        ap = N("file",".spec_approved","fichier-témoin : preuve que tu as validé"),
+        stop = N("file","failReport.md","rien reçu en 10 min : le run s'arrête (pas de rejeu)"),
+        non = N("note","n : arrêt propre — spec.md conservée ; relancer re-présente la porte sans re-payer le PO");
   TABS.push({
-    key:"spec", nav:"Spec.py", grp:"Pipelines partiels",
+    key:"spec", nav:"Spec.py", grp:"Produit",
     eyebrow:"Pipeline partiel · étape 1 seule", title:"Spec.py",
     role:"Cadrer le besoin avec le métier sans rien payer d'autre : du besoin brut à la spécification validée (user stories, critères d'acceptation testables), reprise telle quelle par n'importe quelle usine.",
     facts:[["Portes humaines","1 — validation de la spec"],
-           ["Verdict","Aucun run de production : le livrable EST la spec validée"],
+           ["Verdict","Aucun contrôle Python du contenu de la spec (hors filet « Hors périmètre » quand l'agent oublie son fichier de fin) : c'est ta relecture qui fait verdict"],
            ["Livrables","<code>spec.md</code> + <code>.spec_approved</code>"],
+           ["Relance","Spec existante non approuvée : la porte est re-présentée, aucun agent re-payé ; spec approuvée : toute usine la reprend telle quelle"],
            ["Quand","Atelier de cadrage ; l'usine reprendra ces fichiers sans reconfiguration"]],
     spec:{
-      cap:"L'étape 1 des usines, isolée : la sentinelle .spec_approved matérialise l'approbation — une spec jamais validée ne sera pas prise pour un état de reprise.",
-      rows:[[need,po,spec,g,ap]],
-      edges:[E(need.id,po.id),E(po.id,spec.id,{label:"écrit"}),E(spec.id,g.id),E(g.id,ap.id,{label:"y",kind:"amb"})]
-    }
-  });
-})();
-
-/* Technical-Plan.py */
-(function(){
-  const p = pipeline13("Agent Architecte");
-  const val = N("mech","Validation de schéma","fatal = arrêt · soft = simple info"),
-        stop = N("note","récapitulatif affiché, fin — le blackboard attend une usine");
-  TABS.push({
-    key:"tp", nav:"Technical-Plan.py", grp:"Pipelines partiels",
-    eyebrow:"Pipeline partiel · étapes 1 à 3", title:"Technical-Plan.py",
-    role:"Du besoin au blackboard validé (spec + plan + compilation), sans production. C'est la clé du workflow deux temps : un gros modèle pour penser le plan, un petit modèle pour produire ensuite.",
-    facts:[["Portes humaines","1 — la spec. Le blackboard est validé par schéma, SANS porte : c'est l'usine relancée qui aura la sienne"],
-           ["Verdict","Validation de schéma du blackboard (erreur fatale = arrêt), pas de run"],
-           ["Livrables","<code>spec.md</code> + <code>.spec_approved</code> <code>plan.md</code> <code>blackboard.yaml</code>"],
-           ["Quand","Gros modèle « pense », petit modèle « produit » — relancer une usine reprend tout tel quel"]],
-    spec:{
-      cap:"Les étapes 1 à 3 des usines, isolées — à un écart près : ici le blackboard n'a pas de porte y/n. Il est validé mécaniquement (schéma : erreur fatale = arrêt, écart soft = info), récapitulé à l'écran, et le script se termine ; la porte blackboard sera celle de l'usine relancée.",
-      rows:[p.rows[0],[p.nodes.ar,p.nodes.plan,p.nodes.bb,p.nodes.bby],[val,stop]],
-      edges:[E(p.nodes.need.id,p.nodes.po.id),E(p.nodes.po.id,p.nodes.spec.id,{label:"écrit"}),
-        E(p.nodes.spec.id,p.nodes.g1.id),E(p.nodes.g1.id,p.nodes.ar.id,{label:"y",kind:"amb"}),
-        E(p.nodes.ar.id,p.nodes.plan.id,{label:"écrit"}),E(p.nodes.plan.id,p.nodes.bb.id),
-        E(p.nodes.bb.id,p.nodes.bby.id,{label:"compile"}),E(p.nodes.bby.id,val.id),
-        E(val.id,stop.id,{label:"conforme",kind:"ok"})]
+      cap:"L'étape 1 des usines, isolée : une seule passe d'agent (pas de rejeu, un dépassement de 10 minutes arrête le run). Le fichier .spec_approved prouve que tu as validé — une spec jamais validée ne sera pas reprise comme acquise par l'usine suivante.",
+      rows:[[need,po,spec,g,ap],[stop,non]],
+      edges:[E(need.id,po.id),E(po.id,spec.id,{label:"écrit"}),E(spec.id,g.id),E(g.id,ap.id,{label:"y",kind:"amb"}),
+        E(po.id,stop.id,{label:"rien reçu en 10 min",kind:"ko"}),
+        E(g.id,non.id,{label:"n",kind:"ko"}),
+        E(spec.id,g.id,{label:"relance : spec déjà là, porte re-présentée",dash:true,ch:1})]
     }
   });
 })();
 
 /* audit-design */
 (function(){
-  const disc = N("agent","Découverte du périmètre","front-end existant — lecture seule"),
+  const disc = N("mech","Découverte du périmètre","parcours des fichiers d'interface, zéro LLM — rien n'est payé avant la porte"),
         g = N("gate","Porte : lancer l'audit ?","y/n"),
-        pas = N("agent","10 passes Nielsen","1 heuristique / contexte neuf"),
-        cons = N("file","audit_nielsen/"),
-        syn = N("agent","Synthèse"),
-        rep = N("file","design_audit_report.md","priorisé par sévérité 0–4");
+        grid = N("file","grille SKILL.md","tronc commun + l'heuristique de la passe, jamais les 9 autres"),
+        pas = N("agent","10 passes Nielsen","une par heuristique, contexte neuf — tout le périmètre, liste tronquée à 150 dans le prompt"),
+        ro = N("mech","Garde lecture seule (git)","après chaque passe : fichiers suivis restaurés, fichiers créés signalés"),
+        cons = N("file","audit_nielsen/","H<nn>_*.md — sections ## Constats et ## Bilan obligatoires"),
+        syn = N("agent","Synthèse","rejouée à chaque run (le rapport doit refléter les constats à jour)"),
+        rep = N("file","design_audit_report.md","sévérité 0–4 (4 = bloquant) confiée à l'agent — Python ne vérifie que la présence de la synthèse exécutive"),
+        stop = N("file","failReport.md","3 échecs sur une passe ou sur la synthèse : le run s'arrête"),
+        non = N("note","n : arrêt propre — rien n'a été payé, le harness n'est même pas démarré");
   TABS.push({
-    key:"auditd", nav:"Audit-Design.py", grp:"Audits & documentation",
-    eyebrow:"Audit · lecture seule", title:"Audit-Design.py",
+    key:"auditd", nav:"Audit-Design.py", grp:"Design",
+    eyebrow:"Audit · lecture seule · bêta", title:"Audit-Design.py",
     role:"Audit UX d'une interface existante contre les 10 heuristiques de Nielsen : une passe par heuristique, contexte réinitialisé entre chaque, puis une synthèse priorisée par sévérité.",
     facts:[["Portes humaines","1 — périmètre confirmé avant de payer"],
-           ["Mode","Lecture seule — ne modifie jamais le projet audité"],
+           ["Mode","Lecture seule : sur un projet git, tout fichier suivi qu'un auditeur modifierait est restauré après chaque passe ; les fichiers créés sont seulement signalés. Sans dépôt git, la règle ne tient qu'au prompt"],
            ["Livrables","<code>audit_nielsen/</code> + <code>design_audit_report.md</code>"],
-           ["Quand","Sur un prototype généré ou tout front-end web ; pas besoin de <code>need.md</code>"]],
+           ["Relance","Un fichier de constats déjà valide fait sauter sa passe ; la synthèse, elle, est toujours rejouée ; un livrable arrivé en retard est repris tel quel"],
+           ["Quand","Sur un prototype généré ou tout front-end web ; pas besoin de <code>need.md</code> — si <code>spec.md</code> ou <code>need.md</code> existe, il est signalé aux auditeurs comme contexte optionnel"]],
     spec:{
-      cap:"Découverte automatique du périmètre (Python pur, zéro LLM), confirmation humaine, 10 passes indépendantes (une par heuristique, 3 tentatives max chacune), synthèse priorisée — elle-même une passe LLM, bloquante en cas d'échec.",
-      rows:[[disc,g,pas],[cons,syn,rep]],
-      edges:[E(disc.id,g.id),E(g.id,pas.id,{label:"y",kind:"amb"}),
+      cap:"Découverte du périmètre en Python pur (zéro LLM), confirmation humaine, 10 passes indépendantes (une par heuristique, 3 tentatives max chacune), puis une synthèse — elle-même une passe d'agent : si elle échoue trois fois, le run s'arrête, mais les constats par heuristique restent lisibles.",
+      rows:[[disc,g,grid,pas],[ro,cons,syn,rep],[stop,non]],
+      edges:[E(disc.id,g.id),E(g.id,pas.id,{label:"y",kind:"amb"}),E(grid.id,pas.id,{label:"intrant"}),
+        E(g.id,non.id,{label:"n",kind:"ko"}),
         E(pas.id,pas.id,{label:"×10, contexte neuf à chaque passe",dash:true}),
-        E(pas.id,cons.id,{label:"constats"}),E(cons.id,syn.id),E(syn.id,rep.id)]
+        E(pas.id,ro.id,{label:"après chaque passe"}),
+        E(pas.id,cons.id,{label:"constats — sections manquantes : rejeu (≤3)"}),
+        E(cons.id,pas.id,{label:"relance : constats déjà valides, passe sautée",dash:true,ch:1}),
+        E(pas.id,stop.id,{label:"échec ×3 : run arrêté",kind:"ko"}),
+        E(cons.id,syn.id),E(syn.id,rep.id),
+        E(syn.id,stop.id,{label:"échec ×3 : run arrêté, constats utilisables",kind:"ko",ch:1})]
     }
   });
 })();
@@ -824,36 +894,41 @@ const TABS = [];
 (function(){
   const rout = N("mech","Périmètre + routage des packs","déclencheurs déterministes — décompte des passes"),
         g1 = N("gate","Porte : lancer l'audit","y/n — rien n'est payé avant"),
-        carto = N("agent","Cartographie d'interface","socle / composants / zones"),
+        carto = N("agent","Cartographie d'interface","socle / composants / zones — rejouée si plus de 100 fichiers restent en « Divers » (3 tentatives)"),
         map = N("file","a11y_map.yaml"),
         g = N("gate","Porte : valider la carte","éditable — décompte exact des passes affiché"),
-        pas = N("agent","Passes RGAA","pack × compartiment (25 fichiers max, sinon tranches) — reset DUR du contexte entre passes"),
-        parse = N("mech","Parseur de verdicts","C / NC / NA / AVM — extrait exact retrouvé dans les fichiers (badge ✓ / ⚠️)"),
-        agg = N("mech","Agrégation Python","pire verdict par critère, dédup des constats, C→AVM sur critère manuel"),
-        syn = N("agent","Synthèse LLM","nourrie des chiffres — fallback mécanique"),
-        rep = N("file","accessibility_pre_audit_report.md","taux en fourchette — PARTIEL si des passes ont échoué"),
-        dec = N("file","accessibility_pre_audit_summary.md","synthèse des résultats");
+        pas = N("agent","Passes RGAA","pack × compartiment (tranches de 40 fichiers ou 80 Ko) — reset DUR du contexte entre passes"),
+        parse = N("mech","Parseur de verdicts","C / NC / NA / AVM (à vérifier manuellement) — extrait recherché dans le fichier cité : ✓ ou ⚠️"),
+        agg = N("mech","Agrégation Python","pire verdict par critère, dédup ; un C non démontrable depuis le code est ramené à AVM"),
+        syn = N("agent","Synthèse LLM","chapeau du rapport — nourrie des chiffres et des 10 pires NC ; fallback mécanique"),
+        rep = N("file","accessibility_pre_audit_report.md","assemblé en Python — taux en fourchette, PARTIEL si des passes ont échoué — ni audit opposable ni déclaration"),
+        dec = N("file","accessibility_pre_audit_summary.md","fiche de résultats, 100 % Python"),
+        stop = N("file","failReport.md","cartographie ratée 3×, ou disjoncteur (2 échecs consécutifs, ou ≥ 2 et > 30 %)");
   TABS.push({
-    key:"a11y", nav:"Pre-Audit-A11Y-RGAA.py", grp:"Audits & documentation",
-    eyebrow:"Pré-audit · RGAA 4.1.2 · lecture seule", title:"Pre-Audit-A11Y-RGAA.py",
+    key:"a11y", nav:"Pre-Audit-A11Y-RGAA.py", grp:"Design",
+    eyebrow:"Pré-audit · RGAA 4.1.2 · lecture seule · bêta", title:"Pre-Audit-A11Y-RGAA.py",
     role:"Pré-audit d'accessibilité RGAA (106 critères, 13 thématiques) d'une interface existante : les packs thématiques sont routés par déclencheurs déterministes — pas de vidéo, pack Multimédia jamais payé.",
     facts:[["Portes humaines","2 — lancement (périmètre + routage affichés), carte d'interface"],
-           ["Verdict","Verdicts C/NC/NA/AVM contrôlés par parseur, chaque constat PROUVÉ par un extrait retrouvé mécaniquement, agrégation 100 % Python (AVANT la synthèse)"],
-           ["Livrables","<code>a11y_map.yaml</code> <code>pre_audit_a11y/</code> rapport + synthèse"],
-           ["Reprise","Par fichiers ; après remédiation, <code>--rejouer-modifiees &lt;ref&gt;</code> ne rejoue que les passes touchées par le diff git"],
+           ["Verdict","Verdicts C/NC/NA/AVM contrôlés par parseur ; chaque constat porte un extrait recherché dans le fichier cité : retrouvé ✓, sinon ⚠️ « à vérifier » (le constat est gardé) ; une passe dont AUCUN extrait n'est retrouvé est rejouée. Agrégation 100 % Python, AVANT la synthèse"],
+           ["Lecture seule","Garantie mécaniquement sur un projet git : tout fichier modifié par un auditeur est restauré après chaque passe"],
+           ["Livrables","<code>a11y_map.yaml</code> <code>pre_audit_a11y/</code> rapport + fiche de résultats"],
+           ["Reprise","Par fichiers : carte existante et verdicts qui passent le parseur sont repris, passes sautées ; après remédiation, <code>--rejouer-modifiees [ref]</code> (défaut HEAD, exige git) ne rejoue que les passes touchées par le diff"],
            ["Quand","Chiffrer la dette d'accessibilité (RGAA/EAA), devis de remédiation honnête"]],
     spec:{
-      cap:"Deux portes : le routage déterministe des packs est calculé et affiché AVANT de payer quoi que ce soit (porte 1), puis la carte validée (porte 2) fixe le décompte exact des passes — les compartiments sont scindés en tranches (80 Ko ou 40 fichiers) pour que tout soit réellement audité ; une tranche sans motif du pack est déclarée NA mécaniquement (aucun agent payé) ; les assets tiers (public/, dsfr/…) et la logique pure sans signal d'interface sont hors périmètre, tracés en annexe. Chaque passe repart d'un contexte garanti neuf (reset dur du harness) et doit franchir le parseur : hors format ou extrait halluciné = rejouée (3 tentatives max), et l'orchestrateur injecte les motifs détectés et les sondes NC comme indices à confirmer. L'agrégation Python consolide au pire verdict AVANT la synthèse LLM, qui ne reçoit que les chiffres ; le taux est rendu en fourchette.",
-      rows:[[rout,g1,carto,map],[g,pas,parse],[agg,syn,rep,dec]],
+      cap:"Deux portes : le routage déterministe des packs est calculé et affiché AVANT de payer quoi que ce soit (porte 1), puis la carte validée (porte 2) fixe le décompte exact des passes — les compartiments sont scindés en tranches (80 Ko ou 40 fichiers) pour que tout soit réellement audité ; une tranche sans motif du pack est déclarée NA mécaniquement (aucun agent payé) — sauf 5 packs structurels (langue, titre de page, liens d'évitement…) toujours audités sur le socle, où l'absence même du motif est un défaut potentiel ; les assets tiers (public/, dsfr/…) et la logique pure sans signal d'interface sont hors périmètre, tracés en annexe. Chaque passe repart d'un contexte garanti neuf (reset dur du harness) et doit franchir le parseur : hors format ou aucun extrait retrouvé = rejouée (3 tentatives max), et l'orchestrateur injecte les motifs détectés et les sondes NC comme indices à confirmer. L'agrégation Python consolide au pire verdict AVANT la synthèse LLM, qui ne reçoit que les chiffres et les 10 non-conformités les plus lourdes ; le rapport est assemblé en Python et embarque la synthèse ; le taux est rendu en fourchette.",
+      rows:[[rout,g1,carto,map],[g,pas,parse],[agg,syn,rep,dec],[stop]],
       edges:[E(rout.id,g1.id),E(g1.id,carto.id,{label:"y",kind:"amb"}),E(carto.id,map.id),
+        E(carto.id,stop.id,{label:"échec ×3 : le run s'arrête (contrairement aux passes)",kind:"ko"}),
         E(map.id,g.id),E(g.id,pas.id,{label:"y",kind:"amb"}),
         E(pas.id,pas.id,{label:"une passe par pack déclenché × compartiment",dash:true}),
-        E(pas.id,parse.id),E(parse.id,pas.id,{label:"hors format / extrait halluciné : rejoué (≤3)",kind:"ko",dash:true}),
-        E(pas.id,agg.id,{label:"échec ×3 : critères en AVM, le run CONTINUE",kind:"ko",dash:true,ch:1}),
+        E(pas.id,parse.id),E(parse.id,pas.id,{label:"hors format / aucun extrait retrouvé : rejoué (≤3)",kind:"ko",dash:true}),
+        E(parse.id,agg.id,{label:"échec ×3 : critères en AVM, le run CONTINUE",kind:"ko",dash:true,ch:1}),
+        E(parse.id,stop.id,{label:"disjoncteur : le modèle cale",kind:"ko",ch:2}),
+        E(map.id,agg.id,{label:"reprise : verdicts déjà valides sur le disque, passes sautées",dash:true,ch:2}),
         E(parse.id,agg.id,{label:"verdicts valides",kind:"ok"}),
-        E(agg.id,syn.id,{label:"stats"}),E(syn.id,rep.id),E(agg.id,dec.id,{ch:1})]
+        E(agg.id,syn.id,{label:"chiffres + 10 pires NC"}),E(syn.id,rep.id,{label:"chapeau"}),E(agg.id,rep.id,{label:"compile",ch:1}),E(agg.id,dec.id,{ch:1})]
     },
-    note:"Robustesse : une passe non aboutie après 3 tentatives ne tue plus le run — ses critères sortent en AVM prudent, le rapport porte un bandeau « Rapport PARTIEL » et la relance ne rejoue que le manquant (arrêt uniquement si 2 échecs consécutifs ou &gt; 30 % d'échecs : le modèle cale). Isolation garantie par reset dur du harness entre passes (<code>MM_A11Y_HARD_RESET=0</code> pour l'ancien <code>/new</code>). Les heuristiques anti-complaisance (100 % NA comme ≥ 90 % C, sondes NC) produisent des annexes pour TON arbitrage — jamais un verdict automatique."
+    note:"Robustesse : une passe non aboutie après 3 tentatives ne tue pas le run — ses critères sortent en AVM prudent, le rapport porte un bandeau « Rapport PARTIEL » et la relance ne rejoue que le manquant. Le run s'arrête seulement si la cartographie échoue 3 fois, ou si le disjoncteur saute (2 échecs consécutifs, ou au moins 2 échecs dépassant 30 % des passes : le modèle cale). Isolation garantie par reset dur du harness entre passes (<code>MM_A11Y_HARD_RESET=0</code> pour l'ancien <code>/new</code>). Les heuristiques anti-complaisance (100 % NA, ou ≥ 90 % C sans le moindre constat ni AVM ; sondes NC) produisent des annexes pour TON arbitrage — jamais un verdict automatique."
   });
 })();
 
@@ -861,92 +936,130 @@ const TABS = [];
 (function(){
   const disc = N("mech","Découverte du périmètre","code et tests séparés"),
         g1 = N("gate","Porte : lancer la doc","y/n — rien n'est payé avant"),
-        carto = N("agent","Cartographie fonctionnelle"),
+        carto = N("agent","Cartographie fonctionnelle","liste complète jusqu'à 400 fichiers, échantillon + résumé par répertoire au-delà"),
+        val = N("mech","Validation de la carte","chemins vérifiés sur le disque, répertoires dépliés, « Divers » complétée mécaniquement"),
         map = N("file","doc_map.yaml"),
-        g = N("gate","Porte : valider la carte","éditable — l'ordre des zones = l'ordre de lecture"),
-        z = N("agent","Passe par zone","contexte neuf + gardes de contenu mécaniques"),
+        g = N("gate","Porte : valider la carte","éditable — l'ordre des zones = l'ordre de lecture · n : édite doc_map.yaml et relance"),
+        z = N("agent","Passe par zone","contexte neuf (/new)"),
+        gard = N("mech","Gardes de contenu","chemins cités vérifiés, « Couvert » exigeant un vrai fichier de test, compteurs recomptés"),
         zf = N("file","doc_zones/"),
-        vue = N("agent","Vue d'ensemble","nourrie des seuls bilans de zone"),
+        vue = N("agent","Vue d'ensemble","nourrie des noms, intentions et bilans chiffrés des zones"),
         asm = N("mech","Assemblage Python","recompte tout — jamais sur parole"),
-        doc = N("file","documentation.md");
+        doc = N("file","documentation.md","réécrit à chaque run — un fichier homonyme écrit à la main est écrasé (alerte porte 1)"),
+        stop = N("file","failReport.md","cartographie ou UNE zone ratée 3× : tout le run s'arrête");
   TABS.push({
-    key:"doc", nav:"Documentation.py", grp:"Audits & documentation",
-    eyebrow:"Documentation · lecture seule", title:"Documentation.py",
+    key:"doc", nav:"Documentation.py", grp:"Produit",
+    eyebrow:"Documentation · lecture seule · bêta", title:"Documentation.py",
     role:"Documentation comportementale d'un projet existant : une carte fonctionnelle validée par l'humain, une passe par zone à contexte réinitialisé, un assemblage mécanique en un livrable consolidé.",
     facts:[["Portes humaines","2 — périmètre, carte"],
-           ["Mode","Lecture seule sur le projet documenté"],
-           ["Livrables","<code>doc_map.yaml</code> <code>doc_zones/</code> <code>documentation.md</code>"],
+           ["Lecture seule","Garantie par git : tout fichier du projet modifié par un rédacteur est restauré"],
+           ["Livrables","<code>doc_map.yaml</code> <code>doc_zones/</code> <code>documentation.md</code> (réécrit à chaque run)"],
+           ["Reprise","Par fichiers : carte valide reprise telle quelle, zone déjà documentée sautée — les zones reprises ne repassent pas les gardes : un écart est signalé, à toi de supprimer le fichier"],
            ["Quand","Documenter un existant (features + tests d'acceptance Couvert/Proposé) avant de le faire évoluer"]],
     spec:{
-      cap:"Deux portes : le périmètre avant de payer, puis la carte validée (le cartographe reçoit un échantillon représentatif de tous les répertoires et peut assigner des répertoires entiers ; « Divers » est facultative, et une carte qui y laisse l'essentiel du projet est rejouée). Chaque zone est documentée par une passe indépendante contrôlée par des gardes mécaniques (chemins cités vérifiés sur le disque, « Couvert » exigeant un vrai fichier de test, compteurs recomptés) ; la vue d'ensemble n'est écrite qu'APRÈS les zones, à partir de leurs bilans ; l'assemblage final est du Python, pas un agent.",
-      rows:[[disc,g1,carto,map],[g,z,zf],[vue,asm,doc]],
-      edges:[E(disc.id,g1.id),E(g1.id,carto.id,{label:"y",kind:"amb"}),E(carto.id,map.id),
+      cap:"Deux portes : le périmètre avant de payer, puis la carte validée (le cartographe reçoit la liste complète des fichiers jusqu'à 400 ; au-delà, un échantillon représentatif de tous les répertoires plus un résumé par répertoire du surplus, assignable par répertoire entier ; « Divers » est facultative, et une carte qui y laisse plus de 100 fichiers est rejouée — sauf à la 3e et dernière tentative, où elle est acceptée telle quelle). Chaque zone est documentée par une passe indépendante puis contrôlée par des gardes mécaniques ; la vue d'ensemble n'est écrite qu'APRÈS les zones ; l'assemblage final est du Python. « Couvert » = un test d'acceptance déjà vérifié par un test existant cité ; « Proposé » = un test à écrire.",
+      rows:[[disc,g1,carto,val,map],[g,z,gard,zf],[vue,asm,doc,stop]],
+      edges:[E(disc.id,g1.id),E(g1.id,carto.id,{label:"y",kind:"amb"}),E(carto.id,val.id),E(val.id,map.id),
+        E(val.id,carto.id,{label:"plus de 100 fichiers en Divers : rejouée (≤3)",kind:"ko",dash:true}),
+        E(carto.id,stop.id,{label:"échec ×3 : arrêt du run",kind:"ko"}),
         E(map.id,g.id),E(g.id,z.id,{label:"y",kind:"amb"}),
         E(z.id,z.id,{label:"une passe par zone, contexte neuf",dash:true}),
-        E(z.id,zf.id),E(zf.id,vue.id,{label:"bilans seuls"}),E(vue.id,asm.id),E(asm.id,doc.id)]
+        E(z.id,gard.id),E(gard.id,z.id,{label:"garde en échec : rejouée (≤3)",kind:"ko",dash:true}),
+        E(gard.id,stop.id,{label:"échec ×3 sur UNE zone : tout le run s'arrête",kind:"ko"}),
+        E(gard.id,zf.id,{label:"conforme",kind:"ok"}),
+        E(map.id,zf.id,{label:"reprise : zones déjà documentées, passes sautées",dash:true,ch:1}),
+        E(zf.id,vue.id,{label:"bilans + intitulés"}),
+        E(vue.id,asm.id,{label:"échec ×3 : vue d'ensemble écrite par le Python, le run continue",dash:true}),
+        E(vue.id,asm.id),E(asm.id,doc.id)]
     }
   });
 })();
 
 /* fix */
 (function(){
-  const diag = N("agent","Diagnostic IA","comportements cassés, pas fichiers"),
-        g = N("gate","Triage humain r/e","par comportement — o affiche le détail ; confirmation y/n/q"),
-        corr = N("agent","Correcteur","r : régression — tests GELÉS"),
-        evo = N("agent","Mise à jour spec + tests","e : évolution — prod GELÉE, spec validée par toi"),
+  const vin = N("mech","verify_cmd d'entrée","la suite est-elle déjà verte ?"),
+        gfx = N("gate","Porte : marquer FIXED","suite déjà verte à l'entrée — y/n, puis fin"),
+        wip = N("mech","Commit wip + diff coupable","état à l'arrêt figé avant tout agent"),
+        diag = N("agent","Diagnostic IA","comportements cassés, pas fichiers"),
+        g = N("gate","Triage humain r/e","par comportement — o détail · y lancer · n refaire · q abandonner"),
+        corr = N("agent","Correcteur","r : régressions — tests GELÉS, une passe regroupée"),
+        evoS = N("agent","Agent PO — met à jour spec.md","e : évolutions — prod GELÉE"),
+        gS = N("gate","Porte : valider la spec mise à jour","y/n — n restaure spec.md et arrête"),
+        evoT = N("agent","Ingénieur Test — adapte les tests","une passe tests regroupée"),
         vc = N("mech","verify_cmd"),
-        fixed = N("file","FIXED dans blackboard.yaml"),
-        rep = N("file","fix_report-<uid>.md","committé, piste d'audit"),
-        rel = N("note","→ relance l'orchestrateur : revalidation par exécution, sans re-payer de codeur");
+        fixed = N("file","FIXED dans blackboard.yaml","si une phase fautive est identifiée — sinon vert + commit"),
+        rep = N("file","fix_report-<uid>.md","créé au diagnostic, complété au résultat (même en échec) — committé"),
+        rel = N("note","→ relance l'usine : elle revalide par exécution (voir Verdict)");
   TABS.push({
-    key:"fix", nav:"Guided-Fix.py", grp:"Outils",
-    eyebrow:"Outil · réparation arbitrée", title:"Guided-Fix.py",
-    role:"Le compagnon des bases après un arrêt sur suite rouge : diagnostic des comportements cassés, puis triage humain — régression subie (le code est corrigé, tests gelés) ou évolution voulue (la spec est mise à jour et validée, puis les tests adaptés, production gelée).",
-    facts:[["Portes humaines","Triage r/e par comportement (o = afficher le détail), confirmation y/n/q + validation de la spec mise à jour"],
-           ["Verdict","Exécution de <code>verify_cmd</code> — le vert marque la phase <code>FIXED</code>"],
-           ["Livrables","<code>fix_report-&lt;uid&gt;.md</code> + marqueur <code>FIXED</code>"],
+    key:"fix", nav:"Guided-Fix.py", grp:"Coding",
+    eyebrow:"Outil · réparation arbitrée · bêta", title:"Guided-Fix.py",
+    role:"Le compagnon des usines de code après un arrêt sur suite rouge : diagnostic des comportements cassés, puis triage humain — régression subie (le code est corrigé, tests gelés) ou évolution voulue (la spec est mise à jour et validée, puis les tests adaptés, production gelée).",
+    facts:[["Portes humaines","4 déclarées au manifeste : triage r/e par comportement (o = détail), confirmation y/n/q, validation de la spec mise à jour (évolutions), et une porte de clôture si la suite est déjà verte à l'entrée (marquer FIXED, y/n)"],
+           ["Verdict","Exécution de <code>verify_cmd</code> — le vert marque <code>FIXED</code> seulement si une phase fautive a été identifiée. À la relance, l'usine revalide par exécution : verte, elle poursuit sans re-payer de codeur ; rouge, la phase repart en production normale"],
+           ["Livrables","<code>fix_report-&lt;uid&gt;.md</code> toujours (créé au diagnostic, complété au résultat, même en échec) ; marqueur <code>FIXED</code> si une phase fautive a été identifiée"],
            ["Quand","Phase REJECTED, run tué, régression post-refacto — l'équivalent après-coup de l'arbitrage d'impact"]],
     spec:{
-      cap:"Chaque comportement cassé est arbitré séparément : les deux chemins gèlent par git ce qui fait foi (les tests pour une régression, la production pour une évolution) et convergent sur le même verdict mécanique. Sur rouge résiduel, la boucle repart au correcteur (3 rounds max, 3 tentatives d'agent chacun) ; le vert marque FIXED — une réclamation que l'usine relancée revalidera par exécution.",
-      rows:[[diag,g],[corr,evo],[vc,fixed,rep,rel]],
-      edges:[E(diag.id,g.id,{label:"liste des comportements"}),
+      cap:"La DÉCISION est prise comportement par comportement, l'EXÉCUTION est regroupée : une passe spec, une passe tests, puis une passe code (évolutions avant régressions). Les deux chemins gèlent par git ce qui fait foi (les tests pour une régression, la production pour une évolution) et convergent sur le même verdict mécanique. Sur rouge résiduel : au plus 2 repasses après la première vérification — vers le correcteur s'il reste des régressions, sinon vers l'agent tests ; les 3 tentatives internes ne servent qu'en cas d'agent muet ou hors périmètre. Le vert marque FIXED — une réclamation que l'usine relancée revalidera par exécution.",
+      rows:[[vin,gfx,wip,diag,rep],[g,corr,evoS,gS,evoT],[vc,fixed,rel]],
+      edges:[E(vin.id,gfx.id,{label:"déjà vert",kind:"ok"}),E(gfx.id,fixed.id,{label:"y",kind:"amb"}),
+        E(vin.id,wip.id,{label:"rouge",kind:"ko"}),E(wip.id,diag.id),
+        E(diag.id,rep.id,{label:"rapport créé dès le diagnostic"}),
+        E(diag.id,g.id,{label:"liste des comportements"}),
         E(g.id,corr.id,{label:"r : régression",kind:"amb"}),
-        E(g.id,evo.id,{label:"e : évolution",kind:"amb",ch:1}),
-        E(corr.id,vc.id),E(evo.id,vc.id,{ch:1}),
-        E(vc.id,corr.id,{label:"rouge : nouvelle passe (3 rounds max)",kind:"ko",dash:true}),
-        E(vc.id,fixed.id,{label:"vert",kind:"ok"}),E(fixed.id,rep.id),E(rep.id,rel.id)]
-    }
+        E(g.id,evoS.id,{label:"e : évolution",kind:"amb",ch:1}),
+        E(evoS.id,gS.id),E(gS.id,evoT.id,{label:"y",kind:"amb"}),
+        E(gS.id,rel.id,{label:"n : spec restaurée, fin du run",kind:"ko",ch:1}),
+        E(corr.id,vc.id),E(evoT.id,vc.id,{ch:1}),
+        E(vc.id,corr.id,{label:"rouge avec régression : le correcteur repasse (2 repasses max)",kind:"ko",dash:true}),
+        E(vc.id,evoT.id,{label:"rouge sans régression : l'agent tests repasse (2 repasses max)",kind:"ko",dash:true,ch:2}),
+        E(vc.id,fixed.id,{label:"vert",kind:"ok"}),
+        E(fixed.id,rep.id,{label:"rapport complété (résultat)"}),
+        E(vc.id,rep.id,{label:"encore rouge après 2 repasses : rapport écrit quand même, exit 1",kind:"ko",ch:3}),
+        E(rep.id,rel.id)]
+    },
+    note:"<strong>Bêta — utilité supposée, à confirmer par l'usage.</strong> Depuis que l'arbitrage régression/évolution est joué PENDANT le run par Coding, Test-First et Acceptance-First (triage sur suite rouge, porte d'arbitrage mid-run), Guided-Fix ne couvre plus que l'après-coup : un run ARRÊTÉ rouge (phase REJECTED après 3 tentatives, run tué en pleine phase, régression post-refacto non résorbée). Relancer l'usine rejouerait la phase à l'aveugle, 3 tentatives de plus ; Guided-Fix diagnostique, te fait trancher comportement par comportement et pose le marqueur FIXED que l'usine revalide sans re-payer de codeur. Il est le seul orchestrateur sans scénario mock : si le triage in-run suffit dans la pratique, il sera retiré ; sinon il sortira de bêta avec sa couverture de test."
   });
 })();
 
 /* skill-adapt */
 (function(){
-  const q = N("gate","Questionnaire","périmètre, stacks, conventions, modèle cible"),
-        prof = N("file","skill_adapt_profile.yaml","réutilisable"),
-        rw = N("agent","Réécriture par skill","des ORDRES, jamais des descriptions"),
-        gard = N("mech","Garde-fous Python","limite de lignes, frontmatter name intact"),
+  const gp = N("gate","Profil existant : le réutiliser ?","y/n — n relance le questionnaire"),
+        q = N("gate","Questionnaire (7 questions)","périmètre, testing oui/non, stacks back/front, conventions, limite de lignes, modèle cible"),
+        prof = N("file","skill_adapt_profile.yaml","écrit automatiquement, réutilisable"),
+        src = N("file",".skill_adapt_source-<name>.md","copie locale du skill du moteur, lue par l'agent — purgée en fin de run"),
+        rw = N("agent","Réécriture par skill","contexte neuf par skill — consigne au modèle : des ordres, pas des descriptions (non contrôlé) ; réparations dans le même contexte"),
+        gard = N("mech","Garde-fous Python","5 contrôles : limite de lignes, name intact, description non vide, tableau ❌/✅, checklist"),
         rev = N("agent","Revue qualité indépendante","CONFORME / NON CONFORME parsé"),
-        g2 = N("gate","Porte : valider","y/n — écrasement APRÈS"),
-        out = N("file","skills réécrits + .bak"),
+        g2 = N("gate","Porte : écraser CE skill","y/n — une porte par skill (jusqu'à 4)"),
+        out = N("file","skill du MOTEUR réécrit + .bak","miroir dans le projet courant"),
+        non = N("note","n : proposition conservée à la racine, original intact"),
         rep = N("file","skill_adapt_report.md");
   TABS.push({
-    key:"skill", nav:"Skills-Adaptation.py", grp:"Outils",
-    eyebrow:"Outil · adaptation des skills", title:"Skills-Adaptation.py",
-    role:"Adapte les skills fournis (pensés pour Java/Spring et React/TS) à TA stack : un questionnaire produit un profil enregistré et réutilisable, chaque skill est réécrit, contrôlé par des garde-fous Python, audité par une revue indépendante, et écrasé seulement après ta validation.",
-    facts:[["Portes humaines","Questionnaire (choix + saisie libre) + validation finale"],
-           ["Verdict","Garde-fous mécaniques (lignes, <code>name</code> = clé de routage) + revue LLM parsée"],
-           ["Livrables","profil YAML, skills réécrits (+ <code>.bak</code>), <code>skill_adapt_report.md</code>"],
-           ["Quand","Avant la première usine sur une stack différente de celle des skills fournis"]],
+    key:"skill", nav:"Skills-Adaptation.py", grp:"Adaptation des skills",
+    eyebrow:"Outil · adaptation des skills du moteur · WIP", title:"Skills-Adaptation.py",
+    role:"Adapte les skills fournis (pensés pour Java/Spring et React/TS) à TA stack, dans le MOTEUR (<code>engine/.agents/skills</code>, la source que l'app copie dans chaque projet équipé) : un questionnaire produit un profil enregistré et réutilisable, chaque skill est réécrit, contrôlé par des garde-fous Python, audité par une revue indépendante, et écrasé seulement après ta validation — puis recopié dans le projet courant.",
+    facts:[["Portes humaines","9 : réutilisation d'un profil existant, 7 questions du questionnaire, puis validation d'écrasement — une par skill"],
+           ["Verdict","Garde-fous mécaniques (5 contrôles, dont <code>name</code> = clé de routage) + revue LLM parsée ; une proposition que tu édites à la main est écrite telle quelle, sans rejouer les garde-fous"],
+           ["Livrables","profil YAML, skills du moteur réécrits (+ <code>.bak</code>) et leur miroir dans le projet, <code>skill_adapt_report.md</code>"],
+           ["Modèle","Un BON modèle pour l'adaptation, de préférence frontier : ces skills conditionnent tous les runs suivants (le « modèle cible » du questionnaire est celui qui les consommera)"],
+           ["Quand","AVANT la première usine sur une stack différente de celle des skills fournis — sinon les phases de code partent sans skill (l'Architecte n'affecte pas un skill Java à du Next.js) ou, pire, avec le mauvais"]],
     spec:{
-      cap:"Le frontmatter name ne bouge jamais (c'est la clé de routage du blackboard) ; l'ancien contenu survit en .bak ; rien n'est écrasé avant le y humain.",
-      rows:[[q,prof,rw],[gard,rev,g2],[out,rep]],
-      edges:[E(q.id,prof.id,{label:"profil enregistré",kind:"amb"}),E(prof.id,rw.id),
-        E(rw.id,gard.id),E(gard.id,rw.id,{label:"hors bornes : rejoué (≤2, sinon arrêt)",kind:"ko",dash:true}),
+      cap:"Le frontmatter name ne bouge jamais (c'est la clé de routage du blackboard) ; l'ancien contenu survit en .bak ; rien n'est écrasé avant le y humain, demandé skill par skill. L'agent lit une copie locale du skill du moteur (les harness bornent leurs accès au projet) ; Python écrit dans le moteur puis dans le projet. Une proposition déjà présente à la racine est re-arbitrée sans re-générer ni re-contrôler ; si tu l'édites avant de valider, elle est écrite telle quelle.",
+      rows:[[gp,q,prof,src],[rw,gard,rev],[g2,out,non,rep]],
+      edges:[E(gp.id,q.id,{label:"n : questionnaire",kind:"amb"}),E(gp.id,prof.id,{label:"y : profil réutilisé",kind:"amb",ch:1}),
+        E(q.id,prof.id,{label:"profil écrit automatiquement"}),E(prof.id,src.id),E(src.id,rw.id),
+        E(rw.id,gard.id),E(gard.id,rw.id,{label:"hors bornes : rejoué (≤2, sinon le RUN ENTIER s'arrête — pas seulement ce skill)",kind:"ko",dash:true}),
         E(gard.id,rev.id,{label:"conforme",kind:"ok"}),
-        E(rev.id,rw.id,{label:"NON CONFORME : 1 rejeu — sinon la porte tranche",kind:"ko",dash:true,ch:1}),
+        E(rev.id,rw.id,{label:"NON CONFORME : 1 rejeu, garde-fous rejoués",kind:"ko",dash:true,ch:1}),
         E(rev.id,g2.id,{label:"CONFORME",kind:"ok"}),
-        E(g2.id,out.id,{label:"y — écrasement",kind:"amb"}),E(out.id,rep.id)]
-    }
+        E(rev.id,g2.id,{label:"toujours NON CONFORME : la porte tranche quand même",kind:"ko",dash:true,ch:2}),
+        E(src.id,g2.id,{label:"proposition déjà présente : re-arbitrée sans re-générer ni re-contrôler",dash:true,ch:3}),
+        E(g2.id,out.id,{label:"y — écrasement (moteur, puis projet)",kind:"amb"}),
+        E(g2.id,non.id,{label:"n",kind:"ko"}),
+        E(out.id,rw.id,{label:"skill suivant (jusqu'à 4)",dash:true,ch:1}),
+        E(out.id,rep.id)]
+    },
+    note:"<strong>Portée.</strong> Le moteur ne porte qu'UNE adaptation à la fois : les skills adaptés sont ceux de <code>engine/.agents/skills</code>, copiés dans tout projet équipé ensuite (« Mettre à jour l'équipement » pour ceux qui existent déjà — ce bouton recopie le moteur par-dessus le projet, sauvegarde <code>.agents.bak-*</code> à part). Pour travailler sur des projets aux stacks distinctes, <strong>duplique le dossier de l'outil</strong> et adapte chaque copie. WIP : seuls les 4 skills techniques (codage et tests, back et front) sont adaptés ; <code>architecture</code>, <code>refacto</code>, <code>ux</code>, <code>proto-coding</code> et <code>sonar-compliance-testing</code> restent tels quels."
   });
 })();
 
@@ -961,21 +1074,35 @@ function legendSvg(kind){
   if (kind==="ko")    return s+'<line x1="2" y1="10" x2="30" y2="10" class="ed ed-ko ed-dash"/><path d="M26 6 L33 10 L26 14 z" class="arr-ko"/></svg>';
   if (kind==="loopok") return s+'<path d="M31 3 v10 h-23" class="ed ed-ok"/><path d="M9 9 L9 17 L2 13 z" class="arr-ok"/></svg>';
   if (kind==="loopko") return s+'<path d="M31 3 v10 h-23" class="ed ed-ko ed-dash"/><path d="M9 9 L9 17 L2 13 z" class="arr-ko"/></svg>';
+  if (kind==="amb")   return s+'<line x1="2" y1="10" x2="30" y2="10" class="ed ed-amb"/><path d="M26 6 L33 10 L26 14 z" class="arr-amb"/></svg>';
+  if (kind==="note")  return s+'<text x="1" y="14" class="tx-sub" style="font-style:italic">→ texte</text></svg>';
   return s+"</svg>";
 }
 
 /* ── Construction du DOM ─────────────────────────────────────── */
 const rail = document.getElementById("rail");
 const main = document.getElementById("panels");
-const GROUPS = ["Carte","Usines complètes","Pipelines partiels","Audits & documentation","Outils"];
+/* Le rail suit les CATÉGORIES de la Bibliothèque de l'app (champ 'category' du manifeste) :
+   un seul vocabulaire du manifeste au README et aux schémas. */
+const GROUPS = [{name:"Carte"},
+                {name:"Adaptation des skills", hint:"à faire d'abord · skills du moteur · WIP"},
+                {name:"Coding", hint:"planification incluse · + réparation"},
+                {name:"Design", hint:"prototype · audits d'interface"},
+                {name:"Produit", hint:"besoin · spec · documentation"}];
 const btns = {};
 const FIGS = [];
 
-GROUPS.forEach(gname => {
-  const tabs = TABS.filter(t => t.grp === gname);
+GROUPS.forEach(({ name: gname, hint }) => {
+  // Ordre du rail = ordre du manifeste pour les usines (recommandées d'abord), puis logique
+  // de lecture pour le reste ; les onglets absents de la liste gardent leur ordre d'écriture.
+  const RAIL_ORDER = ["Skills-Adaptation.py","Acceptance-First.py","Test-First.py","Coding.py","Coding-Without-Tests.py","Guided-Fix.py",
+                      "Design-Prototype.py","Audit-Design.py","Pre-Audit-A11Y-RGAA.py","Challenge-Need.py","Spec.py","Documentation.py"];
+  const rank = (t) => { const i = RAIL_ORDER.indexOf(t.nav); return i < 0 ? 99 : i; };
+  const tabs = TABS.filter(t => t.grp === gname).sort((a, b) => rank(a) - rank(b));
   if (!tabs.length) return;
   const h = document.createElement("div");
   h.className = "grp"; h.textContent = gname;
+  if (hint){ const sm = document.createElement("small"); sm.textContent = hint; h.appendChild(sm); }
   rail.appendChild(h);
   tabs.forEach(t => {
     const b = document.createElement("button");
@@ -1011,6 +1138,8 @@ TABS.forEach(t => {
        <span class="it">${legendSvg("ko")} échec / rejet</span>
        <span class="it">${legendSvg("loopok")} retour plein : boucle nominale (phase, cycle ou lot suivant)</span>
        <span class="it">${legendSvg("loopko")} retour pointillé : nouvelle tentative (3 max) ou rollback</span>
+       <span class="it">${legendSvg("amb")} ambre : décision humaine (le « y » d'une porte)</span>
+       <span class="it">${legendSvg("note")} texte nu : consigne ou suite hors script</span>
      </div>
      <ul class="facts">${facts}</ul>`;
 
@@ -1028,6 +1157,39 @@ TABS.forEach(t => {
   }
   main.appendChild(sec);
 });
+
+/* ── Bloc commun : ce que TOUS les onglets sous-entendent ────── */
+const COMMON = document.createElement("section");
+COMMON.className = "common";
+COMMON.innerHTML = `
+  <h3>Règles communes à tous les scripts (non redessinées sur chaque onglet)</h3>
+  <ol>
+    <li><strong>Boucles bornées.</strong> Chaque passe d'agent dispose de 3 tentatives ; un silence (délai dépassé) ou un fichier hors format en consomme une, sauf les incidents d'infrastructure explicitement non décomptés. Au-delà, le run s'arrête proprement : <code>failReport.md</code> à la racine (message en console seulement pour Coding-Without-Tests et Design-Prototype), session tmux fermée, code de sortie 1. Exceptions dites sur leur onglet : le pré-audit a11y continue après une passe ratée ; la vue d'ensemble de Documentation a un repli Python.</li>
+    <li><strong>« n » à une porte.</strong> Arrêt propre, rien n'est détruit : le livrable relu reste sur le disque et la porte est re-proposée telle quelle à la relance, sans re-payer d'agent. Édite le fichier avant de répondre si tu veux le changer — il est relu.</li>
+    <li><strong>Reprise par fichiers.</strong> À la relance, tout livrable présent et validé est repris : <code>spec.md</code> + <code>.spec_approved</code>, <code>plan.md</code>, <code>impact.md</code> + <code>.impact_approved</code>, <code>blackboard.yaml</code>, phases DONE/OK, cartes et passes/zones déjà valides. Sans le marqueur d'approbation, la porte est rejouée. Supprimer un livrable force la seule étape correspondante.</li>
+    <li><strong>Sous git, le run est gardé</strong> : commit par phase verte, tests protégés restaurés, annulation d'un polish qui casse, lecture seule garantie pour les audits et la doc. Sans git, tout fonctionne, sans ces filets.</li>
+    <li><strong>Contexte neuf.</strong> Chaque agent démarre dans un contexte remis à zéro (<code>/new</code> du harness, contrôlé en simple avertissement ; reset dur pour le pré-audit a11y) et ne reçoit que ce qui concerne sa tâche (les user stories de sa phase, pas la spec entière).</li>
+  </ol>
+  <h3>Glossaire</h3>
+  <dl>
+    <dt>blackboard.yaml</dt><dd>le plan compilé en phases exécutables : checklist, skill affecté, commande de vérification, statut (TODO / DONE / REJECTED / FIXED).</dd>
+    <dt>verify_cmd · build_cmd</dt><dd>la commande de vérification (compilation + suite complète, code de sortie 0 = vert) et, en acceptance-first, la commande de compilation seule des étapes intermédiaires.</dd>
+    <dt>sentinelle · fichier de fin</dt><dd>fichier <code>.done</code> que l'agent crée en toute dernière action : c'est le signal de fin de tâche, attendu par l'orchestrateur (jamais par le harness). À défaut, un livrable resté stable 30 s est accepté.</dd>
+    <dt>surcouche</dt><dd>revue d'impact + vérificateur LLM + triage des cassures, intégrée aux trois usines de code (Coding, Test-First, Acceptance-First).</dd>
+    <dt>étape 2bis</dt><dd>la revue d'impact, insérée entre le plan et le blackboard : les comportements que le plan va casser, entérinés par toi avant de payer une phase.</dd>
+    <dt>brique B</dt><dd>mutation testing en avertissement seul (warn-only) : mesure la robustesse des tests sans jamais bloquer.</dd>
+    <dt>frontmatter · clé de routage</dt><dd>l'en-tête <code>name:</code> d'un SKILL.md : le mot-clé que l'Architecte affecte aux phases ; il ne doit jamais changer.</dd>
+    <dt>verdict inversé</dt><dd>phase red / test d'acceptance : la suite DOIT échouer pour être acceptée.</dd>
+    <dt>PRÉVU · IMPRÉVU</dt><dd>classement du triage, par fichier de test en échec (tokens <code>PREVU</code> / <code>IMPREVU</code> dans les fichiers) ; dans le doute, IMPRÉVU.</dd>
+    <dt>CONFLICT</dt><dd>déclaré par le réparateur quand la casse est un vrai désaccord entre le plan et l'existant : la porte d'arbitrage mid-run te fait trancher.</dd>
+    <dt>FIXED</dt><dd>statut posé par Guided-Fix (ou à la main) sur une phase réparée : l'usine relancée la revalide par exécution sans re-payer de codeur.</dd>
+    <dt>essai à blanc</dt><dd>le scaffold : <code>verify_cmd</code> réellement exécutée sur le squelette + un test santé, pour prouver que la chaîne tourne avant la première phase.</dd>
+    <dt>AVM</dt><dd>« à vérifier manuellement » (pré-audit a11y) : critère non tranché depuis le code.</dd>
+    <dt>compartiment · pack · tranche · motif</dt><dd>pré-audit a11y : partie de l'interface (socle, composants, zones) × thématique RGAA × découpe de 40 fichiers ou 80 Ko ; le motif est l'indice de code qui déclenche un pack.</dd>
+    <dt>zone · bilan · Couvert / Proposé</dt><dd>Documentation : partie fonctionnelle du projet ; ses compteurs ; un test d'acceptance déjà vérifié par un test existant cité, ou encore à écrire.</dd>
+    <dt>soft · fatal</dt><dd>contrôle de schéma du blackboard : écart signalé pour information, ou arrêt.</dd>
+  </dl>`;
+main.appendChild(COMMON);
 
 let currentKey = null;
 function select(key, push){
@@ -1059,7 +1221,16 @@ function drawAll(){
   FIGS.forEach(({ t, fig, cap }) => {
     const old = fig.querySelector("svg");
     if (old) old.remove();
-    fig.insertBefore(render(t.spec, t.key, aw), cap);
+    // Les couloirs de retour en marge gauche élargissent le dessin au-delà des nœuds : si le
+    // SVG déborde de la colonne, on replie les rangées plus tôt (3 passes max) au lieu de scroller.
+    let avail = aw, svg = render(t.spec, t.key, avail);
+    for (let i = 0; i < 3; i++){
+      const vw = Number(svg.getAttribute("width"));
+      if (vw <= aw) break;
+      avail = Math.max(300, avail - (vw - aw) - 20);
+      svg = render(t.spec, t.key, avail);
+    }
+    fig.insertBefore(svg, cap);
   });
 }
 let rsz;

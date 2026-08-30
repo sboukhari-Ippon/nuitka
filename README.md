@@ -1,10 +1,14 @@
 # MAIsterMind — App + Usine (dépôt unifié V3.0)
 *By Selim Boukhari* — [LinkedIn](https://www.linkedin.com/in/selim-boukhari-6356b949/)
 
-MAIsterMind est une usine à code automatisée qui pilote un agent IA en ligne de commande — **OpenCode ou Codex CLI, au choix, projet par projet** — à travers des pipelines structurés et validés par l'humain. Ce dépôt unifie **les 13 orchestrateurs** (les scripts de l'usine, ex-dépôt privé) et **l'app cockpit** (ex-App_v3) : l'app est le point d'entrée grand public — elle découvre les binaires du moteur (`engine/`), équipe les projets, lance les runs dans tmux, affiche leur écran et répond aux portes depuis le navigateur.
+MAIsterMind est une usine à code automatisée qui pilote un agent IA en ligne de commande — **OpenCode ou Codex CLI, au choix, projet par projet** — à travers des pipelines structurés et validés par l'humain. Ce dépôt unifie **les 12 orchestrateurs** (les scripts de l'usine, ex-dépôt privé) et **l'app cockpit** (ex-App_v3) : l'app est le point d'entrée grand public — elle découvre les binaires du moteur (`engine/`), équipe les projets, lance les runs dans tmux, affiche leur écran et répond aux portes depuis le navigateur.
 
 > **Requiert UN harness d'agent** : [OpenCode](https://opencode.ai) ou [Codex CLI](https://github.com/openai/codex).
 > Un seul suffit ; les deux peuvent cohabiter. Voir l'`INSTALL.md` de chaque variante.
+>
+> **Le harness Codex CLI est en bêta** : il est moins éprouvé qu'OpenCode sur des runs réels et
+> demande des retours utilisateurs (comportement des portes, permissions, modèles). Toute
+> remontée est bienvenue ; OpenCode reste le choix de référence.
 
 > 📄 **Licence** : usage non commercial, personnel ou éducatif uniquement — voir [LICENSE](LICENSE).
 > Tout usage commercial requiert un accord écrit préalable de l'auteur.
@@ -53,7 +57,7 @@ MAIsterMind/                     ← l'archive extraite (ou un dossier source LA
 ├── INSTALL.md · README.md · useCases*.md · LICENSE
 └── engine/                      ← le moteur : ce que l'app découvre et lance
     ├── orchestrators.json       ← manifeste des orchestrateurs et de leurs portes
-    ├── Coding, Spec… (× 13)      ← binaires en release, sources .py en dev
+    ├── Coding, Spec… (× 12)      ← binaires en release, sources .py en dev
     ├── need.md                  ← gabarit (mode expert)
     ├── mm_runner.py             ← l'abstraction du harness (module, jamais un binaire)
     ├── mm_core.py               ← fonctions partagées des orchestrateurs (module)
@@ -66,25 +70,41 @@ MAIsterMind/                     ← l'archive extraite (ou un dossier source LA
 
 L'app trouve ses moteurs par la présence du manifeste (à côté d'elle, ou dans ses sous-dossiers immédiats). En dev, le binaire absent retombe sur la source `.py` du même nom : le dépôt s'utilise tel quel, sans compilation.
 
-## Les 13 orchestrateurs
+## Les 12 orchestrateurs, par catégorie
 
-| Binaire | Famille | Portes (validation humaine) | need.md |
-|---|---|---|---|
-| `Coding-Without-Tests` | production (sans tests, vérif LLM) | spec → blackboard | requis |
-| `Design-Prototype` (bêta) | production (prototypes HTML) | design system → spec → blackboard | requis |
-| `Coding` | production (verdict universel ; revue d'impact, vérificateur LLM, triage) | spec → impact → blackboard (+ arbitrage mid-run) | requis |
-| `Test-First` | production (test-first par cycles red/green/refactor, inspiré du TDD ; surcouche sur les phases green) | spec → impact → blackboard (+ arbitrage mid-run) | requis |
-| `Acceptance-First` | production (acceptance-first par lots de user story, inspiré de l'ATDD ; surcouche sur les clôtures de lot) | spec → impact → blackboard (+ arbitrage mid-run) | requis |
-| `Challenge-Need` | cadrage (opt-in, aucun couplage aval) | revue du besoin (unique) | requis |
-| `Spec` | cadrage | spec (unique) | requis |
-| `Technical-Plan` | cadrage | spec (puis plan + blackboard sans production) | requis |
-| `Documentation` (bêta) | lecture seule | périmètre → carte des zones | optionnel |
-| `Audit-Design` (bêta) | lecture seule | périmètre (unique) | optionnel |
-| `Pre-Audit-A11Y-RGAA` (bêta) | lecture seule | périmètre → carte d'interface | optionnel |
-| `Skills-Adaptation` | outillage | questionnaire guidé → écrasement validé | non |
-| `Guided-Fix` | maintenance | triage régression/évolution + réparation validée | non |
+Quatre catégories, portées par le champ `category` du manifeste et reprises telles quelles
+dans la Bibliothèque de l'app (on choisit d'abord la catégorie, puis le script), le rail
+de `SCHEMAS.html` et les README des variantes :
 
-Les 13 sont déclarés dans `engine/orchestrators.json` et pilotables depuis l'app (portes y/n, à choix et à saisie libre). Chaque run laisse un journal local `.mm-runs/<id>/` (chronologie `events.jsonl`, artefacts figés aux transitions, `summary.md` — rétention 20 runs, opt-out `MM_AUDIT=0`). Le détail de chaque pipeline : `SCHEMAS.html` (un onglet par script), `README.md` et `useCases*.md` de la variante.
+| Catégorie | Binaire | Ce qu'il fait | Portes (validation humaine) | need.md |
+|---|---|---|---|---|
+| **Adaptation des skills** — à faire d'abord hors Java/Spring + React/TS ; WIP : skills techniques (codage, tests, back et front) | `Skills-Adaptation` | réécrit les skills **du moteur** (`engine/.agents/skills`) pour ta stack, miroir dans le projet courant | questionnaire guidé → écrasement validé | non |
+| **Coding** — du besoin au code vérifié, planification (spec, plan, blackboard) incluse | `Acceptance-First` ⭐ | acceptance-first par lots de user story, inspiré de l'ATDD ; surcouche sur les clôtures de lot | spec → impact → blackboard (+ arbitrage mid-run) | requis |
+| | `Test-First` ⭐ | test-first par cycles red/green/refactor, inspiré du TDD ; surcouche sur les phases green | spec → impact → blackboard (+ arbitrage mid-run) | requis |
+| | `Coding` | verdict universel ; revue d'impact, vérificateur LLM, triage | spec → impact → blackboard (+ arbitrage mid-run) | requis |
+| | `Coding-Without-Tests` | sans tests : chaque phase relue par un vérificateur LLM | spec → blackboard | requis |
+| | `Guided-Fix` (bêta) | réparation arbitrée d'un run arrêté sur suite rouge — utilité à confirmer depuis que l'arbitrage est joué pendant le run | triage régression/évolution + réparation validée | non |
+| **Design** — prototype et audits d'interface | `Design-Prototype` (bêta) | usine à prototypes cliquables HTML/CSS/JS | design system → spec → blackboard | requis |
+| | `Audit-Design` (bêta) | audit UX, 10 heuristiques de Nielsen (lecture seule) | périmètre (unique) | optionnel |
+| | `Pre-Audit-A11Y-RGAA` (bêta) | pré-audit d'accessibilité RGAA 4.1.2 (lecture seule) | périmètre → carte d'interface | optionnel |
+| **Produit** — besoin, spec, documentation | `Challenge-Need` | challenge du besoin avant de payer une spec (opt-in, aucun couplage aval) | revue du besoin (unique) | requis |
+| | `Spec` | la spec seule, validée avec le métier | spec (unique) | requis |
+| | `Documentation` (bêta) | documentation comportementale d'un existant (lecture seule) | périmètre → carte des zones | optionnel |
+
+**Un bon modèle pour adapter.** Lance `Skills-Adaptation` avec un modèle frontier de préférence : ces
+skills conditionnent tous les runs suivants (le « modèle cible » du questionnaire est celui qui les
+consommera, pas celui qui les écrit).
+
+**Un moteur = une stack.** Les skills adaptés vivent dans `engine/.agents/skills` et sont copiés dans
+chaque projet équipé ensuite (« Mettre à jour l'équipement » pour les projets existants). Pour
+travailler sur des projets aux stacks distinctes, **duplique le dossier de l'outil** (l'archive
+extraite) et adapte chaque copie : le moteur ne porte qu'une adaptation à la fois.
+
+Le workflow deux temps (gros modèle pour penser, petit pour produire) n'a plus de script dédié :
+lance une usine avec le gros modèle, réponds `n` à sa porte blackboard, change de modèle, relance
+(reprise par fichiers). `Technical-Plan`, qui faisait cela sans le `n`, a été retiré.
+
+Les 12 sont déclarés dans `engine/orchestrators.json` et pilotables depuis l'app (portes y/n, à choix et à saisie libre). Chaque run laisse un journal local `.mm-runs/<id>/` (chronologie `events.jsonl`, artefacts figés aux transitions, `summary.md` — rétention 20 runs, opt-out `MM_AUDIT=0`). Le détail de chaque pipeline : `SCHEMAS.html` (un onglet par script), `README.md` et `useCases*.md` de la variante.
 
 ## Développer et publier
 
@@ -98,7 +118,7 @@ Les 13 sont déclarés dans `engine/orchestrators.json` et pilotables depuis l'a
   - `python3 tools/test_audit_units.py` — tests unitaires (stdlib) des fonctions pures de l'audit RGAA et du journal de run : parseur de verdicts, extraits de matérialité, sondes, breaker, split de compartiments…
   - `python3 engine/mm_runner.py` — diagnostic : harness retenu pour ce dossier, origine de la décision, préflight des deux (binaire, authentification, modèle).
 - **CI** : `.github/workflows/checks.yml` rejoue tout ça (5 checkers, tests unitaires, 32 scénarios sous `--golden check`) sur chaque push/PR ; `build.yml` l'exécute aussi avant de compiler.
-- **Release** : `git tag v3.0.0 && git push --tags` — `.github/workflows/build.yml` compile (Nuitka onefile, versions épinglées) l'app une fois par job + les 13 orchestrateurs par langue (les modules `mm_runner`/`mm_core`/`mm_audit` sont EMBARQUÉS dans chaque binaire, jamais livrés en `.py`), assemble les archives complètes (lanceurs, skills et LICENSE compris, bits exécutables posés) et les publie en artifacts `tar.gz` (jamais de zip : il écrase les permissions). Attacher les tar.gz à une Release GitHub pour la distribution pérenne.
+- **Release** : `git tag v3.0.0 && git push --tags` — `.github/workflows/build.yml` compile (Nuitka onefile, versions épinglées) l'app une fois par job + les 12 orchestrateurs par langue (les modules `mm_runner`/`mm_core`/`mm_audit` sont EMBARQUÉS dans chaque binaire, jamais livrés en `.py`), assemble les archives complètes (lanceurs, skills et LICENSE compris, bits exécutables posés) et les publie en artifacts `tar.gz` (jamais de zip : il écrase les permissions). Attacher les tar.gz à une Release GitHub pour la distribution pérenne.
 - **Workflow de correctif** : éditer la variante `Ubuntu` d'une langue, recopier tel quel vers `MacOS`/`Windows`, porter la traduction dans l'autre langue, `check_variants_sync.py` jusqu'au vert.
 
 > ⚠️ Ne modifie pas les skills d'orchestration (`.agents/pipeline/`, `refacto`) : c'est le moteur du pipeline. Et ne laisse jamais le code produit devenir une boîte noire — relis-le.

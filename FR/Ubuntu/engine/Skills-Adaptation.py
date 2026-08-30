@@ -6,7 +6,11 @@ Orchestrateur IA - Adaptateur de skills « à ta stack » (harness d'agent + tmu
 Les skills de codage livrés (backend-coding : Java/Spring Boot, frontend-coding :
 React/TypeScript, et leurs pendants testing) sont des GABARITS. Cet orchestrateur
 les réécrit pour TA stack, via un questionnaire court, puis écrase les originaux
-du projet — chacun après TA validation, ancien contenu sauvegardé en .bak.
+du MOTEUR (engine/.agents/skills, la source que l'app copie dans chaque projet
+équipé) — chacun après TA validation, ancien contenu sauvegardé en .bak — et met à
+jour en miroir la copie du projet courant. Les autres projets déjà équipés les
+reçoivent via « Mettre à jour l'équipement ». Une stack distincte = une copie
+distincte du dossier de l'outil (le moteur ne porte qu'UNE adaptation à la fois).
 
 Chaîne de qualité, dans l'esprit de l'usine (l'IA propose, Python vérifie,
 l'humain tranche) :
@@ -39,6 +43,7 @@ import os
 import sys
 import time
 import signal
+import shutil
 
 from mm_runner import resolve_runner, resolve_timeout
 
@@ -61,7 +66,24 @@ from mm_core import (
 RUNNER = resolve_runner(os.getcwd(), role="skilladapt")
 
 # ─── CONFIGURATION ────────────────────────────────────────────────────────────
-SKILLS_DIR            = "./.agents/skills"
+# Le moteur (engine/) est la SOURCE des skills. MM_ENGINE_HOME (posé par l'app au
+# lancement, et par le harness de test) prime ; sinon le dossier du binaire ou du script
+# lancé — les orchestrateurs vivent dans engine/, à côté des skills.
+def resolve_engine_home() -> str:
+    explicit = os.environ.get("MM_ENGINE_HOME", "").strip()
+    if explicit:
+        return os.path.abspath(explicit)
+    compiled = globals().get("__compiled__")
+    launched = getattr(compiled, "original_argv0", None) or sys.argv[0]
+    if os.sep not in launched and shutil.which(launched):
+        launched = shutil.which(launched)
+    return os.path.dirname(os.path.abspath(launched))
+
+
+ENGINE_HOME           = resolve_engine_home()
+ENGINE_SKILLS_DIR     = os.path.join(ENGINE_HOME, ".agents", "skills")
+PROJECT_SKILLS_DIR    = "./.agents/skills"
+SOURCE_PREFIX         = ".skill_adapt_source-"
 ADAPT_SKILL_FILE      = "./.agents/pipeline/skill-adapt/SKILL.md"
 REVIEW_SKILL_FILE     = "./.agents/pipeline/skill-adapt-review/SKILL.md"
 PROFILE_FILE          = "skill_adapt_profile.yaml"
@@ -439,6 +461,23 @@ def route_grid(grid_path: str, tmp_path: str):
         f.write(grid)
 
 
+def engine_skill_path(name: str) -> str:
+    """Le SKILL.md de référence, dans le moteur : c'est lui qui est adapté."""
+    return os.path.join(ENGINE_SKILLS_DIR, name, "SKILL.md")
+
+
+def stage_source(name: str) -> str:
+    """Copie locale (racine du projet) du skill du moteur, pour que l'agent le lise sans
+    sortir du projet (les harness bornent leurs accès au dossier courant). Purgée en fin
+    de run ; jamais écrite par l'agent."""
+    staged = f"{SOURCE_PREFIX}{name}.md"
+    with open(engine_skill_path(name), "r", encoding="utf-8") as src:
+        content = src.read()
+    with open(staged, "w", encoding="utf-8") as dst:
+        dst.write(content)
+    return staged
+
+
 def generate_proposal(name: str, profile: dict, proposal: str):
     """Passe de GÉNÉRATION : réécriture du skill pour la stack cible, dans un
     contexte neuf, guidée par la grille skill-adapt."""
@@ -446,7 +485,7 @@ def generate_proposal(name: str, profile: dict, proposal: str):
     ensure_runner_started()
     RUNNER.new_context()
     route_grid(ADAPT_SKILL_FILE, TMP_ADAPT_FILE)
-    skill_path = f"{SKILLS_DIR}/{name}/SKILL.md"
+    skill_path = stage_source(name)
 
     prompt = f"""Lis les consignes d'adaptation du fichier '{TMP_ADAPT_FILE}', puis le skill actuel '{skill_path}'.
 Tu es un Adaptateur de Skills. En appliquant SCRUPULEUSEMENT les consignes de '{TMP_ADAPT_FILE}', réécris ce skill ({SKILL_DOMAINS[name]}) pour la stack cible du PROFIL ci-dessous, et sauvegarde le résultat DIRECTEMENT dans un nouveau fichier '{proposal}' à la racine du projet. Le skill d'origine '{skill_path}' reste INTACT.
@@ -494,7 +533,7 @@ def review_proposal(name: str, profile: dict, proposal: str) -> tuple:
     RUNNER.new_context()
     route_grid(REVIEW_SKILL_FILE, TMP_REVIEW_FILE)
 
-    prompt = f"""Lis la grille de contrôle qualité du fichier '{TMP_REVIEW_FILE}', puis le skill proposé '{proposal}' et le skill d'origine '{SKILLS_DIR}/{name}/SKILL.md'.
+    prompt = f"""Lis la grille de contrôle qualité du fichier '{TMP_REVIEW_FILE}', puis le skill proposé '{proposal}' et le skill d'origine '{stage_source(name)}'.
 Tu es un Contrôleur Qualité de skills, indépendant de l'auteur. En appliquant la grille de '{TMP_REVIEW_FILE}', audite la proposition contre le PROFIL ATTENDU ci-dessous et écris ton rapport DIRECTEMENT dans '{REVIEW_FILE}' à la racine du projet. Lecture seule sur tout le reste.
 
 PROFIL ATTENDU :
@@ -560,7 +599,8 @@ def confirm_overwrite(name: str, proposal: str) -> bool:
     éditable dans l'app ou un autre terminal avant validation."""
     print(f"\n{'=' * 50}")
     print(f"📋 PROPOSITION PRÊTE : relis '{proposal}' (elle remplacera "
-          f"'{SKILLS_DIR}/{name}/SKILL.md', ancien contenu sauvegardé en .bak).")
+          f"'{engine_skill_path(name)}' dans le MOTEUR — et sa copie dans ce projet — "
+          f"ancien contenu sauvegardé en .bak).")
     print(f"   Tu peux l'éditer directement avant de valider : le fichier fait foi.")
     print(f"{'=' * 50}")
     answer = input(f"\n▶️  Écraser le skill '{name}' avec la version adaptée ? (y/n) : ").strip().lower()
@@ -569,20 +609,28 @@ def confirm_overwrite(name: str, proposal: str) -> bool:
 
 
 def apply_proposal(name: str, proposal: str) -> str:
-    """Sauvegarde .bak puis écrasement. Le .bak est la piste de retour arrière
-    (en plus de git quand le projet en a un)."""
-    skill_path = os.path.join(SKILLS_DIR, name, "SKILL.md")
-    backup_path = skill_path + ".bak"
-    with open(skill_path, "r", encoding="utf-8") as f:
-        original = f.read()
-    with open(backup_path, "w", encoding="utf-8") as f:
-        f.write(original)
+    """Sauvegarde .bak puis écrasement — dans le MOTEUR (la source que l'app copie dans
+    chaque projet équipé), puis en miroir dans la copie du projet courant si elle existe,
+    pour que ce projet en profite sans ré-équipement. Le .bak est la piste de retour
+    arrière (en plus de git quand le dossier en a un)."""
     with open(proposal, "r", encoding="utf-8") as f:
         adapted = f.read()
-    with open(skill_path, "w", encoding="utf-8") as f:
-        f.write(adapted)
+    targets = [engine_skill_path(name)]
+    mirror = os.path.join(PROJECT_SKILLS_DIR, name, "SKILL.md")
+    if os.path.exists(mirror) and os.path.realpath(mirror) != os.path.realpath(targets[0]):
+        targets.append(mirror)
+    backup_path = ""
+    for skill_path in targets:
+        current_backup = skill_path + ".bak"
+        with open(skill_path, "r", encoding="utf-8") as f:
+            original = f.read()
+        with open(current_backup, "w", encoding="utf-8") as f:
+            f.write(original)
+        with open(skill_path, "w", encoding="utf-8") as f:
+            f.write(adapted)
+        backup_path = backup_path or current_backup
+        print(f"   ✅ '{skill_path}' écrasé (ancien contenu : '{current_backup}').")
     os.remove(proposal)
-    print(f"   ✅ '{skill_path}' écrasé (ancien contenu : '{backup_path}').")
     return backup_path
 
 
@@ -598,7 +646,10 @@ def write_report(profile: dict, rows: list):
              f"- Limite : {profile['line_cap']} lignes · Modèle cible : {profile['model_target']}",
              "", "## Skills traités", ""]
     lines.extend(rows)
-    lines.extend(["", "Retour arrière : restaure le '.bak' correspondant (ou 'git checkout' du skill).",
+    lines.extend(["", f"Skills adaptés dans le moteur : '{ENGINE_SKILLS_DIR}' (copiés dans chaque projet "
+                  "équipé ensuite ; « Mettre à jour l'équipement » pour les projets existants). "
+                  "Une autre stack ? Duplique le dossier de l'outil : un moteur = une adaptation.",
+                  "Retour arrière : restaure le '.bak' correspondant (ou 'git checkout' du skill).",
                   f"Profil réutilisable : '{PROFILE_FILE}' (relance l'orchestrateur et réponds y)."])
     with open(REPORT_FILE, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
@@ -618,6 +669,9 @@ def main():
     # celui du run courant : purge au démarrage.
     if os.path.exists(FAIL_REPORT_FILE):
         os.remove(FAIL_REPORT_FILE)
+    print(f"🏭 Moteur adapté : '{ENGINE_SKILLS_DIR}' (source des skills de tous les projets équipés).")
+    print("   💡 Utilise un BON modèle pour cette adaptation, de préférence frontier : ces skills conditionnent "
+          "tous les runs suivants. Le « modèle cible » demandé ci-dessous est celui qui les consommera.")
 
     # ── Profil : réutilisé sur accord explicite, sinon questionnaire. ──
     profile = read_profile()
@@ -634,15 +688,15 @@ def main():
         write_profile(profile)
         print(f"   ✓ Profil sauvegardé dans '{PROFILE_FILE}' (éditable à la main).")
 
-    # ── Périmètre : chaque skill visé doit exister (projet équipé). ──
+    # ── Périmètre : chaque skill visé doit exister dans le moteur. ──
     targets = target_skills(profile)
     missing = [name for name in targets
-               if not os.path.exists(os.path.join(SKILLS_DIR, name, "SKILL.md"))]
+               if not os.path.exists(engine_skill_path(name))]
     if missing:
-        print(f"❌ Skill(s) absent(s) du projet : {', '.join(missing)}.")
-        write_fail_report("Projet non équipé pour ce périmètre",
-                          f"Skills manquants sous '{SKILLS_DIR}' : {', '.join(missing)}. "
-                          "Équipe le projet depuis l'app (ou réduis le périmètre), puis relance.")
+        print(f"❌ Skill(s) absent(s) du moteur : {', '.join(missing)}.")
+        write_fail_report("Moteur incomplet pour ce périmètre",
+                          f"Skills manquants sous '{ENGINE_SKILLS_DIR}' : {', '.join(missing)}. "
+                          "Vérifie l'installation de MAIsterMind (ou MM_ENGINE_HOME), ou réduis le périmètre, puis relance.")
         sys.exit(1)
     print(f"\n🎯 Périmètre : {len(targets)} skill(s) → {', '.join(targets)}")
 
@@ -668,14 +722,16 @@ def main():
     # Fermeture propre : fichiers de routage, tampon tmux, sentinelles tardives
     # et rapport de revue transitoire sont purgés ; profil et .bak SURVIVENT.
     for tmp_f in [TMP_ADAPT_FILE, TMP_REVIEW_FILE, TMP_PROMPT_BUFFER,
-                  ADAPT_DONE_SENTINEL, REVIEW_DONE_SENTINEL, REVIEW_FILE]:
+                  ADAPT_DONE_SENTINEL, REVIEW_DONE_SENTINEL, REVIEW_FILE,
+                  *[f"{SOURCE_PREFIX}{name}.md" for name in targets]]:
         if os.path.exists(tmp_f):
             os.remove(tmp_f)
     RUNNER.kill()
 
     applied = sum(1 for row in rows if "ÉCRASÉ" in row)
-    print(f"\n🏁 Adaptation terminée : {applied}/{len(targets)} skill(s) écrasé(s). "
-          f"Les prochains runs de production utiliseront ces skills adaptés tels quels.")
+    print(f"\n🏁 Adaptation terminée : {applied}/{len(targets)} skill(s) écrasé(s) dans le moteur "
+          f"(et dans ce projet). Ce projet les utilise dès le prochain run ; pour les autres projets "
+          f"déjà équipés : « Mettre à jour l'équipement ». Une autre stack ? Duplique le dossier de l'outil.")
     # Clôture du journal de run (chemin capturé AVANT end, qui remet l'état à zéro).
     journal_dir = mm_audit.run_dir()
     mm_audit.end("success")

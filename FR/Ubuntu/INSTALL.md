@@ -16,6 +16,8 @@ sh install.sh
 #    (l'un suffit, les deux cohabitent sans problème) :
 #      OpenCode : https://opencode.ai/docs      puis  opencode auth login
 #      Codex    : npm install -g @openai/codex  puis  codex login
+#                 (BÊTA : moins éprouvé qu'OpenCode sur des runs réels — tes retours sont
+#                 bienvenus : portes, permissions, modèles. OpenCode reste la référence.)
 #    Le harness se choisit ensuite projet par projet, dans l'app (bouton Équiper).
 
 # 3. Au quotidien : lance « MAIsterMind » depuis le menu d'applications —

@@ -104,7 +104,7 @@ Les étapes 1 à 3 (spec, plan, blackboard) sont des one-shots à fort levier ; 
 1. Configure un **gros modèle** (`/model` dans le TUI, ou le fichier de config du harness), lance, valide la spec… et réponds `n` au y/n blackboard pour t'arrêter là proprement.
 2. Bascule sur le **petit modèle**, relance : spec, plan et blackboard sont repris tels quels, la production démarre après ton `y`.
 
-Variante sans `n` à taper : `Technical-Plan.py` déroule les étapes 1 à 3 puis s'arrête de lui-même au blackboard validé (et `Spec.py` s'arrête dès la spec approuvée) — mêmes fichiers, même reprise.
+Pour ne payer que la spec avec le gros modèle : `Spec.py` s'arrête dès la spec approuvée — mêmes fichiers, même reprise.
 
 ## UC7 — Le scaffold (étape 0) n'aboutit pas : suspecte le modèle, pas le code
 
@@ -122,7 +122,7 @@ Tu reprends un projet (legacy, prototype validé, code hérité d'une autre équ
 2. Un cartographe propose un découpage en zones fonctionnelles (`doc_map.yaml`) — vérifié par le script (couverture totale, zone « Divers » pour le résiduel), puis validé par toi (le YAML est éditable avant le `y` : renomme, redécoupe, réordonne — l'ordre des zones devient l'ordre de lecture).
 3. Une passe de documentation par zone (contexte réinitialisé entre chaque), puis un assemblage 100 % Python produisent **`documentation.md`** à la racine : features sourcées `fichier:ligne`, tests d'acceptance Étant donné/Quand/Alors avec statut **Couvert** (un test existant les vérifie, cité) ou **Proposé** (à écrire — l'annexe de couverture en donne le décompte : c'est ton backlog de tests).
 
-Chaînage naturel : la documentation en main, décris l'évolution dans `need.md` et enchaîne avec `Technical-Plan.py` (gros modèle) puis `Coding.py` (petit modèle) — cf. UC6. Après l'évolution, supprime les fichiers des zones touchées dans `doc_zones/` et relance : seules ces zones sont re-documentées, l'assemblage est refait.
+Chaînage naturel : la documentation en main, décris l'évolution dans `need.md` et enchaîne avec `Coding.py` : gros modèle jusqu'au blackboard (`n` à sa porte), petit modèle pour produire — cf. UC6. Après l'évolution, supprime les fichiers des zones touchées dans `doc_zones/` et relance : seules ces zones sont re-documentées, l'assemblage est refait.
 
 ## UC10 — Pré-auditer l'accessibilité d'une interface existante (RGAA / EAA)
 

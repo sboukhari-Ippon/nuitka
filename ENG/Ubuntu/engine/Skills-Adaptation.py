@@ -6,8 +6,11 @@ AI Orchestrator - "Your stack" skill adapter (agent harness + tmux)
 The shipped coding skills (backend-coding: Java/Spring Boot, frontend-coding:
 React/TypeScript, and their testing counterparts) are TEMPLATES. This
 orchestrator rewrites them for YOUR stack, through a short questionnaire, then
-overwrites the project's originals — each one after YOUR validation, previous
-content saved as .bak.
+overwrites the ENGINE's originals (engine/.agents/skills, the source the app copies
+into every equipped project) — each one after YOUR validation, previous content
+saved as .bak — and mirrors the update into the current project's copy. Other
+already-equipped projects receive them through "Update equipment". A distinct stack
+= a distinct copy of the tool folder (the engine carries ONE adaptation at a time).
 
 Quality chain, in the factory's spirit (the AI proposes, Python verifies,
 the human decides):
@@ -40,6 +43,7 @@ import os
 import sys
 import time
 import signal
+import shutil
 
 from mm_runner import resolve_runner, resolve_timeout
 
@@ -62,7 +66,24 @@ from mm_core import (
 RUNNER = resolve_runner(os.getcwd(), role="skilladapt")
 
 # ─── CONFIGURATION ────────────────────────────────────────────────────────────
-SKILLS_DIR            = "./.agents/skills"
+# The engine (engine/) is the SOURCE of the skills. MM_ENGINE_HOME (set by the app at
+# launch, and by the test harness) wins; otherwise the folder of the launched binary or
+# script — orchestrators live in engine/, next to the skills.
+def resolve_engine_home() -> str:
+    explicit = os.environ.get("MM_ENGINE_HOME", "").strip()
+    if explicit:
+        return os.path.abspath(explicit)
+    compiled = globals().get("__compiled__")
+    launched = getattr(compiled, "original_argv0", None) or sys.argv[0]
+    if os.sep not in launched and shutil.which(launched):
+        launched = shutil.which(launched)
+    return os.path.dirname(os.path.abspath(launched))
+
+
+ENGINE_HOME           = resolve_engine_home()
+ENGINE_SKILLS_DIR     = os.path.join(ENGINE_HOME, ".agents", "skills")
+PROJECT_SKILLS_DIR    = "./.agents/skills"
+SOURCE_PREFIX         = ".skill_adapt_source-"
 ADAPT_SKILL_FILE      = "./.agents/pipeline/skill-adapt/SKILL.md"
 REVIEW_SKILL_FILE     = "./.agents/pipeline/skill-adapt-review/SKILL.md"
 PROFILE_FILE          = "skill_adapt_profile.yaml"
@@ -440,6 +461,23 @@ def route_grid(grid_path: str, tmp_path: str):
         f.write(grid)
 
 
+def engine_skill_path(name: str) -> str:
+    """The reference SKILL.md, in the engine: that is the one being adapted."""
+    return os.path.join(ENGINE_SKILLS_DIR, name, "SKILL.md")
+
+
+def stage_source(name: str) -> str:
+    """Local copy (project root) of the engine skill, so the agent reads it without
+    leaving the project (harnesses confine their access to the current folder). Purged
+    at the end of the run; never written by the agent."""
+    staged = f"{SOURCE_PREFIX}{name}.md"
+    with open(engine_skill_path(name), "r", encoding="utf-8") as src:
+        content = src.read()
+    with open(staged, "w", encoding="utf-8") as dst:
+        dst.write(content)
+    return staged
+
+
 def generate_proposal(name: str, profile: dict, proposal: str):
     """GENERATION pass: skill rewrite for the target stack, in a fresh
     context, guided by the skill-adapt grid."""
@@ -447,7 +485,7 @@ def generate_proposal(name: str, profile: dict, proposal: str):
     ensure_runner_started()
     RUNNER.new_context()
     route_grid(ADAPT_SKILL_FILE, TMP_ADAPT_FILE)
-    skill_path = f"{SKILLS_DIR}/{name}/SKILL.md"
+    skill_path = stage_source(name)
 
     prompt = f"""Read the adaptation instructions from the file '{TMP_ADAPT_FILE}', then the current skill '{skill_path}'.
 You are a Skill Adapter. Applying the instructions of '{TMP_ADAPT_FILE}' SCRUPULOUSLY, rewrite this skill ({SKILL_DOMAINS[name]}) for the target stack of the PROFILE below, and save the result DIRECTLY into a new file '{proposal}' at the project root. The original skill '{skill_path}' stays INTACT.
@@ -495,7 +533,7 @@ def review_proposal(name: str, profile: dict, proposal: str) -> tuple:
     RUNNER.new_context()
     route_grid(REVIEW_SKILL_FILE, TMP_REVIEW_FILE)
 
-    prompt = f"""Read the quality-control grid from the file '{TMP_REVIEW_FILE}', then the proposed skill '{proposal}' and the original skill '{SKILLS_DIR}/{name}/SKILL.md'.
+    prompt = f"""Read the quality-control grid from the file '{TMP_REVIEW_FILE}', then the proposed skill '{proposal}' and the original skill '{stage_source(name)}'.
 You are a skill Quality Controller, independent from the author. Applying the grid of '{TMP_REVIEW_FILE}', audit the proposal against the EXPECTED PROFILE below and write your report DIRECTLY into '{REVIEW_FILE}' at the project root. Read-only on everything else.
 
 EXPECTED PROFILE:
@@ -561,7 +599,8 @@ def confirm_overwrite(name: str, proposal: str) -> bool:
     editable in the app or another terminal before validating."""
     print(f"\n{'=' * 50}")
     print(f"📋 PROPOSAL READY: reread '{proposal}' (it will replace "
-          f"'{SKILLS_DIR}/{name}/SKILL.md', previous content saved as .bak).")
+          f"'{engine_skill_path(name)}' in the ENGINE — and its copy in this project — "
+          f"previous content saved as .bak).")
     print(f"   You can edit it directly before validating: the file is the source of truth.")
     print(f"{'=' * 50}")
     answer = input(f"\n▶️  Overwrite the skill '{name}' with the adapted version? (y/n): ").strip().lower()
@@ -570,20 +609,28 @@ def confirm_overwrite(name: str, proposal: str) -> bool:
 
 
 def apply_proposal(name: str, proposal: str) -> str:
-    """.bak backup then overwrite. The .bak is the rollback trail
-    (on top of git when the project has one)."""
-    skill_path = os.path.join(SKILLS_DIR, name, "SKILL.md")
-    backup_path = skill_path + ".bak"
-    with open(skill_path, "r", encoding="utf-8") as f:
-        original = f.read()
-    with open(backup_path, "w", encoding="utf-8") as f:
-        f.write(original)
+    """.bak backup then overwrite — in the ENGINE (the source the app copies into every
+    equipped project), then mirrored into the current project's copy if it exists, so
+    this project benefits without re-equipping. The .bak is the rollback trail (on top
+    of git when the folder has one)."""
     with open(proposal, "r", encoding="utf-8") as f:
         adapted = f.read()
-    with open(skill_path, "w", encoding="utf-8") as f:
-        f.write(adapted)
+    targets = [engine_skill_path(name)]
+    mirror = os.path.join(PROJECT_SKILLS_DIR, name, "SKILL.md")
+    if os.path.exists(mirror) and os.path.realpath(mirror) != os.path.realpath(targets[0]):
+        targets.append(mirror)
+    backup_path = ""
+    for skill_path in targets:
+        current_backup = skill_path + ".bak"
+        with open(skill_path, "r", encoding="utf-8") as f:
+            original = f.read()
+        with open(current_backup, "w", encoding="utf-8") as f:
+            f.write(original)
+        with open(skill_path, "w", encoding="utf-8") as f:
+            f.write(adapted)
+        backup_path = backup_path or current_backup
+        print(f"   ✅ '{skill_path}' overwritten (previous content: '{current_backup}').")
     os.remove(proposal)
-    print(f"   ✅ '{skill_path}' overwritten (previous content: '{backup_path}').")
     return backup_path
 
 
@@ -599,7 +646,10 @@ def write_report(profile: dict, rows: list):
              f"- Cap: {profile['line_cap']} lines · Target model: {profile['model_target']}",
              "", "## Processed skills", ""]
     lines.extend(rows)
-    lines.extend(["", "Rollback: restore the matching '.bak' (or 'git checkout' of the skill).",
+    lines.extend(["", f"Skills adapted in the engine: '{ENGINE_SKILLS_DIR}' (copied into every project "
+                  "equipped from now on; \"Update equipment\" for existing projects). "
+                  "Another stack? Duplicate the tool folder: one engine = one adaptation.",
+                  "Rollback: restore the matching '.bak' (or 'git checkout' of the skill).",
                   f"Reusable profile: '{PROFILE_FILE}' (relaunch the orchestrator and answer y)."])
     with open(REPORT_FILE, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
@@ -619,6 +669,9 @@ def main():
     # current run's one: purged at startup.
     if os.path.exists(FAIL_REPORT_FILE):
         os.remove(FAIL_REPORT_FILE)
+    print(f"🏭 Engine being adapted: '{ENGINE_SKILLS_DIR}' (source of the skills of every equipped project).")
+    print("   💡 Use a GOOD model for this adaptation, preferably frontier: these skills shape every later run. "
+          "The \"target model\" asked below is the one that will consume them.")
 
     # ── Profile: reused on explicit agreement, otherwise questionnaire. ──
     profile = read_profile()
@@ -635,15 +688,15 @@ def main():
         write_profile(profile)
         print(f"   ✓ Profile saved to '{PROFILE_FILE}' (hand-editable).")
 
-    # ── Scope: every targeted skill must exist (equipped project). ──
+    # ── Scope: every targeted skill must exist in the engine. ──
     targets = target_skills(profile)
     missing = [name for name in targets
-               if not os.path.exists(os.path.join(SKILLS_DIR, name, "SKILL.md"))]
+               if not os.path.exists(engine_skill_path(name))]
     if missing:
-        print(f"❌ Skill(s) missing from the project: {', '.join(missing)}.")
-        write_fail_report("Project not equipped for this scope",
-                          f"Missing skills under '{SKILLS_DIR}': {', '.join(missing)}. "
-                          "Equip the project from the app (or narrow the scope), then relaunch.")
+        print(f"❌ Skill(s) missing from the engine: {', '.join(missing)}.")
+        write_fail_report("Engine incomplete for this scope",
+                          f"Missing skills under '{ENGINE_SKILLS_DIR}': {', '.join(missing)}. "
+                          "Check the MAIsterMind installation (or MM_ENGINE_HOME), or narrow the scope, then relaunch.")
         sys.exit(1)
     print(f"\n🎯 Scope: {len(targets)} skill(s) → {', '.join(targets)}")
 
@@ -669,14 +722,16 @@ def main():
     # Clean close: routing files, tmux buffer, late sentinels and the transient
     # review report are purged; profile and .bak files SURVIVE.
     for tmp_f in [TMP_ADAPT_FILE, TMP_REVIEW_FILE, TMP_PROMPT_BUFFER,
-                  ADAPT_DONE_SENTINEL, REVIEW_DONE_SENTINEL, REVIEW_FILE]:
+                  ADAPT_DONE_SENTINEL, REVIEW_DONE_SENTINEL, REVIEW_FILE,
+                  *[f"{SOURCE_PREFIX}{name}.md" for name in targets]]:
         if os.path.exists(tmp_f):
             os.remove(tmp_f)
     RUNNER.kill()
 
     applied = sum(1 for row in rows if "OVERWRITTEN" in row)
-    print(f"\n🏁 Adaptation finished: {applied}/{len(targets)} skill(s) overwritten. "
-          f"The next production runs will use these adapted skills as they are.")
+    print(f"\n🏁 Adaptation finished: {applied}/{len(targets)} skill(s) overwritten in the engine "
+          f"(and in this project). This project uses them from the next run on; for other already-equipped "
+          f"projects: \"Update equipment\". Another stack? Duplicate the tool folder.")
     # Closing the run journal (path captured BEFORE end, which resets the state).
     journal_dir = mm_audit.run_dir()
     mm_audit.end("success")

@@ -15,8 +15,8 @@ Pourquoi un point d'entrée dédié :
     atelier avec le métier, gros modèle réservé à l'affinage…).
   - Mêmes CONTRATS DE FICHIERS que les variantes complètes ('spec.md' + sentinelle
     d'approbation '.spec_approved') : n'importe quel orchestrateur relancé ensuite —
-    Technical-Plan.py (jusqu'au blackboard), Coding.py, Coding-Without-Tests.py
-    ou Design-Prototype.py — trouve la spec approuvée et saute l'étape 1 (reprise par
+    Coding.py, Test-First.py, Acceptance-First.py, Coding-Without-Tests.py ou
+    Design-Prototype.py — trouve la spec approuvée et saute l'étape 1 (reprise par
     fichiers, aucune configuration).
 
 Le découpage de la fenêtre de contexte par étape reste le principe directeur : l'Agent PO
@@ -261,8 +261,8 @@ def print_handover():
 {'─'*50}
 ➡️  Étapes suivantes possibles (reprise par fichiers : la spec approuvée est reprise
    telle quelle, l'étape PO ne sera PAS rejouée) :
-   - python3 Technical-Plan.py   → s'arrêter au blackboard (plan technique seul)
    - python3 Coding.py             → dérouler tout le pipeline jusqu'au code
+     (réponds n à la porte blackboard pour t'arrêter au plan technique validé)
    Astuce : c'est le bon moment pour changer de modèle (/model dans le TUI ou
    '{AGENT_CONFIG_FILE}') — gros modèle pour penser, petit modèle pour produire.
 {'─'*50}""")

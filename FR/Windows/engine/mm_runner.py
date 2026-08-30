@@ -140,6 +140,7 @@ class AgentRunner:
     tui_name       = ""      # nom tel qu'il apparaît dans les messages tmux existants
     binary         = ""      # exécutable attendu dans le PATH
     launch_cmd     = ""      # ligne de commande tapée dans le pane tmux
+    task_preamble  = ""      # rappel collé en tête de CHAQUE tâche (vide : rien n'est ajouté)
     session_prefix = ""      # préfixe de session : "oc-" / "cx-"
     buffer_prefix  = ""      # préfixe du tampon de prompt : "oc" / "cx"
     tmp_prefix     = ""      # préfixe des fichiers de routage : "opencode" / "codex"
@@ -283,7 +284,7 @@ class AgentRunner:
         Rend la main dès la soumission : la fin de la tâche est signalée par la
         SENTINELLE FICHIER nommée dans le prompt, jamais par un retour d'ici."""
         with open(self.prompt_buffer, "w", encoding="utf-8") as f:
-            f.write(prompt)
+            f.write(self.task_preamble + prompt if self.task_preamble else prompt)
 
         # Buffer NOMMÉ : les buffers tmux sont globaux au serveur, deux usines utilisant le
         # buffer par défaut se marcheraient dessus (le projet A collerait le prompt chargé
@@ -507,6 +508,12 @@ class CodexTuiRunner(AgentRunner):
     install_hint   = "installe Codex CLI : npm install -g @openai/codex"
     auth_cmd       = ("codex", "login", "status")
     auth_hint      = "authentifie-toi : codex login"
+    # Codex n'a pas d'équivalent au « question: deny » de l'agent OpenCode : la consigne ne
+    # tient qu'au texte. AGENTS.md la pose au démarrage ; ce rappel la répète en tête de
+    # chaque tâche, pour qu'elle survive à la longueur de la session et aux /new.
+    task_preamble  = ("CONSIGNE DE SESSION (usine automatisée, personne ne lit l'écran) : ne pose AUCUNE question et "
+                      "ne demande AUCUNE confirmation ; en cas de doute, choisis l'option la plus prudente et continue. "
+                      "Signale la fin de la tâche uniquement par le fichier sentinelle indiqué ci-dessous.\n\n")
 
     def after_boot(self):
         """Valide l'écran « Do you trust this directory? » du premier boot de Codex

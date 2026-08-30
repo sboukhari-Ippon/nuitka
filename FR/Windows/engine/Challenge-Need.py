@@ -350,7 +350,7 @@ def print_handover():
     print(f"""
 {'─'*50}
 ➡️  Exploite la revue : tranche les questions [BLOQUANT], mets à jour '{NEED_FILE}',
-   puis relance le pipeline de ton choix (Spec.py, Technical-Plan.py, Coding.py…).
+   puis relance le pipeline de ton choix (Spec.py, Coding.py…).
    AUCUN pipeline ne lit '{REVIEW_FILE}' ni n'exige '.need_reviewed' : zéro couplage,
    zéro ralentissement — cette revue ne vaut que par ce que TU en retires.
 {'─'*50}""")

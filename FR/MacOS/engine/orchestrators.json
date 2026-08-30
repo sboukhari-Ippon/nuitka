@@ -1,884 +1,20 @@
 {
   "contract_version": 1,
   "distro_version": "3.0.0",
-  "notes": "Manifeste de découverte lu par l'app MAIsterMind. Ajouter un orchestrateur = déposer son binaire à côté de ce fichier + ajouter une entrée ici. Les 'prompt_regex' des portes sont les libellés EXACTS affichés par les binaires (mode écran), FR et ENG en alternance : ce fichier est LE MÊME dans les 6 variantes (sync garantie par tools/check_variants_sync.py). Si un binaire reformule un prompt, mettre à jour sa regex ici, pas l'app. Une porte à fichier DYNAMIQUE (arbitrage mid-run des orchestrateurs Yolo) déclare 'file': null + 'file_glob' : l'app résout le nom réel le plus récent à la racine du projet (motif fermé, cf. DOC_DYNAMIC_RE côté app). Portes v1.1 : une porte porte un 'kind' optionnel — 'yn' (défaut historique, boutons Valider/Refuser), 'choice' (liste 'choices' [{key,label{fr,eng}}] : un bouton par choix, la key est envoyée telle quelle au pane — c'est ainsi que le triage r/e/o de Guided-Fix et les questionnaires 1/2/3 se pilotent depuis l'app), 'text' (saisie libre d'une ligne, 200 caractères max, 'placeholder' {fr,eng} optionnel). La regex d'une porte doit couvrir le libellé JUSQU'À son dernier caractère non blanc avant le ':' final, sinon la détection croit qu'une réponse est déjà tapée. Le harness d'agent (OpenCode ou Codex CLI) est choisi à l'équipement et inscrit dans '.mm-equip.json' du projet : le manifeste, lui, est neutre vis-à-vis du harness. Champ 'beta' (v1.3, optionnel) : orchestrateur affiché avec un badge « bêta » dans la Bibliothèque — fonctionnel mais moins éprouvé que les usines de code (Documentation, Audit-Design, Pre-Audit-A11Y-RGAA, Design-Prototype).",
+  "notes": "Manifeste de découverte lu par l'app MAIsterMind. Ajouter un orchestrateur = déposer son binaire à côté de ce fichier + ajouter une entrée ici. Les 'prompt_regex' des portes sont les libellés EXACTS affichés par les binaires (mode écran), FR et ENG en alternance : ce fichier est LE MÊME dans les 6 variantes (sync garantie par tools/check_variants_sync.py). Si un binaire reformule un prompt, mettre à jour sa regex ici, pas l'app. Une porte à fichier DYNAMIQUE (arbitrage mid-run des orchestrateurs Yolo) déclare 'file': null + 'file_glob' : l'app résout le nom réel le plus récent à la racine du projet (motif fermé, cf. DOC_DYNAMIC_RE côté app). Portes v1.1 : une porte porte un 'kind' optionnel — 'yn' (défaut historique, boutons Valider/Refuser), 'choice' (liste 'choices' [{key,label{fr,eng}}] : un bouton par choix, la key est envoyée telle quelle au pane — c'est ainsi que le triage r/e/o de Guided-Fix et les questionnaires 1/2/3 se pilotent depuis l'app), 'text' (saisie libre d'une ligne, 200 caractères max, 'placeholder' {fr,eng} optionnel). La regex d'une porte doit couvrir le libellé JUSQU'À son dernier caractère non blanc avant le ':' final, sinon la détection croit qu'une réponse est déjà tapée. Le harness d'agent (OpenCode ou Codex CLI) est choisi à l'équipement et inscrit dans '.mm-equip.json' du projet : le manifeste, lui, est neutre vis-à-vis du harness. Champ 'beta' (v1.3, optionnel) : orchestrateur affiché avec un badge « bêta » dans la Bibliothèque — fonctionnel mais moins éprouvé que les usines de code (Documentation, Audit-Design, Pre-Audit-A11Y-RGAA, Design-Prototype, Guided-Fix — ce dernier n'a pas encore de scénario mock). Champ 'category' (v1.4) : catégorie affichée dans la Bibliothèque — 'coding' (usines de code, planification incluse, et Guided-Fix), 'design' (Design-Prototype et Audit-Design), 'product' (Challenge-Need, Spec, Documentation), 'skills' (Skills-Adaptation et Pre-Audit-A11Y-RGAA, hors sélecteur, affichés EN TÊTE : le premier adapte les skills du moteur, préalable à toute usine sur une autre stack ; le second est un outil transverse, indépendant des usines). L'app n'affiche d'abord que les catégories ; un clic déplie les orchestrateurs de l'une d'elles. Un orchestrateur sans 'category' reste visible, dans un bloc « autres ».",
   "orchestrators": [
-    {
-      "id": "code",
-      "binary": "Coding-Without-Tests",
-      "family": "production",
-      "title": {
-        "fr": "Coding-Without-Tests",
-        "eng": "Coding-Without-Tests"
-      },
-      "description": {
-        "fr": "Pipeline sans tests (skill plan-no-test) : chaque phase est jugée par un agent vérificateur LLM indépendant qui relit le code produit.",
-        "eng": "Pipeline without tests (plan-no-test skill): each phase is judged by an independent LLM verifier agent re-reading the produced code."
-      },
-      "recommended": false,
-      "needs_need_md": true,
-      "gates": [
-        {
-          "id": "spec",
-          "title": {
-            "fr": "Porte 1 · Valider la spécification",
-            "eng": "Gate 1 · Validate the specification"
-          },
-          "file": "spec.md",
-          "prompt_regex": "Valider la spécification et lancer l'architecture \\? \\(y/n\\)|Validate the specification and start the architecture\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Relis en priorité « Hypothèses & Questions » et « Hors périmètre ». Tu peux éditer spec.md dans ton éditeur avant de valider : l'aperçu se recharge.",
-            "eng": "Review “Assumptions & Questions” and “Out of scope” first. You can edit spec.md in your editor before validating: the preview reloads."
-          },
-          "yes_label": {
-            "fr": "Valider et lancer l'architecture",
-            "eng": "Validate and start the architecture"
-          },
-          "no_label": {
-            "fr": "Refuser (arrêt propre)",
-            "eng": "Reject (clean stop)"
-          }
-        },
-        {
-          "id": "blackboard",
-          "title": {
-            "fr": "Porte 2 · Valider le blackboard",
-            "eng": "Gate 2 · Validate the blackboard"
-          },
-          "file": "blackboard.yaml",
-          "prompt_regex": "Valider le blackboard et lancer la production \\? \\(y/n\\)|Validate (?:the )?blackboard and start production\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Dernier arrêt avant la production. Tu peux ajuster les phases dans blackboard.yaml avant de valider : l'orchestrateur recharge le fichier s'il a changé pendant l'attente.",
-            "eng": "Last stop before production. You can adjust the phases in blackboard.yaml before validating: the orchestrator reloads the file if it changed while waiting."
-          },
-          "yes_label": {
-            "fr": "Valider et lancer la production",
-            "eng": "Validate and start production"
-          },
-          "no_label": {
-            "fr": "Refuser (arrêt propre)",
-            "eng": "Reject (clean stop)"
-          }
-        }
-      ]
-    },
-    {
-      "id": "proto",
-      "binary": "Design-Prototype",
-      "family": "production",
-      "title": {
-        "fr": "Design-Prototype",
-        "eng": "Design-Prototype"
-      },
-      "description": {
-        "fr": "Usine à prototypes cliquables (HTML/CSS/JS vanilla) pensée pour les designers : production par phases puis review UX + conformité globale en fin de run.",
-        "eng": "Clickable-prototype factory (vanilla HTML/CSS/JS) designed for designers: phased production, then a single global UX + compliance review at the end of the run."
-      },
-      "recommended": false,
-      "beta": true,
-      "needs_need_md": true,
-      "gates": [
-        {
-          "id": "design-system",
-          "title": {
-            "fr": "Porte 0 · Design system",
-            "eng": "Gate 0 · Design system"
-          },
-          "file": "need.md",
-          "prompt_regex": "Continuer avec les tokens par défaut du prototype \\? \\(y/n\\)|Continue with the prototype's default tokens\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Aucun design system détecté dans need.md. Si tu en utilises un, refuse puis décris-le dans need.md (section « ## Design system » : son nom, et comment le trouver — serveur MCP à mentionner aux agents, librairie/CDN, dossier local, URL de doc) et relance. Sinon, le prototype part sur ses tokens par défaut. Cette porte n'apparaît pas quand need.md déclare déjà un design system.",
-            "eng": "No design system detected in need.md. If you use one, reject then describe it in need.md (“## Design system” section: its name, and how to find it — MCP server to mention to the agents, library/CDN, local folder, docs URL) and relaunch. Otherwise the prototype starts from its default tokens. This gate does not appear when need.md already declares a design system."
-          },
-          "yes_label": {
-            "fr": "Continuer avec les tokens par défaut",
-            "eng": "Continue with default tokens"
-          },
-          "no_label": {
-            "fr": "Refuser (je déclare un design system)",
-            "eng": "Reject (I will declare a design system)"
-          }
-        },
-        {
-          "id": "spec",
-          "title": {
-            "fr": "Porte 1 · Valider la spécification",
-            "eng": "Gate 1 · Validate the specification"
-          },
-          "file": "spec.md",
-          "prompt_regex": "Valider la spécification et lancer l'architecture \\? \\(y/n\\)|Validate the specification and start the architecture\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Relis en priorité « Hypothèses & Questions », « Hors périmètre » et la section « Design system » (transcrite, jamais inventée). Tu peux éditer spec.md dans ton éditeur avant de valider : l'aperçu se recharge.",
-            "eng": "Review “Assumptions & Questions”, “Out of scope” and the “Design system” section (transcribed, never invented) first. You can edit spec.md in your editor before validating: the preview reloads."
-          },
-          "yes_label": {
-            "fr": "Valider et lancer l'architecture",
-            "eng": "Validate and start the architecture"
-          },
-          "no_label": {
-            "fr": "Refuser (arrêt propre)",
-            "eng": "Reject (clean stop)"
-          }
-        },
-        {
-          "id": "blackboard",
-          "title": {
-            "fr": "Porte 2 · Valider le blackboard",
-            "eng": "Gate 2 · Validate the blackboard"
-          },
-          "file": "blackboard.yaml",
-          "prompt_regex": "Valider le blackboard et lancer la production \\? \\(y/n\\)|Validate (?:the )?blackboard and start production\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Dernier arrêt avant la production du prototype. Vérifie global_rules.design_system et l'ordre fondations → composants → écrans dans blackboard.yaml avant de valider.",
-            "eng": "Last stop before prototype production. Check global_rules.design_system and the foundations → components → screens order in blackboard.yaml before validating."
-          },
-          "yes_label": {
-            "fr": "Valider et lancer la production",
-            "eng": "Validate and start production"
-          },
-          "no_label": {
-            "fr": "Refuser (arrêt propre)",
-            "eng": "Reject (clean stop)"
-          }
-        }
-      ]
-    },
-    {
-      "id": "coding",
-      "binary": "Coding",
-      "family": "production",
-      "title": {
-        "fr": "Coding",
-        "eng": "Coding"
-      },
-      "description": {
-        "fr": "Pipeline de référence à verdict universel : l'orchestrateur exécute lui-même compilation + suite complète à chaque phase (exit 0 = vert). Revue d'impact validée en amont (impact.md), vérificateur LLM indépendant sur chaque suite verte, triage des cassures sur chaque suite rouge (suppression entérinée / réparation / arbitrage humain).",
-        "eng": "Reference universal-verdict pipeline: the orchestrator itself runs compilation + the full suite at every phase (exit 0 = green). Upfront validated impact review (impact.md), independent LLM verifier on every green suite, breakage triage on every red suite (endorsed deletion / repair / human arbitration)."
-      },
-      "recommended": false,
-      "needs_need_md": true,
-      "gates": [
-        {
-          "id": "spec",
-          "title": {
-            "fr": "Porte 1 · Valider la spécification",
-            "eng": "Gate 1 · Validate the specification"
-          },
-          "file": "spec.md",
-          "prompt_regex": "Valider la spécification et lancer l'architecture \\? \\(y/n\\)|Validate the specification and start the architecture\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Relis en priorité « Hypothèses & Questions » et « Hors périmètre ». Tu peux éditer spec.md dans ton éditeur avant de valider : l'aperçu se recharge.",
-            "eng": "Review “Assumptions & Questions” and “Out of scope” first. You can edit spec.md in your editor before validating: the preview reloads."
-          },
-          "yes_label": {
-            "fr": "Valider et lancer l'architecture",
-            "eng": "Validate and start the architecture"
-          },
-          "no_label": {
-            "fr": "Refuser (arrêt propre)",
-            "eng": "Reject (clean stop)"
-          }
-        },
-        {
-          "id": "impact",
-          "title": {
-            "fr": "Porte 1bis · Valider la revue d'impact",
-            "eng": "Gate 1bis · Validate the impact review"
-          },
-          "file": "impact.md",
-          "prompt_regex": "Valider la revue d'impact et continuer \\? \\(y/n\\)|Validate the impact review and continue\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Chaque impact validé ici sera cassé SANS nouvel arrêt en production (le test concerné est supprimé par l'orchestrateur). Tu peux éditer impact.md avant de valider : retirer un impact = exiger la préservation du comportement.",
-            "eng": "Every impact validated here will be broken WITHOUT another stop during production (the covering test is deleted by the orchestrator). You can edit impact.md before validating: removing an impact = requiring the behavior to be preserved."
-          },
-          "yes_label": {
-            "fr": "Valider les impacts et continuer",
-            "eng": "Validate the impacts and continue"
-          },
-          "no_label": {
-            "fr": "Refuser (préserver ces comportements)",
-            "eng": "Reject (preserve these behaviors)"
-          }
-        },
-        {
-          "id": "blackboard",
-          "title": {
-            "fr": "Porte 2 · Valider le blackboard",
-            "eng": "Gate 2 · Validate the blackboard"
-          },
-          "file": "blackboard.yaml",
-          "prompt_regex": "Valider le blackboard et lancer la production \\? \\(y/n\\)|Validate (?:the )?blackboard and start production\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Dernier arrêt avant la production. Tu peux ajuster les phases dans blackboard.yaml avant de valider : l'orchestrateur recharge le fichier s'il a changé pendant l'attente.",
-            "eng": "Last stop before production. You can adjust the phases in blackboard.yaml before validating: the orchestrator reloads the file if it changed while waiting."
-          },
-          "yes_label": {
-            "fr": "Valider et lancer la production",
-            "eng": "Validate and start production"
-          },
-          "no_label": {
-            "fr": "Refuser (arrêt propre)",
-            "eng": "Reject (clean stop)"
-          }
-        },
-        {
-          "id": "impact-phase",
-          "title": {
-            "fr": "Porte d'arbitrage · Impact imprévu en production",
-            "eng": "Arbitration gate · Unplanned impact during production"
-          },
-          "file": null,
-          "file_glob": "impact-phase-*.md",
-          "prompt_regex": "Accepter ce nouvel impact et continuer \\? \\(y/n\\)|Accept this new impact and continue\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Un impact imprévu a été détecté : lis 'impact-phase-<id>.md' à la racine. y = l'impact est entériné (tests concernés supprimés par l'orchestrateur, le flux continue) ; n = l'ancien comportement fait foi (un agent corrige la phase en le préservant, arbitrage consigné).",
-            "eng": "An unplanned impact was detected: read 'impact-phase-<id>.md' at the project root. y = the impact is endorsed (covering tests deleted by the orchestrator, the flow continues); n = the historical behavior prevails (an agent fixes the phase while preserving it, arbitration recorded)."
-          },
-          "yes_label": {
-            "fr": "Accepter l'impact et continuer",
-            "eng": "Accept the impact and continue"
-          },
-          "no_label": {
-            "fr": "Refuser (préserver le comportement)",
-            "eng": "Reject (preserve the behavior)"
-          }
-        }
-      ]
-    },
-    {
-      "id": "test-first",
-      "binary": "Test-First",
-      "family": "production",
-      "title": {
-        "fr": "Test-First",
-        "eng": "Test-First"
-      },
-      "description": {
-        "fr": "Test-first par cycles red → green → refactor, inspiré du TDD (Beck) : la phase red doit faire ÉCHOUER la suite (verdict inversé), la phase green la remettre au vert, le refactor de cycle est re-vérifié (rollback au moindre écart). Revue d'impact en amont ; vérificateur LLM et triage des cassures sur les phases green uniquement.",
-        "eng": "Test-first by red → green → refactor cycles, inspired by TDD (Beck): the red phase must make the suite FAIL (inverted verdict), the green phase brings it back to green, the cycle refactor is re-verified (rollback on any drift). Upfront impact review; LLM verifier and breakage triage on green phases only."
-      },
-      "recommended": true,
-      "needs_need_md": true,
-      "gates": [
-        {
-          "id": "spec",
-          "title": {
-            "fr": "Porte 1 · Valider la spécification",
-            "eng": "Gate 1 · Validate the specification"
-          },
-          "file": "spec.md",
-          "prompt_regex": "Valider la spécification et lancer l'architecture \\? \\(y/n\\)|Validate the specification and start the architecture\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Relis en priorité « Hypothèses & Questions » et « Hors périmètre ». Tu peux éditer spec.md dans ton éditeur avant de valider : l'aperçu se recharge.",
-            "eng": "Review “Assumptions & Questions” and “Out of scope” first. You can edit spec.md in your editor before validating: the preview reloads."
-          },
-          "yes_label": {
-            "fr": "Valider et lancer l'architecture",
-            "eng": "Validate and start the architecture"
-          },
-          "no_label": {
-            "fr": "Refuser (arrêt propre)",
-            "eng": "Reject (clean stop)"
-          }
-        },
-        {
-          "id": "impact",
-          "title": {
-            "fr": "Porte 1bis · Valider la revue d'impact",
-            "eng": "Gate 1bis · Validate the impact review"
-          },
-          "file": "impact.md",
-          "prompt_regex": "Valider la revue d'impact et continuer \\? \\(y/n\\)|Validate the impact review and continue\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Chaque impact validé ici sera cassé SANS nouvel arrêt en production (le test concerné est supprimé par l'orchestrateur). Tu peux éditer impact.md avant de valider : retirer un impact = exiger la préservation du comportement.",
-            "eng": "Every impact validated here will be broken WITHOUT another stop during production (the covering test is deleted by the orchestrator). You can edit impact.md before validating: removing an impact = requiring the behavior to be preserved."
-          },
-          "yes_label": {
-            "fr": "Valider les impacts et continuer",
-            "eng": "Validate the impacts and continue"
-          },
-          "no_label": {
-            "fr": "Refuser (préserver ces comportements)",
-            "eng": "Reject (preserve these behaviors)"
-          }
-        },
-        {
-          "id": "blackboard",
-          "title": {
-            "fr": "Porte 2 · Valider le blackboard (cycles red/green)",
-            "eng": "Gate 2 · Validate the blackboard (red/green cycles)"
-          },
-          "file": "blackboard.yaml",
-          "prompt_regex": "Valider le blackboard et lancer la production \\? \\(y/n\\)|Validate (?:the )?blackboard and start production\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Dernier arrêt avant la production. Vérifie l'alternance des cycles red/green dans blackboard.yaml : l'orchestrateur recharge le fichier s'il a changé pendant l'attente.",
-            "eng": "Last stop before production. Check the red/green cycle alternation in blackboard.yaml: the orchestrator reloads the file if it changed while waiting."
-          },
-          "yes_label": {
-            "fr": "Valider et lancer la production",
-            "eng": "Validate and start production"
-          },
-          "no_label": {
-            "fr": "Refuser (arrêt propre)",
-            "eng": "Reject (clean stop)"
-          }
-        },
-        {
-          "id": "impact-phase",
-          "title": {
-            "fr": "Porte d'arbitrage · Impact imprévu en production",
-            "eng": "Arbitration gate · Unplanned impact during production"
-          },
-          "file": null,
-          "file_glob": "impact-phase-*.md",
-          "prompt_regex": "Accepter ce nouvel impact et continuer \\? \\(y/n\\)|Accept this new impact and continue\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Un impact imprévu a été détecté : lis 'impact-phase-<id>.md' à la racine. y = l'impact est entériné (tests concernés supprimés par l'orchestrateur, le flux continue) ; n = l'ancien comportement fait foi (un agent corrige la phase en le préservant, arbitrage consigné).",
-            "eng": "An unplanned impact was detected: read 'impact-phase-<id>.md' at the project root. y = the impact is endorsed (covering tests deleted by the orchestrator, the flow continues); n = the historical behavior prevails (an agent fixes the phase while preserving it, arbitration recorded)."
-          },
-          "yes_label": {
-            "fr": "Accepter l'impact et continuer",
-            "eng": "Accept the impact and continue"
-          },
-          "no_label": {
-            "fr": "Refuser (préserver le comportement)",
-            "eng": "Reject (preserve the behavior)"
-          }
-        }
-      ]
-    },
-    {
-      "id": "acceptance-first",
-      "binary": "Acceptance-First",
-      "family": "production",
-      "title": {
-        "fr": "Acceptance-First",
-        "eng": "Acceptance-First"
-      },
-      "description": {
-        "fr": "Acceptance-first par lots de user story, inspiré de l'ATDD (Adzic, Gärtner) : tests d'acceptance qui doivent ÉCHOUER (verdict inversé), étapes d'implémentation qui compilent, clôture du lot à la suite complète verte. Revue d'impact en amont ; vérificateur LLM et triage des cassures sur les clôtures de lot uniquement.",
-        "eng": "Acceptance-first by user-story batches, inspired by ATDD (Adzic, Gärtner): acceptance tests that must FAIL (inverted verdict), implementation steps that compile, batch closing on the full green suite. Upfront impact review; LLM verifier and breakage triage on batch closings only."
-      },
-      "recommended": true,
-      "needs_need_md": true,
-      "gates": [
-        {
-          "id": "spec",
-          "title": {
-            "fr": "Porte 1 · Valider la spécification",
-            "eng": "Gate 1 · Validate the specification"
-          },
-          "file": "spec.md",
-          "prompt_regex": "Valider la spécification et lancer l'architecture \\? \\(y/n\\)|Validate the specification and start the architecture\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Relis en priorité « Hypothèses & Questions » et « Hors périmètre ». En ATDD, chaque critère d'acceptation deviendra un test d'acceptance automatisé tel quel : vérifie qu'ils sont observables de l'extérieur. Tu peux éditer spec.md avant de valider : l'aperçu se recharge.",
-            "eng": "Review “Assumptions & Questions” and “Out of scope” first. In ATDD, each acceptance criterion becomes an automated acceptance test as-is: check they are externally observable. You can edit spec.md before validating: the preview reloads."
-          },
-          "yes_label": {
-            "fr": "Valider et lancer l'architecture",
-            "eng": "Validate and start the architecture"
-          },
-          "no_label": {
-            "fr": "Refuser (arrêt propre)",
-            "eng": "Reject (clean stop)"
-          }
-        },
-        {
-          "id": "impact",
-          "title": {
-            "fr": "Porte 1bis · Valider la revue d'impact",
-            "eng": "Gate 1bis · Validate the impact review"
-          },
-          "file": "impact.md",
-          "prompt_regex": "Valider la revue d'impact et continuer \\? \\(y/n\\)|Validate the impact review and continue\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Chaque impact validé ici sera cassé SANS nouvel arrêt en production (le test concerné est supprimé par l'orchestrateur). Tu peux éditer impact.md avant de valider : retirer un impact = exiger la préservation du comportement.",
-            "eng": "Every impact validated here will be broken WITHOUT another stop during production (the covering test is deleted by the orchestrator). You can edit impact.md before validating: removing an impact = requiring the behavior to be preserved."
-          },
-          "yes_label": {
-            "fr": "Valider les impacts et continuer",
-            "eng": "Validate the impacts and continue"
-          },
-          "no_label": {
-            "fr": "Refuser (préserver ces comportements)",
-            "eng": "Reject (preserve these behaviors)"
-          }
-        },
-        {
-          "id": "blackboard",
-          "title": {
-            "fr": "Porte 2 · Valider le blackboard (lots ATDD)",
-            "eng": "Gate 2 · Validate the blackboard (ATDD lots)"
-          },
-          "file": "blackboard.yaml",
-          "prompt_regex": "Valider le blackboard et lancer la production \\? \\(y/n\\)|Validate (?:the )?blackboard and start production\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Dernier arrêt avant la production. Vérifie la structure des lots dans blackboard.yaml (chaque lot s'ouvre par sa phase atdd-test et se referme par sa dernière phase atdd-impl) et la build_cmd (compilation de la production SEULE, jamais des tests) : l'orchestrateur recharge le fichier s'il a changé pendant l'attente.",
-            "eng": "Last stop before production. Check the lot structure in blackboard.yaml (each lot opens with its atdd-test phase and closes with its last atdd-impl phase) and the build_cmd (compiles production ONLY, never the tests): the orchestrator reloads the file if it changed while waiting."
-          },
-          "yes_label": {
-            "fr": "Valider et lancer la production",
-            "eng": "Validate and start production"
-          },
-          "no_label": {
-            "fr": "Refuser (arrêt propre)",
-            "eng": "Reject (clean stop)"
-          }
-        },
-        {
-          "id": "impact-phase",
-          "title": {
-            "fr": "Porte d'arbitrage · Impact imprévu en production",
-            "eng": "Arbitration gate · Unplanned impact during production"
-          },
-          "file": null,
-          "file_glob": "impact-phase-*.md",
-          "prompt_regex": "Accepter ce nouvel impact et continuer \\? \\(y/n\\)|Accept this new impact and continue\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Un impact imprévu a été détecté : lis 'impact-phase-<id>.md' à la racine. y = l'impact est entériné (tests concernés supprimés par l'orchestrateur, le flux continue) ; n = l'ancien comportement fait foi (un agent corrige la phase en le préservant, arbitrage consigné).",
-            "eng": "An unplanned impact was detected: read 'impact-phase-<id>.md' at the project root. y = the impact is endorsed (covering tests deleted by the orchestrator, the flow continues); n = the historical behavior prevails (an agent fixes the phase while preserving it, arbitration recorded)."
-          },
-          "yes_label": {
-            "fr": "Accepter l'impact et continuer",
-            "eng": "Accept the impact and continue"
-          },
-          "no_label": {
-            "fr": "Refuser (préserver le comportement)",
-            "eng": "Reject (preserve the behavior)"
-          }
-        }
-      ]
-    },
-    {
-      "id": "spec",
-      "binary": "Spec",
-      "family": "spec",
-      "title": {
-        "fr": "Spec",
-        "eng": "Spec"
-      },
-      "description": {
-        "fr": "Pipeline partiel « du besoin à la spec » : exécute uniquement l'étape PO (need.md → spec.md validée) puis s'arrête — pour cadrer avant de produire, ou faire relire la spec.",
-        "eng": "Partial pipeline “from need to spec”: runs only the PO step (need.md → validated spec.md) then stops — to frame before producing, or to have the spec reviewed."
-      },
-      "recommended": false,
-      "needs_need_md": true,
-      "gates": [
-        {
-          "id": "spec",
-          "title": {
-            "fr": "Porte unique · Valider la spécification",
-            "eng": "Single gate · Validate the specification"
-          },
-          "file": "spec.md",
-          "prompt_regex": "Valider la spécification \\? \\(y/n\\)|Validate the specification\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Relis en priorité « Hypothèses & Questions » et « Hors périmètre ». Tu peux éditer spec.md avant de valider : l'aperçu se recharge. Le run s'arrête après cette validation.",
-            "eng": "Review “Assumptions & Questions” and “Out of scope” first. You can edit spec.md before validating: the preview reloads. The run stops after this validation."
-          },
-          "yes_label": {
-            "fr": "Valider la spécification",
-            "eng": "Validate the specification"
-          },
-          "no_label": {
-            "fr": "Refuser (arrêt propre)",
-            "eng": "Reject (clean stop)"
-          }
-        }
-      ],
-      "steps": [
-        {
-          "title": {
-            "fr": "Rédaction (PO)",
-            "eng": "Drafting (PO)"
-          },
-          "done": "spec.md"
-        },
-        {
-          "title": {
-            "fr": "Validation de la spec",
-            "eng": "Spec validation"
-          },
-          "gates": [
-            "spec"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "challenge-need",
-      "binary": "Challenge-Need",
-      "family": "spec",
-      "title": {
-        "fr": "Challenge-Need",
-        "eng": "Challenge-Need"
-      },
-      "description": {
-        "fr": "Pipeline partiel « challenge du besoin » : un agent confronte need.md à ses ambiguïtés, contradictions et présupposés AVANT de payer une spec — la porte la plus en amont est la moins chère.",
-        "eng": "Partial pipeline “challenge the need”: an agent confronts need.md with its ambiguities, contradictions and assumptions BEFORE paying for a spec — the earliest gate is the cheapest one."
-      },
-      "recommended": false,
-      "needs_need_md": true,
-      "gates": [
-        {
-          "id": "review",
-          "title": {
-            "fr": "Porte unique · Entériner la revue du besoin",
-            "eng": "Single gate · Endorse the need review"
-          },
-          "file": "need_review.md",
-          "prompt_regex": "Entériner cette revue du besoin \\? \\(y/n\\)|Endorse this need review\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Relis les questions [BLOQUANT] en priorité. La revue ne modifie rien : mets à jour need.md toi-même, puis relance le pipeline de ton choix. Aucun pipeline aval ne dépend de cette revue.",
-            "eng": "Review the [BLOCKING] questions first. The review changes nothing: update need.md yourself, then relaunch the pipeline of your choice. No downstream pipeline depends on this review."
-          },
-          "yes_label": {
-            "fr": "Entériner la revue",
-            "eng": "Endorse the review"
-          },
-          "no_label": {
-            "fr": "Refuser (arrêt propre)",
-            "eng": "Reject (clean stop)"
-          }
-        }
-      ],
-      "steps": [
-        {
-          "title": {
-            "fr": "Revue du besoin",
-            "eng": "Need review"
-          },
-          "done": "need_review.md"
-        },
-        {
-          "title": {
-            "fr": "Arbitrage",
-            "eng": "Arbitration"
-          },
-          "gates": [
-            "review"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "tech-plan",
-      "binary": "Technical-Plan",
-      "family": "spec",
-      "title": {
-        "fr": "Technical-Plan",
-        "eng": "Technical-Plan"
-      },
-      "description": {
-        "fr": "Pipeline partiel « du besoin au blackboard » : étapes PO, Architecte et compilateur blackboard, aucune production — pour préparer un chantier et le lancer plus tard.",
-        "eng": "Partial pipeline “from need to blackboard”: PO, Architect and blackboard compiler steps, no production — to prepare a work plan and launch it later."
-      },
-      "recommended": false,
-      "needs_need_md": true,
-      "gates": [
-        {
-          "id": "spec",
-          "title": {
-            "fr": "Porte unique · Valider la spécification",
-            "eng": "Single gate · Validate the specification"
-          },
-          "file": "spec.md",
-          "prompt_regex": "Valider la spécification et lancer l'architecture \\? \\(y/n\\)|Validate the specification and launch the architecture\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Relis en priorité « Hypothèses & Questions » et « Hors périmètre ». Après validation, l'Architecte produit plan.md puis blackboard.yaml et le run s'arrête (aucune production).",
-            "eng": "Review “Assumptions & Questions” and “Out of scope” first. After validation, the Architect produces plan.md then blackboard.yaml and the run stops (no production)."
-          },
-          "yes_label": {
-            "fr": "Valider et lancer l'architecture",
-            "eng": "Validate and launch the architecture"
-          },
-          "no_label": {
-            "fr": "Refuser (arrêt propre)",
-            "eng": "Reject (clean stop)"
-          }
-        }
-      ],
-      "steps": [
-        {
-          "title": {
-            "fr": "Spécification (PO)",
-            "eng": "Specification (PO)"
-          },
-          "gates": [
-            "spec"
-          ],
-          "done": "spec.md"
-        },
-        {
-          "title": {
-            "fr": "Plan (Architecte)",
-            "eng": "Plan (Architect)"
-          },
-          "done": "plan.md"
-        },
-        {
-          "title": {
-            "fr": "Blackboard",
-            "eng": "Blackboard"
-          },
-          "done": "blackboard.yaml"
-        }
-      ]
-    },
-    {
-      "id": "documentation",
-      "binary": "Documentation",
-      "family": "documentation",
-      "title": {
-        "fr": "Documentation",
-        "eng": "Documentation"
-      },
-      "description": {
-        "fr": "Documentation comportementale d'un projet EXISTANT, en lecture seule : cartographie fonctionnelle validée, puis une passe par zone (contexte réinitialisé), assemblage mécanique en documentation.md à la racine.",
-        "eng": "Behavioral documentation of an EXISTING project, read-only: validated functional map, then one pass per zone (fresh context), mechanical assembly into documentation.md at the root."
-      },
-      "recommended": false,
-      "beta": true,
-      "needs_need_md": false,
-      "gates": [
-        {
-          "id": "scope",
-          "title": {
-            "fr": "Porte 1 · Valider le périmètre",
-            "eng": "Gate 1 · Validate the scope"
-          },
-          "file": null,
-          "prompt_regex": "Lancer la documentation sur ce périmètre \\? \\(y/n\\)|Launch the documentation on this scope\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Le périmètre découvert (fichiers code + tests) est affiché dans l'écran du run : vérifie qu'il est sensé (pas de dossiers générés, tests bien séparés) avant de payer la cartographie.",
-            "eng": "The discovered scope (code + test files) is shown in the run screen: check it makes sense (no generated folders, tests properly separated) before paying for the mapping."
-          },
-          "yes_label": {
-            "fr": "Lancer sur ce périmètre",
-            "eng": "Launch on this scope"
-          },
-          "no_label": {
-            "fr": "Refuser (arrêt propre)",
-            "eng": "Reject (clean stop)"
-          }
-        },
-        {
-          "id": "map",
-          "title": {
-            "fr": "Porte 2 · Valider la carte fonctionnelle",
-            "eng": "Gate 2 · Validate the functional map"
-          },
-          "file": "doc_map.yaml",
-          "prompt_regex": "Valider cette carte et lancer la documentation zone par zone \\? \\(y/n\\)|Validate this map and launch the zone-by-zone documentation\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Les zones deviennent les chapitres de la documentation, dans cet ordre. Tu peux éditer doc_map.yaml avant de valider (renommer, redécouper, réordonner) : chaque zone coûte une passe d'agent.",
-            "eng": "Zones become the documentation chapters, in this order. You can edit doc_map.yaml before validating (rename, resplit, reorder): each zone costs one agent pass."
-          },
-          "yes_label": {
-            "fr": "Valider la carte et documenter",
-            "eng": "Validate the map and document"
-          },
-          "no_label": {
-            "fr": "Refuser (arrêt propre)",
-            "eng": "Reject (clean stop)"
-          }
-        }
-      ],
-      "steps": [
-        {
-          "title": {
-            "fr": "Périmètre",
-            "eng": "Scope"
-          },
-          "gates": [
-            "scope"
-          ],
-          "done": "doc_map.yaml"
-        },
-        {
-          "title": {
-            "fr": "Carte des zones",
-            "eng": "Zone map"
-          },
-          "gates": [
-            "map"
-          ],
-          "done": "doc_zones/"
-        },
-        {
-          "title": {
-            "fr": "Passes & assemblage",
-            "eng": "Passes & assembly"
-          },
-          "done": "documentation.md"
-        }
-      ]
-    },
-    {
-      "id": "audit-design",
-      "binary": "Audit-Design",
-      "family": "audit",
-      "title": {
-        "fr": "Audit-Design",
-        "eng": "Audit-Design"
-      },
-      "description": {
-        "fr": "Audit design d'un projet EXISTANT contre les 10 heuristiques de Nielsen, en lecture seule : une passe par heuristique, synthèse dans design_audit_report.md.",
-        "eng": "Design audit of an EXISTING project against Nielsen's 10 heuristics, read-only: one pass per heuristic, synthesis into design_audit_report.md."
-      },
-      "recommended": false,
-      "beta": true,
-      "needs_need_md": false,
-      "gates": [
-        {
-          "id": "scope",
-          "title": {
-            "fr": "Porte unique · Valider le périmètre",
-            "eng": "Single gate · Validate the scope"
-          },
-          "file": null,
-          "prompt_regex": "Lancer l'audit sur ce périmètre \\? \\(y/n\\)|Run the audit on this scope\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Le périmètre découvert (fichiers d'interface) est affiché dans l'écran du run : vérifie-le avant de payer les 10 passes + la synthèse.",
-            "eng": "The discovered scope (UI files) is shown in the run screen: check it before paying for the 10 passes + the synthesis."
-          },
-          "yes_label": {
-            "fr": "Lancer l'audit",
-            "eng": "Run the audit"
-          },
-          "no_label": {
-            "fr": "Refuser (arrêt propre)",
-            "eng": "Reject (clean stop)"
-          }
-        }
-      ],
-      "steps": [
-        {
-          "title": {
-            "fr": "Périmètre",
-            "eng": "Scope"
-          },
-          "gates": [
-            "scope"
-          ],
-          "done": "audit_nielsen/"
-        },
-        {
-          "title": {
-            "fr": "Passes & rapport",
-            "eng": "Passes & report"
-          },
-          "done": "design_audit_report.md"
-        }
-      ]
-    },
-    {
-      "id": "pre-audit-a11y",
-      "binary": "Pre-Audit-A11Y-RGAA",
-      "family": "audit",
-      "title": {
-        "fr": "Pre-Audit-A11Y-RGAA",
-        "eng": "Pre-Audit-A11Y-RGAA"
-      },
-      "description": {
-        "fr": "Pré-audit d'accessibilité RGAA 4.1.2 d'un projet EXISTANT, en lecture seule : 13 packs de critères croisés avec les compartiments d'interface, rapport détaillé + synthèse des résultats à la racine.",
-        "eng": "RGAA 4.1.2 accessibility pre-audit of an EXISTING project, read-only: 13 criteria packs crossed with interface compartments, detailed report + results summary at the root."
-      },
-      "recommended": false,
-      "beta": true,
-      "needs_need_md": false,
-      "gates": [
-        {
-          "id": "scope",
-          "title": {
-            "fr": "Porte 1 · Valider le périmètre",
-            "eng": "Gate 1 · Validate the scope"
-          },
-          "file": null,
-          "prompt_regex": "Lancer le pré-audit d'accessibilité sur ce périmètre \\? \\(y/n\\)|Run the accessibility pre-audit on this scope\\? \\(y/n\\)",
-          "hint": {
-            "fr": "Le périmètre découvert (fichiers UI, routage des 13 packs, contrastes mesurés) est affiché dans l'écran du run : vérifie-le avant de payer les passes.",
-            "eng": "The discovered scope (UI files, 13-pack routing, measured contrasts) is shown in the run screen: check it before paying for the passes."
-          },
-          "yes_label": {
-            "fr": "Lancer sur ce périmètre",
-            "eng": "Launch on this scope"
-          },
-          "no_label": {
-            "fr": "Refuser (arrêt propre)",
-            "eng": "Reject (clean stop)"
-          }
-        },
-        {
-          "id": "map",
-          "title": {
-            "fr": "Porte 2 · Valider la carte d'interface",
-            "eng": "Gate 2 · Validate the interface map"
-          },
-          "file": "a11y_map.yaml",
-          "prompt_regex": "Valider cette carte et lancer le pré-audit d'accessibilité \\? \\(y/n\\)|Validate this map and launch the accessibility pre-audit\\? \\(y/n\\)",
-          "hint": {
-            "fr": "La carte fixe les compartiments audités et le décompte exact des passes. Tu peux éditer a11y_map.yaml avant de valider : le pré-audit suit cette carte à la lettre.",
-            "eng": "The map sets the audited compartments and the exact pass count. You can edit a11y_map.yaml before validating: the pre-audit follows this map to the letter."
-          },
-          "yes_label": {
-            "fr": "Valider la carte et lancer le pré-audit",
-            "eng": "Validate the map and run the pre-audit"
-          },
-          "no_label": {
-            "fr": "Refuser (arrêt propre)",
-            "eng": "Reject (clean stop)"
-          }
-        }
-      ],
-      "steps": [
-        {
-          "title": {
-            "fr": "Périmètre",
-            "eng": "Scope"
-          },
-          "gates": [
-            "scope"
-          ],
-          "done": "a11y_map.yaml"
-        },
-        {
-          "title": {
-            "fr": "Carte d'interface",
-            "eng": "Interface map"
-          },
-          "gates": [
-            "map"
-          ],
-          "done": "pre_audit_a11y/"
-        },
-        {
-          "title": {
-            "fr": "Passes de pré-audit",
-            "eng": "Pre-audit passes"
-          },
-          "done": "accessibility_pre_audit_report.md"
-        },
-        {
-          "title": {
-            "fr": "Rapport & synthèse",
-            "eng": "Report & summary"
-          },
-          "done": "accessibility_pre_audit_summary.md"
-        }
-      ]
-    },
     {
       "id": "skill-adapt",
       "binary": "Skills-Adaptation",
       "family": "tooling",
+      "category": "skills",
       "title": {
         "fr": "Skills-Adaptation",
         "eng": "Skills-Adaptation"
       },
       "description": {
-        "fr": "Réécrit les skills de codage/testing livrés (gabarits Java/Spring, React/TS) pour TA stack : questionnaire court, génération par l'agent, garde-fous Python (limite de lignes 200/250/300, structure, frontmatter), revue qualité indépendante, puis écrasement skill par skill après ta validation (ancien contenu en .bak). Calibrage au choix : modèles ≥ 100B ou compact ~27B.",
-        "eng": "Rewrites the shipped coding/testing skills (Java/Spring, React/TS templates) for YOUR stack: short questionnaire, agent generation, Python guardrails (200/250/300 line cap, structure, frontmatter), independent quality review, then per-skill overwrite after your validation (previous content kept as .bak). Calibration choice: ≥ 100B models or compact ~27B."
+        "fr": "Réécrit pour ta stack les 4 skills de codage et de tests du moteur, après un questionnaire court : génération par l'agent, garde-fous Python, revue qualité indépendante, écrasement skill par skill après ta validation (ancien contenu en .bak). Ce projet en profite tout de suite, les autres projets équipés via « Mettre à jour l'équipement ».",
+        "eng": "Rewrites the engine's 4 coding and testing skills for your stack, after a short questionnaire: agent generation, Python guardrails, independent quality review, per-skill overwrite after your validation (previous content kept as .bak). This project benefits right away, other equipped projects through “Update equipment”."
       },
       "needs_need_md": false,
       "gates": [
@@ -1092,8 +228,8 @@
           "file_glob": "skill_adapt-*.md",
           "prompt_regex": "Écraser le skill '.+' avec la version adaptée \\? \\(y/n\\)|Overwrite the skill '.+' with the adapted version\\? \\(y/n\\)",
           "hint": {
-            "fr": "La proposition (garde-fous Python passés + revue qualité affichée à l'écran) remplacera le skill du projet ; l'ancien contenu part en .bak. Tu peux éditer la proposition avant de valider.",
-            "eng": "The proposal (Python guardrails passed + quality review shown on screen) will replace the project's skill; the previous content goes to .bak. You can edit the proposal before validating."
+            "fr": "La proposition (garde-fous Python passés + revue qualité affichée à l'écran) remplacera le skill du MOTEUR (engine/.agents/skills) — et sa copie dans ce projet ; l'ancien contenu part en .bak. Tu peux éditer la proposition avant de valider.",
+            "eng": "The proposal (Python guardrails passed + quality review shown on screen) will replace the ENGINE's skill (engine/.agents/skills) — and its copy in this project; the previous content goes to .bak. You can edit the proposal before validating."
           },
           "yes_label": {
             "fr": "Écraser (ancien en .bak)",
@@ -1143,9 +279,707 @@
       ]
     },
     {
+      "id": "acceptance-first",
+      "binary": "Acceptance-First",
+      "family": "production",
+      "category": "coding",
+      "title": {
+        "fr": "Acceptance-First",
+        "eng": "Acceptance-First"
+      },
+      "description": {
+        "fr": "Acceptance-first par lots de user story, inspiré de l'ATDD (Adzic, Gärtner) : tests d'acceptance qui doivent ÉCHOUER (verdict inversé), étapes d'implémentation qui compilent, clôture du lot à la suite complète verte. Revue d'impact en amont ; vérificateur LLM et triage des cassures sur les clôtures de lot uniquement.",
+        "eng": "Acceptance-first by user-story batches, inspired by ATDD (Adzic, Gärtner): acceptance tests that must FAIL (inverted verdict), implementation steps that compile, batch closing on the full green suite. Upfront impact review; LLM verifier and breakage triage on batch closings only."
+      },
+      "recommended": true,
+      "needs_need_md": true,
+      "gates": [
+        {
+          "id": "spec",
+          "title": {
+            "fr": "Porte 1 · Valider la spécification",
+            "eng": "Gate 1 · Validate the specification"
+          },
+          "file": "spec.md",
+          "prompt_regex": "Valider la spécification et lancer l'architecture \\? \\(y/n\\)|Validate the specification and start the architecture\\? \\(y/n\\)",
+          "hint": {
+            "fr": "Relis en priorité « Hypothèses & Questions » et « Hors périmètre ». En ATDD, chaque critère d'acceptation deviendra un test d'acceptance automatisé tel quel : vérifie qu'ils sont observables de l'extérieur. Tu peux éditer spec.md avant de valider : l'aperçu se recharge.",
+            "eng": "Review “Assumptions & Questions” and “Out of scope” first. In ATDD, each acceptance criterion becomes an automated acceptance test as-is: check they are externally observable. You can edit spec.md before validating: the preview reloads."
+          },
+          "yes_label": {
+            "fr": "Valider et lancer l'architecture",
+            "eng": "Validate and start the architecture"
+          },
+          "no_label": {
+            "fr": "Refuser (arrêt propre)",
+            "eng": "Reject (clean stop)"
+          }
+        },
+        {
+          "id": "impact",
+          "title": {
+            "fr": "Porte 1bis · Valider la revue d'impact",
+            "eng": "Gate 1bis · Validate the impact review"
+          },
+          "file": "impact.md",
+          "prompt_regex": "Valider la revue d'impact et continuer \\? \\(y/n\\)|Validate the impact review and continue\\? \\(y/n\\)",
+          "hint": {
+            "fr": "Chaque impact validé ici sera cassé SANS nouvel arrêt en production (le test concerné est supprimé par l'orchestrateur). Tu peux éditer impact.md avant de valider : retirer un impact = exiger la préservation du comportement.",
+            "eng": "Every impact validated here will be broken WITHOUT another stop during production (the covering test is deleted by the orchestrator). You can edit impact.md before validating: removing an impact = requiring the behavior to be preserved."
+          },
+          "yes_label": {
+            "fr": "Valider les impacts et continuer",
+            "eng": "Validate the impacts and continue"
+          },
+          "no_label": {
+            "fr": "Refuser (préserver ces comportements)",
+            "eng": "Reject (preserve these behaviors)"
+          }
+        },
+        {
+          "id": "blackboard",
+          "title": {
+            "fr": "Porte 2 · Valider le blackboard (lots ATDD)",
+            "eng": "Gate 2 · Validate the blackboard (ATDD lots)"
+          },
+          "file": "blackboard.yaml",
+          "prompt_regex": "Valider le blackboard et lancer la production \\? \\(y/n\\)|Validate (?:the )?blackboard and start production\\? \\(y/n\\)",
+          "hint": {
+            "fr": "Dernier arrêt avant la production. Vérifie la structure des lots dans blackboard.yaml (chaque lot s'ouvre par sa phase atdd-test et se referme par sa dernière phase atdd-impl) et la build_cmd (compilation de la production SEULE, jamais des tests) : l'orchestrateur recharge le fichier s'il a changé pendant l'attente.",
+            "eng": "Last stop before production. Check the lot structure in blackboard.yaml (each lot opens with its atdd-test phase and closes with its last atdd-impl phase) and the build_cmd (compiles production ONLY, never the tests): the orchestrator reloads the file if it changed while waiting."
+          },
+          "yes_label": {
+            "fr": "Valider et lancer la production",
+            "eng": "Validate and start production"
+          },
+          "no_label": {
+            "fr": "Refuser (arrêt propre)",
+            "eng": "Reject (clean stop)"
+          }
+        },
+        {
+          "id": "impact-phase",
+          "title": {
+            "fr": "Porte d'arbitrage · Impact imprévu en production",
+            "eng": "Arbitration gate · Unplanned impact during production"
+          },
+          "file": null,
+          "file_glob": "impact-phase-*.md",
+          "prompt_regex": "Accepter ce nouvel impact et continuer \\? \\(y/n\\)|Accept this new impact and continue\\? \\(y/n\\)",
+          "hint": {
+            "fr": "Un impact imprévu a été détecté : lis 'impact-phase-<id>.md' à la racine. y = l'impact est entériné (tests concernés supprimés par l'orchestrateur, le flux continue) ; n = l'ancien comportement fait foi (un agent corrige la phase en le préservant, arbitrage consigné).",
+            "eng": "An unplanned impact was detected: read 'impact-phase-<id>.md' at the project root. y = the impact is endorsed (covering tests deleted by the orchestrator, the flow continues); n = the historical behavior prevails (an agent fixes the phase while preserving it, arbitration recorded)."
+          },
+          "yes_label": {
+            "fr": "Accepter l'impact et continuer",
+            "eng": "Accept the impact and continue"
+          },
+          "no_label": {
+            "fr": "Refuser (préserver le comportement)",
+            "eng": "Reject (preserve the behavior)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "test-first",
+      "binary": "Test-First",
+      "family": "production",
+      "category": "coding",
+      "title": {
+        "fr": "Test-First",
+        "eng": "Test-First"
+      },
+      "description": {
+        "fr": "Test-first par cycles red → green → refactor, inspiré du TDD (Beck) : la phase red doit faire ÉCHOUER la suite (verdict inversé), la phase green la remettre au vert, le refactor de cycle est re-vérifié (rollback au moindre écart). Revue d'impact en amont ; vérificateur LLM et triage des cassures sur les phases green uniquement.",
+        "eng": "Test-first by red → green → refactor cycles, inspired by TDD (Beck): the red phase must make the suite FAIL (inverted verdict), the green phase brings it back to green, the cycle refactor is re-verified (rollback on any drift). Upfront impact review; LLM verifier and breakage triage on green phases only."
+      },
+      "recommended": true,
+      "needs_need_md": true,
+      "gates": [
+        {
+          "id": "spec",
+          "title": {
+            "fr": "Porte 1 · Valider la spécification",
+            "eng": "Gate 1 · Validate the specification"
+          },
+          "file": "spec.md",
+          "prompt_regex": "Valider la spécification et lancer l'architecture \\? \\(y/n\\)|Validate the specification and start the architecture\\? \\(y/n\\)",
+          "hint": {
+            "fr": "Relis en priorité « Hypothèses & Questions » et « Hors périmètre ». Tu peux éditer spec.md dans ton éditeur avant de valider : l'aperçu se recharge.",
+            "eng": "Review “Assumptions & Questions” and “Out of scope” first. You can edit spec.md in your editor before validating: the preview reloads."
+          },
+          "yes_label": {
+            "fr": "Valider et lancer l'architecture",
+            "eng": "Validate and start the architecture"
+          },
+          "no_label": {
+            "fr": "Refuser (arrêt propre)",
+            "eng": "Reject (clean stop)"
+          }
+        },
+        {
+          "id": "impact",
+          "title": {
+            "fr": "Porte 1bis · Valider la revue d'impact",
+            "eng": "Gate 1bis · Validate the impact review"
+          },
+          "file": "impact.md",
+          "prompt_regex": "Valider la revue d'impact et continuer \\? \\(y/n\\)|Validate the impact review and continue\\? \\(y/n\\)",
+          "hint": {
+            "fr": "Chaque impact validé ici sera cassé SANS nouvel arrêt en production (le test concerné est supprimé par l'orchestrateur). Tu peux éditer impact.md avant de valider : retirer un impact = exiger la préservation du comportement.",
+            "eng": "Every impact validated here will be broken WITHOUT another stop during production (the covering test is deleted by the orchestrator). You can edit impact.md before validating: removing an impact = requiring the behavior to be preserved."
+          },
+          "yes_label": {
+            "fr": "Valider les impacts et continuer",
+            "eng": "Validate the impacts and continue"
+          },
+          "no_label": {
+            "fr": "Refuser (préserver ces comportements)",
+            "eng": "Reject (preserve these behaviors)"
+          }
+        },
+        {
+          "id": "blackboard",
+          "title": {
+            "fr": "Porte 2 · Valider le blackboard (cycles red/green)",
+            "eng": "Gate 2 · Validate the blackboard (red/green cycles)"
+          },
+          "file": "blackboard.yaml",
+          "prompt_regex": "Valider le blackboard et lancer la production \\? \\(y/n\\)|Validate (?:the )?blackboard and start production\\? \\(y/n\\)",
+          "hint": {
+            "fr": "Dernier arrêt avant la production. Vérifie l'alternance des cycles red/green dans blackboard.yaml : l'orchestrateur recharge le fichier s'il a changé pendant l'attente.",
+            "eng": "Last stop before production. Check the red/green cycle alternation in blackboard.yaml: the orchestrator reloads the file if it changed while waiting."
+          },
+          "yes_label": {
+            "fr": "Valider et lancer la production",
+            "eng": "Validate and start production"
+          },
+          "no_label": {
+            "fr": "Refuser (arrêt propre)",
+            "eng": "Reject (clean stop)"
+          }
+        },
+        {
+          "id": "impact-phase",
+          "title": {
+            "fr": "Porte d'arbitrage · Impact imprévu en production",
+            "eng": "Arbitration gate · Unplanned impact during production"
+          },
+          "file": null,
+          "file_glob": "impact-phase-*.md",
+          "prompt_regex": "Accepter ce nouvel impact et continuer \\? \\(y/n\\)|Accept this new impact and continue\\? \\(y/n\\)",
+          "hint": {
+            "fr": "Un impact imprévu a été détecté : lis 'impact-phase-<id>.md' à la racine. y = l'impact est entériné (tests concernés supprimés par l'orchestrateur, le flux continue) ; n = l'ancien comportement fait foi (un agent corrige la phase en le préservant, arbitrage consigné).",
+            "eng": "An unplanned impact was detected: read 'impact-phase-<id>.md' at the project root. y = the impact is endorsed (covering tests deleted by the orchestrator, the flow continues); n = the historical behavior prevails (an agent fixes the phase while preserving it, arbitration recorded)."
+          },
+          "yes_label": {
+            "fr": "Accepter l'impact et continuer",
+            "eng": "Accept the impact and continue"
+          },
+          "no_label": {
+            "fr": "Refuser (préserver le comportement)",
+            "eng": "Reject (preserve the behavior)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "coding",
+      "binary": "Coding",
+      "family": "production",
+      "category": "coding",
+      "title": {
+        "fr": "Coding",
+        "eng": "Coding"
+      },
+      "description": {
+        "fr": "Pipeline de référence à verdict universel : l'orchestrateur exécute lui-même compilation + suite complète à chaque phase (exit 0 = vert). Revue d'impact validée en amont (impact.md), vérificateur LLM indépendant sur chaque suite verte, triage des cassures sur chaque suite rouge (suppression entérinée / réparation / arbitrage humain).",
+        "eng": "Reference universal-verdict pipeline: the orchestrator itself runs compilation + the full suite at every phase (exit 0 = green). Upfront validated impact review (impact.md), independent LLM verifier on every green suite, breakage triage on every red suite (endorsed deletion / repair / human arbitration)."
+      },
+      "recommended": false,
+      "needs_need_md": true,
+      "gates": [
+        {
+          "id": "spec",
+          "title": {
+            "fr": "Porte 1 · Valider la spécification",
+            "eng": "Gate 1 · Validate the specification"
+          },
+          "file": "spec.md",
+          "prompt_regex": "Valider la spécification et lancer l'architecture \\? \\(y/n\\)|Validate the specification and start the architecture\\? \\(y/n\\)",
+          "hint": {
+            "fr": "Relis en priorité « Hypothèses & Questions » et « Hors périmètre ». Tu peux éditer spec.md dans ton éditeur avant de valider : l'aperçu se recharge.",
+            "eng": "Review “Assumptions & Questions” and “Out of scope” first. You can edit spec.md in your editor before validating: the preview reloads."
+          },
+          "yes_label": {
+            "fr": "Valider et lancer l'architecture",
+            "eng": "Validate and start the architecture"
+          },
+          "no_label": {
+            "fr": "Refuser (arrêt propre)",
+            "eng": "Reject (clean stop)"
+          }
+        },
+        {
+          "id": "impact",
+          "title": {
+            "fr": "Porte 1bis · Valider la revue d'impact",
+            "eng": "Gate 1bis · Validate the impact review"
+          },
+          "file": "impact.md",
+          "prompt_regex": "Valider la revue d'impact et continuer \\? \\(y/n\\)|Validate the impact review and continue\\? \\(y/n\\)",
+          "hint": {
+            "fr": "Chaque impact validé ici sera cassé SANS nouvel arrêt en production (le test concerné est supprimé par l'orchestrateur). Tu peux éditer impact.md avant de valider : retirer un impact = exiger la préservation du comportement.",
+            "eng": "Every impact validated here will be broken WITHOUT another stop during production (the covering test is deleted by the orchestrator). You can edit impact.md before validating: removing an impact = requiring the behavior to be preserved."
+          },
+          "yes_label": {
+            "fr": "Valider les impacts et continuer",
+            "eng": "Validate the impacts and continue"
+          },
+          "no_label": {
+            "fr": "Refuser (préserver ces comportements)",
+            "eng": "Reject (preserve these behaviors)"
+          }
+        },
+        {
+          "id": "blackboard",
+          "title": {
+            "fr": "Porte 2 · Valider le blackboard",
+            "eng": "Gate 2 · Validate the blackboard"
+          },
+          "file": "blackboard.yaml",
+          "prompt_regex": "Valider le blackboard et lancer la production \\? \\(y/n\\)|Validate (?:the )?blackboard and start production\\? \\(y/n\\)",
+          "hint": {
+            "fr": "Dernier arrêt avant la production. Tu peux ajuster les phases dans blackboard.yaml avant de valider : l'orchestrateur recharge le fichier s'il a changé pendant l'attente.",
+            "eng": "Last stop before production. You can adjust the phases in blackboard.yaml before validating: the orchestrator reloads the file if it changed while waiting."
+          },
+          "yes_label": {
+            "fr": "Valider et lancer la production",
+            "eng": "Validate and start production"
+          },
+          "no_label": {
+            "fr": "Refuser (arrêt propre)",
+            "eng": "Reject (clean stop)"
+          }
+        },
+        {
+          "id": "impact-phase",
+          "title": {
+            "fr": "Porte d'arbitrage · Impact imprévu en production",
+            "eng": "Arbitration gate · Unplanned impact during production"
+          },
+          "file": null,
+          "file_glob": "impact-phase-*.md",
+          "prompt_regex": "Accepter ce nouvel impact et continuer \\? \\(y/n\\)|Accept this new impact and continue\\? \\(y/n\\)",
+          "hint": {
+            "fr": "Un impact imprévu a été détecté : lis 'impact-phase-<id>.md' à la racine. y = l'impact est entériné (tests concernés supprimés par l'orchestrateur, le flux continue) ; n = l'ancien comportement fait foi (un agent corrige la phase en le préservant, arbitrage consigné).",
+            "eng": "An unplanned impact was detected: read 'impact-phase-<id>.md' at the project root. y = the impact is endorsed (covering tests deleted by the orchestrator, the flow continues); n = the historical behavior prevails (an agent fixes the phase while preserving it, arbitration recorded)."
+          },
+          "yes_label": {
+            "fr": "Accepter l'impact et continuer",
+            "eng": "Accept the impact and continue"
+          },
+          "no_label": {
+            "fr": "Refuser (préserver le comportement)",
+            "eng": "Reject (preserve the behavior)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "code",
+      "binary": "Coding-Without-Tests",
+      "family": "production",
+      "category": "coding",
+      "title": {
+        "fr": "Coding-Without-Tests",
+        "eng": "Coding-Without-Tests"
+      },
+      "description": {
+        "fr": "Pipeline sans tests (skill plan-no-test) : chaque phase est jugée par un agent vérificateur LLM indépendant qui relit le code produit.",
+        "eng": "Pipeline without tests (plan-no-test skill): each phase is judged by an independent LLM verifier agent re-reading the produced code."
+      },
+      "recommended": false,
+      "needs_need_md": true,
+      "gates": [
+        {
+          "id": "spec",
+          "title": {
+            "fr": "Porte 1 · Valider la spécification",
+            "eng": "Gate 1 · Validate the specification"
+          },
+          "file": "spec.md",
+          "prompt_regex": "Valider la spécification et lancer l'architecture \\? \\(y/n\\)|Validate the specification and start the architecture\\? \\(y/n\\)",
+          "hint": {
+            "fr": "Relis en priorité « Hypothèses & Questions » et « Hors périmètre ». Tu peux éditer spec.md dans ton éditeur avant de valider : l'aperçu se recharge.",
+            "eng": "Review “Assumptions & Questions” and “Out of scope” first. You can edit spec.md in your editor before validating: the preview reloads."
+          },
+          "yes_label": {
+            "fr": "Valider et lancer l'architecture",
+            "eng": "Validate and start the architecture"
+          },
+          "no_label": {
+            "fr": "Refuser (arrêt propre)",
+            "eng": "Reject (clean stop)"
+          }
+        },
+        {
+          "id": "blackboard",
+          "title": {
+            "fr": "Porte 2 · Valider le blackboard",
+            "eng": "Gate 2 · Validate the blackboard"
+          },
+          "file": "blackboard.yaml",
+          "prompt_regex": "Valider le blackboard et lancer la production \\? \\(y/n\\)|Validate (?:the )?blackboard and start production\\? \\(y/n\\)",
+          "hint": {
+            "fr": "Dernier arrêt avant la production. Tu peux ajuster les phases dans blackboard.yaml avant de valider : l'orchestrateur recharge le fichier s'il a changé pendant l'attente.",
+            "eng": "Last stop before production. You can adjust the phases in blackboard.yaml before validating: the orchestrator reloads the file if it changed while waiting."
+          },
+          "yes_label": {
+            "fr": "Valider et lancer la production",
+            "eng": "Validate and start production"
+          },
+          "no_label": {
+            "fr": "Refuser (arrêt propre)",
+            "eng": "Reject (clean stop)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "proto",
+      "binary": "Design-Prototype",
+      "family": "production",
+      "category": "design",
+      "title": {
+        "fr": "Design-Prototype",
+        "eng": "Design-Prototype"
+      },
+      "description": {
+        "fr": "Usine à prototypes cliquables (HTML/CSS/JS vanilla) pensée pour les designers : production par phases puis review UX + conformité globale en fin de run.",
+        "eng": "Clickable-prototype factory (vanilla HTML/CSS/JS) designed for designers: phased production, then a single global UX + compliance review at the end of the run."
+      },
+      "recommended": false,
+      "beta": true,
+      "needs_need_md": true,
+      "gates": [
+        {
+          "id": "design-system",
+          "title": {
+            "fr": "Porte 0 · Design system",
+            "eng": "Gate 0 · Design system"
+          },
+          "file": "need.md",
+          "prompt_regex": "Continuer avec les tokens par défaut du prototype \\? \\(y/n\\)|Continue with the prototype's default tokens\\? \\(y/n\\)",
+          "hint": {
+            "fr": "Aucun design system détecté dans need.md. Si tu en utilises un, refuse puis décris-le dans need.md (section « ## Design system » : son nom, et comment le trouver — serveur MCP à mentionner aux agents, librairie/CDN, dossier local, URL de doc) et relance. Sinon, le prototype part sur ses tokens par défaut. Cette porte n'apparaît pas quand need.md déclare déjà un design system.",
+            "eng": "No design system detected in need.md. If you use one, reject then describe it in need.md (“## Design system” section: its name, and how to find it — MCP server to mention to the agents, library/CDN, local folder, docs URL) and relaunch. Otherwise the prototype starts from its default tokens. This gate does not appear when need.md already declares a design system."
+          },
+          "yes_label": {
+            "fr": "Continuer avec les tokens par défaut",
+            "eng": "Continue with default tokens"
+          },
+          "no_label": {
+            "fr": "Refuser (je déclare un design system)",
+            "eng": "Reject (I will declare a design system)"
+          }
+        },
+        {
+          "id": "spec",
+          "title": {
+            "fr": "Porte 1 · Valider la spécification",
+            "eng": "Gate 1 · Validate the specification"
+          },
+          "file": "spec.md",
+          "prompt_regex": "Valider la spécification et lancer l'architecture \\? \\(y/n\\)|Validate the specification and start the architecture\\? \\(y/n\\)",
+          "hint": {
+            "fr": "Relis en priorité « Hypothèses & Questions », « Hors périmètre » et la section « Design system » (transcrite, jamais inventée). Tu peux éditer spec.md dans ton éditeur avant de valider : l'aperçu se recharge.",
+            "eng": "Review “Assumptions & Questions”, “Out of scope” and the “Design system” section (transcribed, never invented) first. You can edit spec.md in your editor before validating: the preview reloads."
+          },
+          "yes_label": {
+            "fr": "Valider et lancer l'architecture",
+            "eng": "Validate and start the architecture"
+          },
+          "no_label": {
+            "fr": "Refuser (arrêt propre)",
+            "eng": "Reject (clean stop)"
+          }
+        },
+        {
+          "id": "blackboard",
+          "title": {
+            "fr": "Porte 2 · Valider le blackboard",
+            "eng": "Gate 2 · Validate the blackboard"
+          },
+          "file": "blackboard.yaml",
+          "prompt_regex": "Valider le blackboard et lancer la production \\? \\(y/n\\)|Validate (?:the )?blackboard and start production\\? \\(y/n\\)",
+          "hint": {
+            "fr": "Dernier arrêt avant la production du prototype. Vérifie global_rules.design_system et l'ordre fondations → composants → écrans dans blackboard.yaml avant de valider.",
+            "eng": "Last stop before prototype production. Check global_rules.design_system and the foundations → components → screens order in blackboard.yaml before validating."
+          },
+          "yes_label": {
+            "fr": "Valider et lancer la production",
+            "eng": "Validate and start production"
+          },
+          "no_label": {
+            "fr": "Refuser (arrêt propre)",
+            "eng": "Reject (clean stop)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "audit-design",
+      "binary": "Audit-Design",
+      "family": "audit",
+      "category": "design",
+      "title": {
+        "fr": "Audit-Design",
+        "eng": "Audit-Design"
+      },
+      "description": {
+        "fr": "Audit design d'un projet EXISTANT contre les 10 heuristiques de Nielsen, en lecture seule : une passe par heuristique, synthèse dans design_audit_report.md.",
+        "eng": "Design audit of an EXISTING project against Nielsen's 10 heuristics, read-only: one pass per heuristic, synthesis into design_audit_report.md."
+      },
+      "recommended": false,
+      "beta": true,
+      "needs_need_md": false,
+      "gates": [
+        {
+          "id": "scope",
+          "title": {
+            "fr": "Porte unique · Valider le périmètre",
+            "eng": "Single gate · Validate the scope"
+          },
+          "file": null,
+          "prompt_regex": "Lancer l'audit sur ce périmètre \\? \\(y/n\\)|Run the audit on this scope\\? \\(y/n\\)",
+          "hint": {
+            "fr": "Le périmètre découvert (fichiers d'interface) est affiché dans l'écran du run : vérifie-le avant de payer les 10 passes + la synthèse.",
+            "eng": "The discovered scope (UI files) is shown in the run screen: check it before paying for the 10 passes + the synthesis."
+          },
+          "yes_label": {
+            "fr": "Lancer l'audit",
+            "eng": "Run the audit"
+          },
+          "no_label": {
+            "fr": "Refuser (arrêt propre)",
+            "eng": "Reject (clean stop)"
+          }
+        }
+      ],
+      "steps": [
+        {
+          "title": {
+            "fr": "Périmètre",
+            "eng": "Scope"
+          },
+          "gates": [
+            "scope"
+          ],
+          "done": "audit_nielsen/"
+        },
+        {
+          "title": {
+            "fr": "Passes & rapport",
+            "eng": "Passes & report"
+          },
+          "done": "design_audit_report.md"
+        }
+      ]
+    },
+    {
+      "id": "documentation",
+      "binary": "Documentation",
+      "family": "documentation",
+      "category": "product",
+      "title": {
+        "fr": "Documentation",
+        "eng": "Documentation"
+      },
+      "description": {
+        "fr": "Documentation comportementale d'un projet EXISTANT, en lecture seule : cartographie fonctionnelle validée, puis une passe par zone (contexte réinitialisé), assemblage mécanique en documentation.md à la racine.",
+        "eng": "Behavioral documentation of an EXISTING project, read-only: validated functional map, then one pass per zone (fresh context), mechanical assembly into documentation.md at the root."
+      },
+      "recommended": false,
+      "beta": true,
+      "needs_need_md": false,
+      "gates": [
+        {
+          "id": "scope",
+          "title": {
+            "fr": "Porte 1 · Valider le périmètre",
+            "eng": "Gate 1 · Validate the scope"
+          },
+          "file": null,
+          "prompt_regex": "Lancer la documentation sur ce périmètre \\? \\(y/n\\)|Launch the documentation on this scope\\? \\(y/n\\)",
+          "hint": {
+            "fr": "Le périmètre découvert (fichiers code + tests) est affiché dans l'écran du run : vérifie qu'il est sensé (pas de dossiers générés, tests bien séparés) avant de payer la cartographie.",
+            "eng": "The discovered scope (code + test files) is shown in the run screen: check it makes sense (no generated folders, tests properly separated) before paying for the mapping."
+          },
+          "yes_label": {
+            "fr": "Lancer sur ce périmètre",
+            "eng": "Launch on this scope"
+          },
+          "no_label": {
+            "fr": "Refuser (arrêt propre)",
+            "eng": "Reject (clean stop)"
+          }
+        },
+        {
+          "id": "map",
+          "title": {
+            "fr": "Porte 2 · Valider la carte fonctionnelle",
+            "eng": "Gate 2 · Validate the functional map"
+          },
+          "file": "doc_map.yaml",
+          "prompt_regex": "Valider cette carte et lancer la documentation zone par zone \\? \\(y/n\\)|Validate this map and launch the zone-by-zone documentation\\? \\(y/n\\)",
+          "hint": {
+            "fr": "Les zones deviennent les chapitres de la documentation, dans cet ordre. Tu peux éditer doc_map.yaml avant de valider (renommer, redécouper, réordonner) : chaque zone coûte une passe d'agent.",
+            "eng": "Zones become the documentation chapters, in this order. You can edit doc_map.yaml before validating (rename, resplit, reorder): each zone costs one agent pass."
+          },
+          "yes_label": {
+            "fr": "Valider la carte et documenter",
+            "eng": "Validate the map and document"
+          },
+          "no_label": {
+            "fr": "Refuser (arrêt propre)",
+            "eng": "Reject (clean stop)"
+          }
+        }
+      ],
+      "steps": [
+        {
+          "title": {
+            "fr": "Périmètre",
+            "eng": "Scope"
+          },
+          "gates": [
+            "scope"
+          ],
+          "done": "doc_map.yaml"
+        },
+        {
+          "title": {
+            "fr": "Carte des zones",
+            "eng": "Zone map"
+          },
+          "gates": [
+            "map"
+          ],
+          "done": "doc_zones/"
+        },
+        {
+          "title": {
+            "fr": "Passes & assemblage",
+            "eng": "Passes & assembly"
+          },
+          "done": "documentation.md"
+        }
+      ]
+    },
+    {
+      "id": "pre-audit-a11y",
+      "binary": "Pre-Audit-A11Y-RGAA",
+      "family": "audit",
+      "category": "skills",
+      "title": {
+        "fr": "Pre-Audit-A11Y-RGAA",
+        "eng": "Pre-Audit-A11Y-RGAA"
+      },
+      "description": {
+        "fr": "Pré-audit d'accessibilité RGAA 4.1.2 d'un projet EXISTANT, en lecture seule : 13 packs de critères croisés avec les compartiments d'interface, rapport détaillé + synthèse des résultats à la racine.",
+        "eng": "RGAA 4.1.2 accessibility pre-audit of an EXISTING project, read-only: 13 criteria packs crossed with interface compartments, detailed report + results summary at the root."
+      },
+      "recommended": false,
+      "beta": true,
+      "needs_need_md": false,
+      "gates": [
+        {
+          "id": "scope",
+          "title": {
+            "fr": "Porte 1 · Valider le périmètre",
+            "eng": "Gate 1 · Validate the scope"
+          },
+          "file": null,
+          "prompt_regex": "Lancer le pré-audit d'accessibilité sur ce périmètre \\? \\(y/n\\)|Run the accessibility pre-audit on this scope\\? \\(y/n\\)",
+          "hint": {
+            "fr": "Le périmètre découvert (fichiers UI, routage des 13 packs, contrastes mesurés) est affiché dans l'écran du run : vérifie-le avant de payer les passes.",
+            "eng": "The discovered scope (UI files, 13-pack routing, measured contrasts) is shown in the run screen: check it before paying for the passes."
+          },
+          "yes_label": {
+            "fr": "Lancer sur ce périmètre",
+            "eng": "Launch on this scope"
+          },
+          "no_label": {
+            "fr": "Refuser (arrêt propre)",
+            "eng": "Reject (clean stop)"
+          }
+        },
+        {
+          "id": "map",
+          "title": {
+            "fr": "Porte 2 · Valider la carte d'interface",
+            "eng": "Gate 2 · Validate the interface map"
+          },
+          "file": "a11y_map.yaml",
+          "prompt_regex": "Valider cette carte et lancer le pré-audit d'accessibilité \\? \\(y/n\\)|Validate this map and launch the accessibility pre-audit\\? \\(y/n\\)",
+          "hint": {
+            "fr": "La carte fixe les compartiments audités et le décompte exact des passes. Tu peux éditer a11y_map.yaml avant de valider : le pré-audit suit cette carte à la lettre.",
+            "eng": "The map sets the audited compartments and the exact pass count. You can edit a11y_map.yaml before validating: the pre-audit follows this map to the letter."
+          },
+          "yes_label": {
+            "fr": "Valider la carte et lancer le pré-audit",
+            "eng": "Validate the map and run the pre-audit"
+          },
+          "no_label": {
+            "fr": "Refuser (arrêt propre)",
+            "eng": "Reject (clean stop)"
+          }
+        }
+      ],
+      "steps": [
+        {
+          "title": {
+            "fr": "Périmètre",
+            "eng": "Scope"
+          },
+          "gates": [
+            "scope"
+          ],
+          "done": "a11y_map.yaml"
+        },
+        {
+          "title": {
+            "fr": "Carte d'interface",
+            "eng": "Interface map"
+          },
+          "gates": [
+            "map"
+          ],
+          "done": "pre_audit_a11y/"
+        },
+        {
+          "title": {
+            "fr": "Passes de pré-audit",
+            "eng": "Pre-audit passes"
+          },
+          "done": "accessibility_pre_audit_report.md"
+        },
+        {
+          "title": {
+            "fr": "Rapport & synthèse",
+            "eng": "Report & summary"
+          },
+          "done": "accessibility_pre_audit_summary.md"
+        }
+      ]
+    },
+    {
       "id": "fix",
       "binary": "Guided-Fix",
       "family": "fix",
+      "category": "coding",
       "title": {
         "fr": "Guided-Fix",
         "eng": "Guided-Fix"
@@ -1154,6 +988,7 @@
         "fr": "Réparation arbitrée d'un arrêt sur suite rouge : diagnostic IA des comportements cassés, triage humain comportement par comportement (régression → code corrigé, tests gelés ; évolution → spec mise à jour puis tests adaptés, production gelée), verdict par exécution réelle, marqueur FIXED posé pour la relance.",
         "eng": "Arbitrated repair of a red-suite stop: AI diagnosis of broken behaviors, human triage behavior by behavior (regression → code fixed, tests frozen; evolution → spec updated then tests adapted, production frozen), verdict by real execution, FIXED marker set for relaunch."
       },
+      "beta": true,
       "needs_need_md": false,
       "gates": [
         {
@@ -1303,6 +1138,120 @@
           },
           "gates": [
             "fix-mark-fixed"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "challenge-need",
+      "binary": "Challenge-Need",
+      "family": "spec",
+      "category": "product",
+      "title": {
+        "fr": "Challenge-Need",
+        "eng": "Challenge-Need"
+      },
+      "description": {
+        "fr": "Pipeline partiel « challenge du besoin » : un agent confronte need.md à ses ambiguïtés, contradictions et présupposés AVANT de payer une spec — la porte la plus en amont est la moins chère.",
+        "eng": "Partial pipeline “challenge the need”: an agent confronts need.md with its ambiguities, contradictions and assumptions BEFORE paying for a spec — the earliest gate is the cheapest one."
+      },
+      "recommended": false,
+      "needs_need_md": true,
+      "gates": [
+        {
+          "id": "review",
+          "title": {
+            "fr": "Porte unique · Entériner la revue du besoin",
+            "eng": "Single gate · Endorse the need review"
+          },
+          "file": "need_review.md",
+          "prompt_regex": "Entériner cette revue du besoin \\? \\(y/n\\)|Endorse this need review\\? \\(y/n\\)",
+          "hint": {
+            "fr": "Relis les questions [BLOQUANT] en priorité. La revue ne modifie rien : mets à jour need.md toi-même, puis relance le pipeline de ton choix. Aucun pipeline aval ne dépend de cette revue.",
+            "eng": "Review the [BLOCKING] questions first. The review changes nothing: update need.md yourself, then relaunch the pipeline of your choice. No downstream pipeline depends on this review."
+          },
+          "yes_label": {
+            "fr": "Entériner la revue",
+            "eng": "Endorse the review"
+          },
+          "no_label": {
+            "fr": "Refuser (arrêt propre)",
+            "eng": "Reject (clean stop)"
+          }
+        }
+      ],
+      "steps": [
+        {
+          "title": {
+            "fr": "Revue du besoin",
+            "eng": "Need review"
+          },
+          "done": "need_review.md"
+        },
+        {
+          "title": {
+            "fr": "Arbitrage",
+            "eng": "Arbitration"
+          },
+          "gates": [
+            "review"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "spec",
+      "binary": "Spec",
+      "family": "spec",
+      "category": "product",
+      "title": {
+        "fr": "Spec",
+        "eng": "Spec"
+      },
+      "description": {
+        "fr": "Pipeline partiel « du besoin à la spec » : exécute uniquement l'étape PO (need.md → spec.md validée) puis s'arrête — pour cadrer avant de produire, ou faire relire la spec.",
+        "eng": "Partial pipeline “from need to spec”: runs only the PO step (need.md → validated spec.md) then stops — to frame before producing, or to have the spec reviewed."
+      },
+      "recommended": false,
+      "needs_need_md": true,
+      "gates": [
+        {
+          "id": "spec",
+          "title": {
+            "fr": "Porte unique · Valider la spécification",
+            "eng": "Single gate · Validate the specification"
+          },
+          "file": "spec.md",
+          "prompt_regex": "Valider la spécification \\? \\(y/n\\)|Validate the specification\\? \\(y/n\\)",
+          "hint": {
+            "fr": "Relis en priorité « Hypothèses & Questions » et « Hors périmètre ». Tu peux éditer spec.md avant de valider : l'aperçu se recharge. Le run s'arrête après cette validation.",
+            "eng": "Review “Assumptions & Questions” and “Out of scope” first. You can edit spec.md before validating: the preview reloads. The run stops after this validation."
+          },
+          "yes_label": {
+            "fr": "Valider la spécification",
+            "eng": "Validate the specification"
+          },
+          "no_label": {
+            "fr": "Refuser (arrêt propre)",
+            "eng": "Reject (clean stop)"
+          }
+        }
+      ],
+      "steps": [
+        {
+          "title": {
+            "fr": "Rédaction (PO)",
+            "eng": "Drafting (PO)"
+          },
+          "done": "spec.md"
+        },
+        {
+          "title": {
+            "fr": "Validation de la spec",
+            "eng": "Spec validation"
+          },
+          "gates": [
+            "spec"
           ]
         }
       ]

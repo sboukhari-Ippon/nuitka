@@ -846,7 +846,10 @@ def tmux_start_run(project: str, binary_path: str) -> str:
     # SERVEUR tmux, c'est-à-dire du processus qui l'a créé (une app headless d'il y a
     # trois jours, par exemple) — l'orchestrateur doit voir le PATH de l'app d'aujourd'hui,
     # enrichi du shell de login (enrich_path), comme l'agent dans son propre pane.
+    # MM_ENGINE_HOME : le dossier du moteur qui lance le run — Skills-Adaptation adapte
+    # les skills DE CE MOTEUR (source de tous les projets équipés), pas ceux du projet.
     command = (f"env -u TMUX PATH={shlex.quote(os.environ.get('PATH', ''))} "
+               f"MM_ENGINE_HOME={shlex.quote(os.path.dirname(os.path.abspath(binary_path)))} "
                f"{shlex.quote(os.path.abspath(binary_path))}; __mm=$?; "
                f"echo $__mm > {RUN_EXIT_SENTINEL}; exit $__mm")
     proc = tmux("new-session", "-d", "-s", session, "-x", "220", "-y", "50",
@@ -2788,6 +2791,21 @@ HTML_PAGE = r"""<!doctype html>
   .addrow input { flex:1; }
 
   .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; }
+  /* Étape 3 : les CATÉGORIES d'abord (tuiles-boutons), les orchestrateurs de la catégorie
+     dépliée ensuite. La tuile ouverte se lit par sa bordure accent et son fond : c'est un
+     état de disclosure (aria-expanded), pas une sélection figée ; le focus clavier garde
+     son propre anneau. */
+  .cats { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:14px; }
+  .catbtn { text-align:left; border:1px solid var(--line); border-radius:14px; padding:13px 14px; cursor:pointer;
+            background:linear-gradient(180deg,var(--panel),var(--panel-warm)); color:var(--ink); font:inherit;
+            display:flex; flex-direction:column; gap:5px; box-shadow:var(--shadow); }
+  .catbtn:hover:not(:disabled) { border-color:var(--line-strong); }
+  .catbtn:disabled { opacity:.55; cursor:default; }
+  .catbtn[aria-expanded="true"] { border-color:var(--accent); background:var(--accent-soft); }
+  .catname { font-weight:700; font-size:13.5px; display:flex; gap:8px; align-items:baseline; flex-wrap:wrap; }
+  .catname .n { font-weight:500; font-size:11.5px; color:var(--ink-faint); font-variant-numeric:tabular-nums; }
+  .cathint { font-size:12px; color:var(--ink-soft); }
+  .catsec { margin-top:18px; }
   .ocard { border:1px solid var(--line); border-radius:14px;
            background:linear-gradient(180deg,var(--panel),var(--panel-warm));
            padding:13px 14px; display:flex; flex-direction:column; gap:7px; box-shadow:var(--shadow); }
@@ -3096,7 +3114,11 @@ const I18N_FR = {
   steps: ["Spécification (PO)", "Plan (Architecte)", "Blackboard", "Production", "Refactoring"],
   tab_orch: "Orchestrateur", tab_agent: (h) => h + " (IA)",
   harness_word: "harness", harness_absent: "absent du PATH", harness_unauth: "non authentifié",
-  no_harness: "Aucun harness d'agent IA installé : installe OpenCode (https://opencode.ai/docs) ou Codex CLI (npm install -g @openai/codex), puis connecte-toi. Détail dans Statut & réglages.",
+  no_harness: "Aucun harness d'agent IA installé : installe OpenCode (https://opencode.ai/docs) ou Codex CLI (npm install -g @openai/codex, bêta), puis connecte-toi. Détail dans Statut & réglages.",
+  beta_word: "bêta",
+  equip_tip: "Prépare ce projet pour MAIsterMind : copie les skills et les fichiers de l'agent dans le dossier du projet.",
+  reequip_tip: "Recopie dans ce projet ce que le moteur contient aujourd'hui, skills adaptés compris. L'ancienne version est gardée en sauvegarde.",
+  harness_beta: "bêta : moins éprouvé qu'OpenCode sur des runs réels, tes retours sont bienvenus (portes, permissions, modèles)",
   harness_model: (m) => "modèle : " + m, harness_model_default: "modèle par défaut du harness",
   term_zoom: "Agrandir le terminal", term_unzoom: "Réduire le terminal (Échap)",
   gate_watch: (f) => f + " est surveillé : si tu le modifies ailleurs, l'aperçu se met à jour tout seul",
@@ -3147,6 +3169,17 @@ const I18N_FR = {
   equipped_v: (v) => "équipé" + (v ? " v" + v : " · version inconnue"),
   recommended: "⭐ recommandé",
   beta: "🧪 bêta",
+  cat_pick: "Choisis d'abord une catégorie : ses orchestrateurs s'affichent en dessous.",
+  cat_coding: "Coding",
+  cat_coding_hint: "Du besoin au code vérifié — la planification (spec, plan, blackboard) est incluse. Et la réparation d'un run arrêté sur suite rouge.",
+  cat_design: "Design",
+  cat_design_hint: "Prototype cliquable et audit UX d'une interface existante.",
+  cat_product: "Produit",
+  cat_product_hint: "Challenger le besoin, produire la spec seule, documenter le comportement d'un projet existant.",
+  cat_skills: "Skills et accessibilité",
+  cat_skills_hint: "Skills-Adaptation : à lancer d'abord si ta stack n'est pas Java/Spring + React/TS — adapte les skills techniques du moteur (code et tests, back et front), ce projet et tout projet équipé ensuite en profitent (WIP · un moteur = une stack · bon modèle (frontier) recommandé). Pre-Audit-A11Y-RGAA : pré-audit d'accessibilité d'un projet existant, en lecture seule, indépendant des usines.",
+  cat_other: "Autres orchestrateurs",
+  cat_count: (n) => n + " orchestrateur(s)",
   phase_states: { DONE: "terminée", PENDING: "en cours", REJECTED: "rejetée", TODO: "à faire" },
   tasks_word: (n) => n + " tâche(s)",
   covers_word: " · couvre ",
@@ -3219,7 +3252,11 @@ const I18N_ENG = {
   steps: ["Specification (PO)", "Plan (Architect)", "Blackboard", "Production", "Refactoring"],
   tab_orch: "Orchestrator", tab_agent: (h) => h + " (AI)",
   harness_word: "harness", harness_absent: "not in PATH", harness_unauth: "not signed in",
-  no_harness: "No AI agent harness installed: install OpenCode (https://opencode.ai/docs) or Codex CLI (npm install -g @openai/codex), then log in. Details in Status & settings.",
+  no_harness: "No AI agent harness installed: install OpenCode (https://opencode.ai/docs) or Codex CLI (npm install -g @openai/codex, beta), then log in. Details in Status & settings.",
+  beta_word: "beta",
+  equip_tip: "Prepares this project for MAIsterMind: copies the skills and the agent files into the project folder.",
+  reequip_tip: "Copies what the engine contains today into this project, adapted skills included. The previous version is kept as a backup.",
+  harness_beta: "beta: less proven than OpenCode on real runs, your feedback is welcome (gates, permissions, models)",
   harness_model: (m) => "model: " + m, harness_model_default: "the harness's default model",
   term_zoom: "Expand the terminal", term_unzoom: "Collapse the terminal (Esc)",
   gate_watch: (f) => "Watching " + f + " — edit it elsewhere and the preview updates on its own",
@@ -3270,6 +3307,17 @@ const I18N_ENG = {
   equipped_v: (v) => "equipped" + (v ? " v" + v : " · unknown version"),
   recommended: "⭐ recommended",
   beta: "🧪 beta",
+  cat_pick: "Pick a category first: its orchestrators show up below.",
+  cat_coding: "Coding",
+  cat_coding_hint: "From need to verified code — planning (spec, plan, blackboard) is included. Plus repairing a run stopped on a red suite.",
+  cat_design: "Design",
+  cat_design_hint: "Clickable prototype and UX audit of an existing interface.",
+  cat_product: "Product",
+  cat_product_hint: "Challenge the need, produce the spec alone, document the behaviour of an existing project.",
+  cat_skills: "Skills and accessibility",
+  cat_skills_hint: "Skills-Adaptation: run first if your stack is not Java/Spring + React/TS — adapts the engine's technical skills (code and tests, back and front), this project and every project equipped afterwards benefit (WIP · one engine = one stack · good (frontier) model recommended). Pre-Audit-A11Y-RGAA: read-only accessibility pre-audit of an existing project, independent of the factories.",
+  cat_other: "Other orchestrators",
+  cat_count: (n) => n + " orchestrator(s)",
   phase_states: { DONE: "done", PENDING: "in progress", REJECTED: "rejected", TODO: "to do" },
   tasks_word: (n) => n + " task(s)",
   covers_word: " · covers ",
@@ -3328,6 +3376,8 @@ const ui = {
     return (navigator.language || "fr").toLowerCase().startsWith("fr") ? "fr" : "eng";
   })(),
   activeProject: localStorage.getItem("mm_active") || null,
+  // Catégorie dépliée à l'étape 3 de la Bibliothèque (coding | design | product | null)
+  category: ["coding", "design", "product"].includes(localStorage.getItem("mm_cat")) ? localStorage.getItem("mm_cat") : null,
   termTab: "orch",                 // onglet terminal affiché (orch | agent)
   termZoom: false,                 // terminal en plein écran (⛶ ; Échap referme)
   busy: false,                     // action en cours : boutons de porte désactivés
@@ -3905,10 +3955,14 @@ function equipBtns(p, cls, fkey) {
     const st = h ? harnessState(h.key) : { ok: true, note: "" };
     const bits = [];
     if (e && engines.length > 1) bits.push(I18N.engine_name(e.label));
-    if (h && harnesses.length > 1) bits.push(h.label + (st.ok ? "" : " ⚠"));
+    // Codex CLI est en bêta : dit sur le bouton et dans son infobulle (retours attendus).
+    const beta = h && h.key === "codex";
+    if (h && harnesses.length > 1) bits.push(h.label + (beta ? " · " + I18N.beta_word : "") + (st.ok ? "" : " ⚠"));
     const suffix = bits.length ? " (" + bits.join(" · ") + ")" : "";
     const key = [fkey, e && e.label, h && h.key].filter(Boolean).join("-");
-    const title = h ? `${h.label}${st.note ? " — " + st.note : ""}` : "";
+    // Infobulle en langage courant : ce que le bouton FAIT (le libellé dit seulement « équiper »).
+    const what = p.equipped ? I18N.reequip_tip : I18N.equip_tip;
+    const title = [what, h ? `${h.label}${beta ? " — " + I18N.harness_beta : ""}${st.note ? " — " + st.note : ""}` : ""].filter(Boolean).join("\n");
     return `<button class="btn ${cls}" data-fkey="${esc(key)}" data-action="equip"
       data-arg="${p.hash}" ${e ? `data-arg2="${esc(e.label)}"` : ""} ${h ? `data-arg3="${esc(h.key)}"` : ""}
       title="${esc(title)}">${label}${esc(suffix)}</button>`;
@@ -4007,7 +4061,7 @@ function libraryHtml() {
     }
     const disabled = reasons.length ? "disabled" : "";
     return `<div class="ocard">
-      <span style="display:flex;gap:6px"><span class="badge ${o.family === "production" ? "" : "steel"}">${esc(o.family || "")}</span>${o.recommended ? `<span class="badge ok">${I18N.recommended}</span>` : ""}${o.beta ? `<span class="badge warn">${I18N.beta}</span>` : ""}</span>
+      ${o.recommended || o.beta ? `<span style="display:flex;gap:6px">${o.recommended ? `<span class="badge ok">${I18N.recommended}</span>` : ""}${o.beta ? `<span class="badge warn">${I18N.beta}</span>` : ""}</span>` : ""}
       <span class="oname">${esc(tr(o.title) || o.id)}</span>
       <span class="odesc">${esc(tr(o.description))}</span>
       ${reasons.length ? `<span class="hintline">⛔ ${esc(reasons[0])}</span>` : ""}
@@ -4018,12 +4072,38 @@ function libraryHtml() {
   };
   const grid = (list) => `<div class="grid">${list.map(card).join("")}</div>`;
   // Groupes par moteur seulement s'il y en a plusieurs : à un seul moteur, rien ne change.
-  const body = d.engines.length > 1
+  const byEngine = (list) => d.engines.length > 1
     ? d.engines.map(e => {
-        const own = kept.filter(o => o.engine === e.label);
+        const own = list.filter(o => o.engine === e.label);
         return own.length ? `<div class="label" style="margin:12px 0 6px">${esc(I18N.engine_name(e.label))}${e.distro_version ? ` <span class="hintline">distro ${esc(e.distro_version)}</span>` : ""}</div>${grid(own)}` : "";
       }).join("")
-    : (kept.length ? grid(kept) : "");
+    : grid(list);
+  // Catégories (champ 'category' du manifeste). coding / design / product se CHOISISSENT :
+  // on ne voit d'abord que les tuiles, un clic déplie les cartes de l'une d'elles (mémorisé).
+  // skills reste toujours visible AU-DESSUS des tuiles (Skills-Adaptation + Pre-Audit-A11Y-RGAA,
+  // outils transverses hors usines) ; un orchestrateur sans
+  // catégorie connue n'est jamais caché : il tombe dans « autres ».
+  const PICKABLE = ["coding", "design", "product"];
+  const ofCat = (c) => kept.filter(o => (PICKABLE.includes(o.category) || o.category === "skills" ? o.category : "other") === c);
+  const open = PICKABLE.includes(ui.category) && ofCat(ui.category).length ? ui.category : null;
+  const tiles = PICKABLE.map(c => {
+    const n = ofCat(c).length;
+    return `<button class="catbtn" data-action="pick-category" data-arg="${c}" data-fkey="cat-${c}"
+      aria-expanded="${open === c}" ${open === c ? `aria-controls="cat-${c}"` : ""} ${n ? "" : "disabled"}>
+      <span class="catname">${I18N["cat_" + c]}<span class="n">${I18N.cat_count(n)}</span></span>
+      <span class="cathint">${I18N["cat_" + c + "_hint"]}</span></button>`;
+  }).join("");
+  const section = (c) => {
+    const list = ofCat(c);
+    if (!list.length) return "";
+    const hint = I18N["cat_" + c + "_hint"];
+    return `<div class="catsec" style="${c === "skills" ? "margin-top:0" : ""}"><div class="label" style="margin:0 0 4px">${I18N["cat_" + c]}</div>
+      ${hint ? `<div class="hintline" style="margin-bottom:8px">${hint}</div>` : ""}${byEngine(list)}</div>`;
+  };
+  // skills EN TÊTE : adapter les skills du moteur précède toute usine sur une autre stack.
+  const body = `${section("skills")}<div class="cats" style="margin-top:18px">${tiles}</div>
+    ${open ? `<div id="cat-${open}">${byEngine(ofCat(open))}</div>` : `<div class="hintline">${I18N.cat_pick}</div>`}
+    ${section("other")}`;
   const empty = d.orchestrators.length ? I18N.no_binaries : I18N.no_manifest;
   // Les harness ne comptent pas comme « manquants » un par un : ils s'excluent. Seul
   // le cas « aucun des deux » est bloquant, et il a son propre message.
@@ -4400,6 +4480,8 @@ const ACTIONS = {
   "clean":        (el) => cleanAll(el.dataset.arg),
   "clean-file":   (el) => cleanOne(el.dataset.arg, el.dataset.arg2, el.dataset.dir === "1"),
   "start-run":    (el) => startRun(el.dataset.arg, el.dataset.arg2),
+  "pick-category": (el) => { ui.category = ui.category === el.dataset.arg ? null : el.dataset.arg;
+                             localStorage.setItem("mm_cat", ui.category || ""); render(); },
   "edit-file":    (el) => openFileEditor(el.dataset.arg, el.dataset.arg2, el.dataset.gate === "1"),
   "open-editor":  (el) => openEditor(el.dataset.arg, el.dataset.arg2),
   "show-doc":     (el) => showDoc(el.dataset.arg, el.dataset.arg2),

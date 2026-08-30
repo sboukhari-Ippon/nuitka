@@ -140,6 +140,7 @@ class AgentRunner:
     tui_name       = ""      # name as it appears in the existing tmux messages
     binary         = ""      # executable expected on PATH
     launch_cmd     = ""      # command line typed into the tmux pane
+    task_preamble  = ""      # reminder pasted at the head of EVERY task (empty: nothing added)
     session_prefix = ""      # session prefix: "oc-" / "cx-"
     buffer_prefix  = ""      # prompt buffer prefix: "oc" / "cx"
     tmp_prefix     = ""      # context-routing file prefix: "opencode" / "codex"
@@ -282,7 +283,7 @@ class AgentRunner:
         Returns as soon as the prompt is submitted: the end of the task is signalled
         by the FILE SENTINEL named in the prompt, never by a return value here."""
         with open(self.prompt_buffer, "w", encoding="utf-8") as f:
-            f.write(prompt)
+            f.write(self.task_preamble + prompt if self.task_preamble else prompt)
 
         # NAMED buffer: tmux buffers are global to the server, so two factories using
         # the default buffer would race each other (project A would paste the prompt
@@ -506,6 +507,12 @@ class CodexTuiRunner(AgentRunner):
     install_hint   = "install Codex CLI: npm install -g @openai/codex"
     auth_cmd       = ("codex", "login", "status")
     auth_hint      = "authenticate: codex login"
+    # Codex has no equivalent of the OpenCode agent's "question: deny": the rule only holds
+    # as text. AGENTS.md states it at startup; this reminder repeats it at the head of every
+    # task, so it survives long sessions and /new resets.
+    task_preamble  = ("SESSION RULE (automated factory, nobody reads the screen): ask NO question and request "
+                      "NO confirmation; when in doubt, pick the most cautious option and keep going. "
+                      "Signal the end of the task only through the sentinel file named below.\n\n")
 
     def after_boot(self):
         """Confirm the « Do you trust this directory? » screen of Codex's first boot

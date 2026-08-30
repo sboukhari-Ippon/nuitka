@@ -524,7 +524,7 @@ ORCHESTRATION_BASENAME_PATTERN = "MAIsterMind*.py"
 ORCHESTRATOR_SCRIPTS = frozenset({
     "Coding.py", "Coding-Without-Tests.py", "Test-First.py", "Acceptance-First.py",
     "Design-Prototype.py",
-    "Spec.py", "Technical-Plan.py", "Audit-Design.py", "Pre-Audit-A11Y-RGAA.py",
+    "Spec.py", "Audit-Design.py", "Pre-Audit-A11Y-RGAA.py",
     "Documentation.py", "Guided-Fix.py", "Skills-Adaptation.py", "mm_runner.py",
 })
 

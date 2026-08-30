@@ -363,7 +363,7 @@ _ORCH_BASENAMES = {
 _ORCHESTRATOR_SCRIPTS = frozenset({
     "Coding.py", "Coding-Without-Tests.py", "Test-First.py", "Acceptance-First.py",
     "Design-Prototype.py",
-    "Spec.py", "Technical-Plan.py", "Audit-Design.py", "Pre-Audit-A11Y-RGAA.py",
+    "Spec.py", "Audit-Design.py", "Pre-Audit-A11Y-RGAA.py",
     "Documentation.py", "Guided-Fix.py", "Skills-Adaptation.py",
     "MAIsterMind_App.py", "mm_runner.py",
 })

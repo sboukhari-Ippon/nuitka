@@ -350,7 +350,7 @@ def print_handover():
     print(f"""
 {'─'*50}
 ➡️  Exploit the review: settle the [BLOCKING] questions, update '{NEED_FILE}',
-   then relaunch the pipeline of your choice (Spec.py, Technical-Plan.py, Coding.py…).
+   then relaunch the pipeline of your choice (Spec.py, Coding.py…).
    NO pipeline reads '{REVIEW_FILE}' nor requires '.need_reviewed': zero coupling,
    zero slowdown — this review is only worth what YOU take from it.
 {'─'*50}""")

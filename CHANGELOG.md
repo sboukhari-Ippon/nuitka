@@ -1,312 +1,169 @@
 # Changelog
 
-## 3.0.0 — MAIsterMind devient une app
+## 3.0.0 — MAIsterMind, l'usine à code avec son app
 
-*Première version publique unifiée : l'usine à code (13 orchestrateurs) et son
-cockpit navigateur dans un seul produit, distribué en archives prêtes à l'emploi
-sur 6 variantes (FR/ENG × Ubuntu/macOS/Windows-WSL). Les itérations internes qui
-y ont mené sont tracées dans l'historique git et les notes de chantier archivées
-(`docs/archive/`).*
+*Première version publique unifiée : l'usine à code (12 orchestrateurs) et son cockpit
+navigateur, `MAIsterMind_App`, dans un seul produit, distribué en archives prêtes à l'emploi
+sur 6 variantes (FR/ENG × Ubuntu / macOS / Windows-WSL).*
 
-### Correctifs intégrés avant publication — Un seul Node pour l'agent et l'orchestrateur, des cartes qui découpent vraiment
+### L'app : MAIsterMind_App
 
-*Correctifs issus des runs du 22-23 août 2026 (Advanced-ATDD sur un projet Vite/vitest,
-Documentation et Audit-A11Y-RGAA sur un monorepo de 1 639 fichiers). Ces correctifs sont intégrés à la 3.0.0 avant sa publication ; il n'y a pas de 3.0.1.*
-
-#### Pré-audit d'accessibilité : un nom et des livrables qui disent ce que c'est
-
-- **`Audit-A11Y-RGAA` devient `Pre-Audit-A11Y-RGAA`** (id `pre-audit-a11y`, dossier de passes
-  `pre_audit_a11y/`, rapport `accessibility_pre_audit_report.md`) : l'outil fait un pré-audit
-  statique, son nom, ses portes, son écran, ses schémas et ses use cases le disent désormais.
-- **La « déclaration d'accessibilité » disparaît.** Le squelette réglementaire pré-rempli
-  (article 47, voies de recours, champs [À COMPLÉTER]) donnait l'apparence d'un document
-  officiel prêt à publier. Il est remplacé par `accessibility_pre_audit_summary.md` : chiffres
-  clés, non-conformités démontrées (une ligne + correction chacune), reste à vérifier par
-  thématique — 100 % Python, sans cadre légal.
-- Projets déjà pré-audités : `audit_a11y/`, `accessibility_audit_report.md` et
-  `declaration_accessibilite.md` ne sont plus reconnus (ni repris, ni nettoyés par l'app) —
-  supprime-les à la main ou relance de zéro.
-
-#### Trois usines de code, la surcouche devient la référence
-
-- **`Safe-Coding`, `Safe-TDD`, `Safe-ATDD` retirés.** Les variantes Advanced en étaient des
-  sur-ensembles stricts (mêmes gardes, mêmes prompts, plus la revue d'impact, le vérificateur LLM
-  et le triage des cassures) ; la surcouche pesait 15 % du coût d'un run mesuré le 28/08. Il ne
-  reste qu'un pipeline par contrat : **`Coding`** (ex-Advanced-Coding, id `coding`), **`Test-First`**
-  (ex-Advanced-TDD, id `test-first`), **`Acceptance-First`** (ex-Advanced-ATDD, id `acceptance-first`). `Coding-Without-Tests`
-  et `Design-Prototype` sont inchangés : 13 orchestrateurs.
-- **Bibliothèque de l'app** : plus de carte repliée « Autres pipelines de code » ni de champ
-  `secondary` au manifeste — les pipelines de code sont tous visibles ; `⭐ recommandé` reste sur
-  TDD et ATDD.
-- **Schémas, README, INSTALL, use cases, outils** alignés ; la surcouche y est présentée comme le
-  comportement de référence et non comme une option. Les scénarios mock des ex-Safe sont convertis
-  au flux de référence (porte d'impact, vérificateur, triage/réparateur sur chemin rouge) ; deux
-  doublons supprimés (`universel-nominal`, `atdd-lot`).
-- Compatibilité : les projets équipés n'ont rien à faire (`.mm-equip.json` ne nomme aucun
-  orchestrateur). Les journaux `.mm-runs/*-yolo-*` d'anciens runs restent lisibles ; les nouveaux
-  s'appellent `*-coding` / `*-test-first` / `*-acceptance-first`, et les sessions tmux de l'agent
-  `oc-coding-…`, `oc-test-first-…`, `oc-acceptance-first-…`.
-- **Pourquoi « Test-First » et « Acceptance-First » plutôt que TDD et ATDD.** Revue du 28/08 contre Beck,
-  Adzic et Gärtner : la mécanique test-first est respectée et garantie par git, mais plusieurs choix de
-  sûreté propres à une usine d'agents (plan écrit d'avance, tests gelés, un cycle par comportement)
-  s'écartent des méthodes canoniques. Les noms disent ce que l'usine garantit ; l'inspiration est
-  déclarée dans le manifeste, les schémas et les README. Le vocabulaire interne (`tdd-red`,
-  `atdd-test`, skills `plan-tdd`/`plan-atdd`) est inchangé.
-
-#### Bibliothèque : « recommandé » sur Test-First et Acceptance-First, « bêta » sur quatre pipelines
-
-- Badge **⭐ recommandé** porté par `Test-First` et `Acceptance-First` ; badge **🧪 bêta** (nouveau champ
-  `beta` du manifeste, v1.3) sur `Design-Prototype`, `Documentation`, `Audit-Design` et
-  `Pre-Audit-A11Y-RGAA` : fonctionnels, moins éprouvés que les usines de code. README alignés.
-- `Audit-Design` gagne son scénario mock de bout en bout (`design-nominal` : périmètre → porte →
-  10 passes Nielsen → synthèse → `design_audit_report.md`), le seul orchestrateur qui n'en avait pas.
-  32 scénarios sous `--golden check`.
-
-#### Fil d'Ariane du run : une timeline par orchestrateur
-
-- **La timeline déclarée au manifeste.** Chaque orchestrateur hors production déclare ses étapes
-  dans `orchestrators.json` (`steps` : libellés fr/eng + preuve durable — fichier livré, dossier
-  apparu, motif — et portes rattachées). L'app rend la timeline depuis cette déclaration
-  (`infer_declared_step`) : étape courante = première sans preuve, porte ouverte = son étape en
-  cours, run mort code 0 = tout terminé. Les 8 pipelines concernés : Spec, Challenge-Need,
-  Technical-Plan, Documentation, Audit-Design, Pre-Audit-A11Y-RGAA, Skills-Adaptation, Guided-Fix.
-- Le modèle usine à 5 étapes (Spécification → … → Refactoring) reste le repli des pipelines de
-  production, inchangé. Fini le pré-audit terminé code 0 affiché bloqué sur « Spécification (PO) »
-  (constat du 28/08).
-
-#### Documentation : la garde des sources ne rejette plus les chemins d'exécution
-
-- **Faux positifs supprimés.** La garde « chemin cité inexistant » tenait pour source tout
-  token entre backticks contenant un `/`. Une zone de scripts d'orchestration parle de
-  branches (`origin/epic/<KEY>`), de globs (`docs/*.md`), de motifs (`tick_*_agent_<TICKET>.json`)
-  et de dossiers créés à l'exécution (`docs/`) : 8 écarts sur 11 étaient de cette nature, trois
-  tentatives brûlées (28/08). Désormais un motif (`<>*?{}$|→`) n'est jamais une citation, et un
-  chemin avec `/` n'est vérifié que si son premier segment existe à la racine du projet
-  (`scripts/…`, `src/…`) — les fautes réelles (`agent_drilldown.h`, `orchestrationdispatch_plan.sh`)
-  restent rejetées.
-- **Basename nu : le chemin exact en retour.** `dispatch_plan.sh` cité seul, qui correspond à un
-  unique fichier de la zone, renvoie « cite `scripts/orchestration/dispatch_plan.sh` » au lieu de
-  « n'existe pas ».
-- **Bilan : « Tests d'acceptation » accepté** au même titre que « Tests d'acceptance » (le modèle
-  écrivait le français correct et se faisait rejeter au caractère près).
-- Skill `doc-zone` : les backticks sont réservés aux fichiers du projet, recopiés depuis la racine.
-
-#### Environnement d'outillage (P1-P3)
-
-- **Même Node pour le verdict et pour l'agent.** L'agent tourne dans un pane tmux ouvert
-  sans commande (shell de login interactif : nvm/fnm/volta chargés) ; l'orchestrateur
-  héritait du PATH du processus ayant créé le serveur tmux — l'app, lancée sans terminal,
-  voyait le Node système. Verdict `npx tsc && vitest` rendu sous Node 18 pendant que
-  l'agent voyait 12/12 tests verts sous Node 22. Désormais `mm_core` sonde UNE fois le
-  PATH du shell de login (`$SHELL -lic`) et le place en tête avant tout `run_verify` /
-  `run_mutation` ; l'app fait de même (`enrich_path`) et passe son PATH explicitement à
-  la session tmux du run. Désactivable : `MM_TOOLCHAIN_PROBE=0`.
-- **Pré-vol toolchain** : au premier verdict JS/TS d'un run, une ligne dit quel Node
-  l'orchestrateur exécute (chemin + version) et ce que le projet attend (`.nvmrc`,
-  `.node-version`, `engines.node`) ; journalisé (`toolchain` dans events.jsonl). Le
-  préflight de l'app affiche la version, le chemin et une pastille orange sous Node 20
-  ou si un shell de login résoudrait un autre `node`. `install.sh` vérifie la version et
-  la cohérence avec le shell de login.
-- **Rapport d'échec « environnement »** : quand le pré-contrôle du scaffold échoue sur
-  une signature d'incompatibilité de runtime (`does not provide an export named`,
-  `EBADENGINE`, `ERR_REQUIRE_ESM`…), l'orchestrateur s'arrête net avec un `failReport.md`
-  qui désigne l'environnement (Node vu, Node attendu, cause probable) au lieu de
-  solliciter un agent scaffold puis d'accuser le modèle (« monte le modèle d'un cran »).
-- **Lanceur Ubuntu / WSL en `bash -lic`** : un shell de login non interactif s'arrêtait à
-  la garde `case $- in *i*)` du `~/.bashrc` standard avant de charger nvm.
-
-#### Cartographie (Documentation, Audit-A11Y-RGAA) (P4)
-
-- **« Divers » facultative** : le prompt demandait de ne PAS y recopier le surplus, le
-  validateur rejetait une « Divers » vide — contradiction levée (complétée par la
-  couverture, retirée si rien ne reste).
-- **Entrées RÉPERTOIRE** : une entrée de la carte terminée par `/` assigne tous les
-  fichiers du périmètre qu'elle contient (récursivement). Un monorepo se cartographie sans
-  recopier des milliers de chemins — et sans que tout tombe en « Divers ».
-- **Échantillon représentatif** : les 400 fichiers listés au cartographe sont tirés de
-  tous les répertoires (code applicatif d'abord, assets/migrations/outillage en dernier)
-  au lieu des 400 premiers par ordre alphabétique (311 feuilles de style d'icônes, zéro
-  fichier de `src/`).
-- **Résiduel borné** : plus de 100 fichiers en « Divers » = carte rejouée tant qu'il
-  reste des tentatives, avec les répertoires à assigner en retour. (697 fichiers en
-  « Divers », c'était 364 passes d'audit sur du « non classé ».)
-- **Attente adaptative** : le budget d'une passe se prolonge tant que l'écran de l'agent
-  change (il travaille), jusqu'à 3 × le budget ; un agent figé sur une demande de
-  permission de sa TUI arrête l'attente immédiatement au lieu de consommer 3 × 600 s.
-- **Agent d'usine** : `external_directory: allow` (un `cd` hors projet ouvrait un
-  dialogue de permission que personne ne validait). **OpenCode** : `autoupdate: false`
-  dans la config équipée — l'auto-mise à jour au premier boot avalait le prompt collé.
-  `mm_runner.start()` attend en plus que la TUI ait pris l'écran (readiness ≤ 45 s).
-
-#### Production : le plan peut déclarer des tests obsolètes ou à faire évoluer
-
-- Nouveaux champs de phase, optionnels, transportés du plan au blackboard par les
-  compilateurs : **`tests_to_remove`** (tests existants rendus obsolètes par la spec :
-  l'orchestrateur les supprime LUI-MÊME au début de la phase, `git rm` + commit, retrait
-  des protections, re-baseline de la garde de non-décroissance) et **`tests_to_update`**
-  (tests que la phase d'implémentation a le droit de modifier). Les gardes de gel
-  (implémentation ATDD/TDD, tests protégés) les exemptent ; le prompt codeur porte
-  l'exception planifiée ; le schéma refuse tout chemin qui n'est pas un fichier de test.
-  Grilles `plan`, `plan-tdd`, `plan-atdd` (champs « Tests à supprimer » / « Tests à
-  modifier ») et `plan-to-blackboard*` mises à jour. Le 23/08/2026, un plan qui déclarait
-  noir sur blanc la suppression de `Counter.test.tsx` était restauré trois fois par la
-  garde : la phase échouait sans issue.
-
-#### Audit RGAA : 4 fois moins de passes, même couverture
-
-- **Tranches sans motif = NA mécanique** : une tranche dont aucun fichier ne porte de
-  déclencheur du pack n'est plus envoyée à l'agent (173 des 509 passes d'egapro) ; son
-  fichier de verdicts est écrit au format des passes (parseur, consolidation, reprise
-  inchangés) et tracé en annexe. Exception conservée : packs « toujours » sur le socle.
-- **Assets tiers hors périmètre** (`public/`, `static/`, `assets/`, `dsfr/`, bundles
-  legacy) : la bibliothèque n'est pas le projet ; ses surcharges dans `src/` restent
-  auditées. **Logique pure sans signal d'interface** (`.ts/.js` sans balise, composant,
-  ARIA ni DOM) hors périmètre ; les extensions porteuses de balisage (`.tsx`, `.vue`,
-  `.html`…) restent toujours dedans. Les deux listes sont affichées à l'écran É0 et
-  détaillées par répertoire dans l'annexe « Périmètre et routage ».
-- **Tranches par budget d'octets** (80 Ko, plafond 40 fichiers) au lieu de 25 fichiers
-  quelle que soit leur taille. Sur egapro : 509 passes → ~130.
-
-#### Arrêts propres et observabilité (P5-P6)
-
-- Ctrl-C, `SIGTERM` et `SIGHUP` (kill de la session tmux) clôturent le journal en
-  `interrupted` et tuent la session d'agent ; filet `atexit` (`aborted`). Le bouton
-  d'arrêt de l'app envoie Ctrl-C, attend, puis tue la session de run ET celle de l'agent
-  — plus d'agent orphelin qui écrit une carte résiduelle après la mort de l'orchestrateur.
-- Une carte reprise dont le mtime est postérieur à la dernière trace d'un run resté sans
-  clôture est signalée avant le y/n.
-- `.mm-runs/<run>/orchestrator.log` : copie de tout ce que l'orchestrateur affiche ;
-  `run.json` porte `distro_version` (lue dans `.mm-equip.json` à défaut), le code de
-  sortie du run (`exit_code`, recopié par l'app), et le modèle réellement observé dans le
-  journal d'OpenCode quand aucune config ne le fixe.
-
-#### App
-
-- **Bibliothèque recentrée** : Advanced-ATDD et Advanced-TDD sont les deux pipelines de
-  code mis en avant (⭐ recommandés) ; Safe-Coding, Coding-Without-Tests, Safe-TDD,
-  Safe-ATDD et Advanced-Coding sont repliés dans une carte « Autres pipelines de code »
-  qui se déploie au clic (champ `secondary` du manifeste, choix mémorisé). Rien n'est
-  retiré du moteur.
-- **Timeouts visibles** : le bouton « ⏱ Timeouts » de la carte projet (Bibliothèque)
-  n'est plus un bouton fantôme et affiche les valeurs en vigueur ; il est aussi présent
-  dans l'en-tête de la vue Run, à côté du binaire, de la commande de vérification et du
-  harness.
-- **Aperçu des documents lisible en thème clair** : les blocs de code des specs, plans,
-  blackboard et rapports (`.gate-doc pre`) reprenaient les couleurs du terminal (fond
-  sombre, texte clair) et la règle globale `code {}` posait un fond clair sous le texte
-  clair — illisible en Aurore. Ils suivent désormais le thème (fond panneau, encre du
-  thème, bordure), en clair comme en sombre.
-
-#### Schémas
-
-- `SCHEMAS_FR.html` / `SCHEMAS_ENG.html` (et leurs copies par variante) mis à jour : gel des
-  tests avec exception planifiée, tranches et NA mécanique de l'audit RGAA, périmètre exclu,
-  cartographie par répertoires, verdict avec la toolchain du shell de login.
-
-#### Tests
-
-- `tools/test_toolchain_env.py` (sonde, fusion PATH, contrainte Node, échantillon,
-  répertoires, attente adaptative, livrable résiduel), `tools/test_documentation_units.py`
-  (validateur de carte), cas ajoutés à `test_audit_units.py` et `test_mm_audit.py`.
-
-### C'est une app
-
-- **Cockpit navigateur** : l'app découvre les moteurs (`engine/`), équipe les
-  projets, lance les runs dans tmux, affiche leur écran en direct et répond aux
-  portes de validation (y/n, choix multiples, saisie libre) depuis le
+- **Cockpit navigateur.** L'app découvre les moteurs (`engine/` et son manifeste
+  `orchestrators.json`), équipe les projets, lance les runs dans tmux, affiche leur écran en
+  direct et répond aux portes de validation (y/n, choix multiples, saisie libre) depuis le
   navigateur. Le terminal reste disponible pour tout, en mode expert.
-- **Double-clic au quotidien** : lanceur natif par plateforme — bundle
-  `MAIsterMind.app` (macOS/Finder), `MAIsterMind.bat` polyglotte (Windows →
-  WSL), entrée de menu d'applications (Ubuntu). Sans terminal, l'app journalise
-  dans `.mm-app/launcher.log` et s'éteint par le bouton ⏻ de « Statut &
-  réglages » ; les runs vivent dans tmux et survivent à l'extinction de l'app.
-- **Boîte noire** : chaque run laisse un journal local `.mm-runs/<id>/`
-  (chronologie `events.jsonl` crash-safe, artefacts figés aux transitions,
-  `run.json`, `summary.md`) — rétention 20 runs, auto-gitignoré, désactivable
-  via `MM_AUDIT=0`. Une seule ligne visible au bilan : « 📁 Journal du run ».
-- **Réglages par projet** dans l'app : timeouts (`verify`, `phase`), harness,
-  équipement — persistés, sans fichier de config à écrire.
+- **Bibliothèque en trois étapes.** 1 · le projet (chemin collé ou parcouru, équipement en un
+  clic) ; 2 · le besoin, rédigé directement dans l'app et enregistré dans `need.md` ; 3 · le
+  script. L'étape 3 affiche d'abord l'adaptation des skills, puis trois catégories à déplier :
+  **Coding** (du besoin au code vérifié, planification incluse), **Design** (prototype et audits
+  d'interface), **Produit** (besoin, spec, documentation). Un clic déplie les orchestrateurs de la
+  catégorie, le choix est mémorisé. Badges ⭐ recommandé et 🧪 bêta portés par le manifeste.
+- **Fil d'Ariane du run.** Chaque orchestrateur déclare ses étapes dans le manifeste (libellés
+  fr/eng, preuve durable sur le disque, portes rattachées) ; l'app rend la timeline depuis cette
+  déclaration : étape courante, porte ouverte, run terminé. Les usines de code suivent le modèle à
+  cinq étapes Spécification → Plan → Blackboard → Production → Refactoring.
+- **Portes riches.** Aperçu du fichier relu (spec, plan, blackboard, rapports, cartes) rendu dans
+  le thème, rechargé s'il change ; édition intégrée avant de répondre ; portes à choix (triage
+  r/e/o, questionnaires) et à saisie libre pilotées par le manifeste.
+- **Double-clic au quotidien.** Lanceur natif par plateforme : bundle `MAIsterMind.app`
+  (macOS / Finder), `MAIsterMind.bat` polyglotte (Windows → WSL), entrée de menu d'applications
+  (Ubuntu). Sans terminal, l'app journalise dans `.mm-app/launcher.log` et s'éteint par le bouton ⏻
+  de « Statut & réglages » ; les runs vivent dans tmux et survivent à l'extinction de l'app.
+- **Réglages par projet** : timeouts (`verify`, `phase`) visibles et modifiables depuis la carte
+  projet et l'en-tête du run, harness, équipement — persistés, sans fichier de config à écrire.
+- **Bilingue à bord** (FR / ENG), thème clair et sombre, notifications de porte et de fin de run.
 
-### On travaille sur le projet à distance — plus rien à intégrer dans le dépôt cible
+### On travaille sur le projet à distance : rien à intégrer dans le dépôt cible
 
-- **L'équipement remplace l'intégration** : plus aucun script MAIsterMind à
-  copier ni à maintenir dans le projet cible. L'app équipe le projet en un clic
-  (copie des skills `.agents/` et des artefacts du harness, marqueur
-  `.mm-equip.json`) et les binaires restent dans `engine/`, à côté de l'app —
-  un correctif de l'usine profite immédiatement à tous les projets équipés.
-- **Le harness d'agent est un choix, pas un fork** : OpenCode ou Codex CLI,
-  décidé projet par projet à l'équipement (ou par `MM_AGENT_HARNESS=` en
-  terminal), changeable à tout moment. Les binaires embarquent les deux
-  implémentations (`mm_runner.py` : une interface, une classe par agent —
-  en ajouter un troisième = une classe + une entrée de registre).
-- **Reprise par fichiers** : tout l'état d'un run vit dans le projet
-  (`spec.md`, `plan.md`, `blackboard.yaml`, sentinelles, fichiers de verdicts).
-  Relancer ne refait jamais ce qui est validé ; supprimer un fichier force la
-  régénération de la seule étape correspondante. La bascule gros modèle
-  (penser) / petit modèle (produire) est triviale, sans configuration.
+- **L'équipement.** L'app copie dans le projet les skills `.agents/` et les artefacts du harness
+  choisi, pose le marqueur `.mm-equip.json`, et c'est tout : les binaires restent dans `engine/`, à
+  côté de l'app. Un correctif de l'usine profite immédiatement à tous les projets équipés
+  (« Mettre à jour l'équipement », avec sauvegarde `.agents.bak-*`).
+- **Le harness d'agent est un choix, pas un fork.** OpenCode ou Codex CLI, décidé projet par
+  projet à l'équipement (ou `MM_AGENT_HARNESS=` en terminal), changeable à tout moment. Les
+  binaires embarquent les deux implémentations (`mm_runner.py` : une interface, une classe par
+  agent — en ajouter un troisième = une classe + une entrée de registre). **Codex CLI est en
+  bêta** : moins éprouvé qu'OpenCode sur des runs réels, il demande des retours utilisateurs
+  (portes, permissions, modèles) ; OpenCode reste le choix de référence. Codex n'ayant pas de
+  réglage « ne pose pas de question », la consigne est portée par `AGENTS.md` et rappelée en tête de
+  chaque tâche envoyée à l'agent.
+- **Reprise par fichiers.** Tout l'état d'un run vit dans le projet (`spec.md` + `.spec_approved`,
+  `plan.md`, `impact.md` + `.impact_approved`, `blackboard.yaml`, fichiers de verdicts, cartes).
+  Relancer ne refait jamais ce qui est validé ; supprimer un fichier force la régénération de la
+  seule étape correspondante. Le workflow deux temps (gros modèle pour penser, petit pour
+  produire) tient en un `n` à la porte blackboard, un changement de modèle et une relance.
+- **Boîte noire.** Chaque run laisse un journal local `.mm-runs/<id>/` : chronologie
+  `events.jsonl` crash-safe, artefacts figés aux transitions, copie de l'écran de l'orchestrateur,
+  `run.json` (version de distro, code de sortie, modèle observé), `summary.md`. Rétention 20 runs,
+  auto-gitignoré, `MM_AUDIT=0` pour désactiver. Ctrl-C, `SIGTERM` et `SIGHUP` clôturent le journal
+  proprement et éteignent la session d'agent ; le bouton d'arrêt de l'app fait de même.
 
-### Installation facilitée
+### Installation
 
-- **Une commande, puis plus rien** : `sh install.sh` (détection d'OS, prérequis
-  apt/brew, droits posés, quarantaine macOS levée), puis double-clic au
-  quotidien.
-- **Binaires autonomes** (Nuitka onefile) : aucune installation de Python
-  demandée à l'utilisateur ; en dev, le dépôt s'utilise tel quel (le binaire
-  absent retombe sur la source `.py`).
-- **Zéro `chmod`, jamais** : l'app remet elle-même son moteur en état à chaque
-  démarrage et avant chaque lancement (bit exécutable, quarantaine Gatekeeper) —
-  zip qui écrase les permissions, copie par l'explorateur, clé USB : elle répare.
-- **Archives complètes** `tar.gz` par variante (app + lanceur + moteur + docs +
-  `LICENSE`), construites par la CI au tag. Licence non commerciale
-  personnalisée (`LICENSE`), mentionnée dans toutes les docs.
+- **Une commande, puis plus rien** : `sh install.sh` (détection d'OS, prérequis apt/brew, droits
+  posés, quarantaine macOS levée, vérification de Node et de sa cohérence avec le shell de login),
+  puis double-clic au quotidien.
+- **Binaires autonomes** (Nuitka onefile) : aucune installation de Python demandée ; en dev, le
+  dépôt s'utilise tel quel, le binaire absent retombe sur la source `.py`.
+- **Zéro `chmod`, jamais** : l'app remet elle-même son moteur en état à chaque démarrage et avant
+  chaque lancement (bit exécutable, quarantaine Gatekeeper). Zip qui écrase les permissions, copie
+  par l'explorateur, clé USB : elle répare.
+- **Archives complètes** `tar.gz` par variante (app + lanceur + moteur + docs + `LICENSE`),
+  construites par la CI au tag. Licence non commerciale personnalisée.
 
-### Couverture élargie : quasi tous les besoins
+### Douze orchestrateurs, quatre catégories
 
-Seize orchestrateurs, tous déclarés dans `engine/orchestrators.json` et
-pilotables depuis l'app. Philosophie constante : **le verdict est l'exécution
-réelle** (jamais un LLM qui se note lui-même), des portes humaines aux moments
-à fort levier, un contexte tranché par phase qui rend les petits modèles
-compétitifs.
+Tous déclarés dans `engine/orchestrators.json` (catégorie, portes, étapes, badges) et pilotables
+depuis l'app comme en terminal. Philosophie constante : **le verdict est l'exécution réelle**
+(compilation + suite complète, jamais un LLM qui se note lui-même), des portes humaines aux
+moments à fort levier, un contexte tranché par phase qui rend les petits modèles compétitifs.
 
-- **Production** : `Safe-Coding` (verdict universel : compilation + suite
-  complète à chaque phase), `Coding-Without-Tests` (vérificateur LLM
-  indépendant quand une suite n'a pas de sens), `Safe-TDD` (cycles
-  red → green → refactor, verdicts interprétés par nature, gardes git),
-  `Safe-ATDD` (lots par user story, suite d'acceptance en boîte noire),
-  `Design-Prototype` (prototypes cliquables, design system transporté sous
-  gardes mécaniques, review UX finale).
-- **Surcouche Yolo** : `Advanced-Coding`, `Advanced-TDD`, `Advanced-ATDD` —
-  revue d'impact validée par l'humain avant production, puis arbitrage
-  « régression subie ou évolution voulue ? » PENDANT le run (triage sur suite
-  rouge, porte d'arbitrage mid-run). Pour le brownfield ; les bases restent le
-  choix robuste du greenfield.
-- **Cadrage** : `Challenge-Need` (challenger le besoin AVANT de payer une spec :
-  ambiguïtés, contradictions, présupposés — citations vérifiées mot pour mot,
-  opt-in, aucun couplage aval), `Spec` (la spec seule), `Technical-Plan`
-  (spec + plan + blackboard sans production — le workflow deux temps).
-- **Lecture seule sur l'existant** : `Documentation` (cartographie validée,
-  une passe par zone, features sourcées `fichier:ligne`, tests d'acceptance
-  Couvert/Proposé), `Audit-Design` (10 heuristiques de Nielsen, rapport
-  priorisé par sévérité), `Audit-A11Y-RGAA` (pré-audit RGAA 4.1.2, 106
-  critères : packs routés par déclencheurs déterministes, chaque constat
-  PROUVÉ par un extrait retrouvé mécaniquement dans les fichiers, taux en
-  fourchette honnête, rapport PARTIEL qui survit aux passes échouées, reprise
-  `--rejouer-modifiees <ref>` après remédiation).
-- **Maintenance & outillage** : `Guided-Fix` (réparation arbitrée d'un arrêt
-  sur suite rouge, triage humain comportement par comportement, gardes git),
-  `Skills-Adaptation` (réécrit les skills livrés pour TA stack, sous
-  garde-fous et revue qualité indépendante).
+**Adaptation des skills** — à lancer d'abord si la stack n'est pas Java/Spring + React/TS.
+
+- `Skills-Adaptation` (WIP) réécrit les skills techniques **du moteur** (`engine/.agents/skills` :
+  codage et tests, back et front) pour ta stack, questionnaire court, garde-fous Python (limite de
+  lignes, frontmatter, tableau ❌/✅, checklist), revue qualité indépendante, écrasement skill par
+  skill après ta validation (`.bak`), miroir dans le projet courant. Les autres projets équipés
+  les reçoivent via « Mettre à jour l'équipement ». Un moteur = une stack : pour des projets aux
+  stacks distinctes, dupliquer le dossier de l'outil. À lancer avec un bon modèle, de préférence
+  frontier : ces skills conditionnent tous les runs suivants.
+
+**Coding** — du besoin au code vérifié, planification (spec, plan, blackboard) incluse.
+
+- `Acceptance-First` ⭐ : acceptance-first par lots de user story (inspiré de l'ATDD), suite
+  d'acceptance en boîte noire, étapes intermédiaires compilées seules, clôture à la suite complète.
+- `Test-First` ⭐ : test-first par cycles red → green → refactor (inspiré du TDD), verdicts
+  interprétés par nature, refactor de cycle annulé mécaniquement s'il casse.
+- `Coding` : verdict universel à chaque phase.
+- `Coding-Without-Tests` : vérificateur LLM indépendant quand une suite n'a pas de sens (POC,
+  script jetable, glue).
+- Les trois usines testées embarquent la **surcouche** : revue d'impact validée par l'humain avant
+  production, vérificateur LLM sur chemin vert, et sur chemin rouge un triage par fichier de test
+  (prévu / imprévu), un réparateur, et une porte d'arbitrage mid-run « régression subie ou
+  évolution voulue ? ». Le plan peut déclarer des tests obsolètes (`tests_to_remove`, supprimés par
+  l'orchestrateur) ou à faire évoluer (`tests_to_update`). Sous git : commit par phase verte,
+  tests protégés restaurés, gardes anti-codeur fantôme et de non-décroissance du compte de tests,
+  rollback d'un polish final qui casse.
+- `Guided-Fix` (bêta) : réparation arbitrée d'un run arrêté sur suite rouge — diagnostic des
+  comportements cassés, triage humain comportement par comportement, marqueur `FIXED` revalidé par
+  l'usine à la relance sans re-payer de codeur.
+
+**Design** — prototype et audits d'interface.
+
+- `Design-Prototype` (bêta) : prototypes cliquables HTML/CSS/JS vanilla pour les designers, porte
+  design system en tout premier, gardes mécaniques de tokens à chaque phase, review UX +
+  blackboard + design system en fin de run.
+- `Audit-Design` (bêta) : audit UX d'une interface existante contre les 10 heuristiques de
+  Nielsen, une passe par heuristique, synthèse priorisée par sévérité, lecture seule garantie par
+  git.
+- `Pre-Audit-A11Y-RGAA` (bêta) : pré-audit d'accessibilité RGAA 4.1.2 (106 critères, 13
+  thématiques) — packs routés par déclencheurs déterministes, tranches de 40 fichiers ou 80 Ko,
+  tranches sans motif classées NA sans agent, chaque constat porteur d'un extrait recherché dans
+  le fichier cité, agrégation Python avant la synthèse, taux en fourchette, rapport PARTIEL qui
+  survit aux passes échouées, reprise `--rejouer-modifiees [ref]` après remédiation, fiche de
+  résultats 100 % Python.
+
+**Produit** — besoin, spec, documentation.
+
+- `Challenge-Need` : challenger le besoin avant de payer une spec — ambiguïtés, contradictions,
+  présupposés, citations vérifiées dans `need.md` ; opt-in, aucun couplage aval.
+- `Spec` : la spécification seule, validée avec le métier, reprise telle quelle par toute usine.
+- `Documentation` (bêta) : documentation comportementale d'un projet existant — carte fonctionnelle
+  validée, une passe par zone sous gardes de contenu, features sourcées `fichier:ligne`, tests
+  d'acceptance Couvert / Proposé, assemblage Python.
+
+### Environnement d'outillage
+
+- **Même Node pour le verdict et pour l'agent.** L'orchestrateur sonde une fois le PATH du shell
+  de login (`$SHELL -lic`) et le place en tête avant tout verdict ; l'app fait de même et passe son
+  PATH à la session tmux du run. Désactivable : `MM_TOOLCHAIN_PROBE=0`.
+- **Pré-vol toolchain** : au premier verdict JS/TS, une ligne dit quel Node l'orchestrateur exécute
+  et ce que le projet attend (`.nvmrc`, `.node-version`, `engines.node`) ; le préflight de l'app
+  affiche version et chemin, avec une alerte sous Node 20 ou en cas de divergence avec le shell de
+  login.
+- **Rapport d'échec « environnement »** : une incompatibilité de runtime détectée au scaffold
+  produit un `failReport.md` qui désigne l'environnement (Node vu, Node attendu, cause probable)
+  avant tout appel d'agent.
+
+### Documentation du produit
+
+- **`SCHEMAS.html`** (FR / ENG) : un onglet par orchestrateur — pipeline, portes, verdicts,
+  livrables, boucles d'échec, branches « n » et reprise par fichiers, relus contre le code. Le rail
+  suit les catégories de la Bibliothèque ; un bloc commun sous chaque onglet rappelle les règles
+  partagées (boucles bornées, « n », reprise, garde git, contexte neuf) et donne un glossaire.
+- **README** (racine et par variante), `INSTALL.md`, `useCases*.md` : quel script pour quel besoin,
+  par catégorie ; mode expert ; règles du jeu.
 
 ### Sous le capot (pour qui développe MAIsterMind)
 
-- **6 variantes synchronisées mécaniquement** : identité octet par octet
-  intra-langue, AST FR = ENG modulo chaînes, couche app unifiée — 5 checkers,
-  refusés en CI s'ils sont rouges.
-- **Caractérisation exécutable** : 32 scénarios mock (pipelines entiers, zéro
-  token) comparés à des transcripts goldens versionnés + tests unitaires des
-  fonctions pures, sur chaque push/PR ; `build.yml` rejoue tout avant de
-  compiler.
-- **Moteur factorisé** : le socle commun des orchestrateurs vit dans
-  `mm_core.py`, le journal de run dans `mm_audit.py`, le harness dans
-  `mm_runner.py` — modules embarqués dans chaque binaire, jamais livrés en
-  `.py`.
+- **6 variantes synchronisées mécaniquement** : identité octet par octet intra-langue, AST FR = ENG
+  modulo chaînes, couche app unifiée — checkers refusés en CI s'ils sont rouges.
+- **Schémas verrouillés sur le manifeste** : `tools/check_schemas.py` vérifie le JavaScript
+  embarqué, la correspondance onglets ↔ binaires déclarés et l'identité des copies par variante.
+- **Caractérisation exécutable** : 32 scénarios mock (pipelines entiers, zéro token, harness de
+  test isolé jusqu'au moteur jetable) comparés à des transcripts goldens versionnés, plus les tests
+  unitaires des fonctions pures, sur chaque push/PR ; `build.yml` rejoue tout avant de compiler.
+- **Moteur factorisé** : le socle commun des orchestrateurs vit dans `mm_core.py`, le journal de
+  run dans `mm_audit.py`, le harness dans `mm_runner.py` — modules embarqués dans chaque binaire,
+  jamais livrés en `.py`. `MM_ENGINE_HOME`, posé par l'app au lancement d'un run, désigne le moteur
+  aux orchestrateurs qui en ont besoin.
